@@ -1,3 +1,9 @@
+[![Download APK](https://img.shields.io/badge/Download-APK%20(Debug)-brightgreen?style=for-the-badge&logo=android)](https://github.com/cihatsarsilmaz/citvapp/releases/download/latest-debug/app-debug.apk)
+
+> Direct download: https://github.com/cihatsarsilmaz/citvapp/releases/download/latest-debug/app-debug.apk
+
+---
+
 # AstrogameWAR — Kurulum ve Deploy Rehberi
 
 ## Bu Proje İçinde Ne Var
@@ -5,15 +11,15 @@
 ```
 citvapp/
 ├── src/                    ← Oyun kodu (burada React bileşeni oluştur)
-├── android/                ← Capacitor Android projesi
+├── android/                   ← Capacitor Android projesi
 ├── public/                 ← Statik dosyalar (ikonlar, resimler)
 ├── dist/                   ← Build çıktısı (APK/Web için)
 ├── .github/workflows/       ← GitHub Actions (otomatik build)
 ├── vite.config.js          ← Vite yapılandırması
 ├── capacitor.config.json   ← Capacitor/Android ayarları
 ├── package.json            ← Proje bağımlılıkları
-├── index.html              ← Ana HTML sayfası
-├── manifest.json           ← PWA manifestosu
+├── index.html             ← Ana HTML sayfası
+├── manifest.json            ← PWA manifestosu
 ├── vercel.json             ← Vercel deploy ayarları
 ├── netlify.toml            ← Netlify deploy ayarları
 └── README.md               ← Bu dosya
@@ -43,7 +49,7 @@ Browser: http://localhost:5173
 npm run build
 ```
 
-→ `dist/` klasöründe optimize edilmiş dosyalar oluşur.
+→ `dist/f�klasöründe optimize edilmiş dosyalar oluşur.
 
 ---
 
@@ -177,4 +183,4 @@ Sonra GitHub Secrets'e ekle:
 
 ---
 
-**Sorular?** Lütfen Issues aç! 🚀
+**Sorular?** Lütfen Issues aç 🚀�
