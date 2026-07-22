@@ -6,6 +6,9 @@ on:
       - Kryptocasino
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     name: Build Debug APK
@@ -19,7 +22,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
@@ -69,8 +71,6 @@ jobs:
             --notes "Automated debug APK build from the \`Kryptocasino\` branch.
 
           **Commit:** \`${{ github.sha }}\`
-          **Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')
-
-          > ⚠️ This is a debug build for testing purposes only." \
+          **Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
             --target ${{ github.sha }} \
             android/app/build/outputs/apk/debug/app-debug.apk
