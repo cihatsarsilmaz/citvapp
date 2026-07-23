@@ -35,3 +35,6 @@ bin/
 .env.local
 *.jks
 *.keystore
+
+# Python
+__pycache__/
