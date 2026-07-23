@@ -1,0 +1,79 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - Kryptocasino
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Add Capacitor Android project
+        run: npx cap add android
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        run: cd android && ./gradlew assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Delete existing "latest-debug" release (if any)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest-debug --yes --cleanup-tag || true
+        continue-on-error: true
+
+      - name: Create GitHub Release and upload APK
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create latest-debug \
+            --title "Latest Debug Build" \
+            --notes "Automated debug APK build from the \`Kryptocasino\` branch.
+
+          **Commit:** \`${{ github.sha }}\`
+          **Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
+            --target ${{ github.sha }} \
+            android/app/build/outputs/apk/debug/app-debug.apk
