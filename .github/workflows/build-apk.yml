@@ -6,6 +6,10 @@ on:
       - Kryptocasino
   workflow_dispatch:
 
+concurrency:
+  group: build-android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
