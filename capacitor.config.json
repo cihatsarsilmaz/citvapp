@@ -4,10 +4,13 @@
   "webDir": "dist",
   "backgroundColor": "#020810",
   "android": {
-    "allowMixedContent": false
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
   },
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "cleartext": true
   },
   "plugins": {
     "SplashScreen": {
