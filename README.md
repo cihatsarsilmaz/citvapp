@@ -49,7 +49,7 @@ Browser: http://localhost:5173
 npm run build
 ```
 
-→ `dist/f�klasöründe optimize edilmiş dosyalar oluşur.
+→ `dist/` klasöründe optimize edilmiş dosyalar oluşur.
 
 ---
 
@@ -183,4 +183,4 @@ Sonra GitHub Secrets'e ekle:
 
 ---
 
-**Sorular?** Lütfen Issues aç 🚀�
+**Sorular?** Lütfen Issues aç! 🚀
