@@ -4,23 +4,22 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "deploy:vercel": "npm run build && npx vercel --prod",
+    "dev":            "vite",
+    "build":          "vite build",
+    "preview":        "vite preview",
+    "deploy:vercel":  "npm run build && npx vercel --prod",
     "deploy:netlify": "npm run build && npx netlify-cli deploy --prod --dir=dist",
-    "deploy:gh": "npm run build && npx gh-pages -d dist",
-    "android:add": "npx cap add android",
-    "android:sync": "npm run build && npx cap sync android",
-    "android:open": "npx cap open android",
-    "android:build": "npm run build && (test -d android || npx cap add android) && npx cap sync android && cd android && ./gradlew assembleDebug"
+    "deploy:gh":      "npm run build && npx gh-pages -d dist",
+    "android:add":    "npx cap add android",
+    "android:sync":   "npm run build && npx cap sync android",
+    "android:open":   "npx cap open android",
+    "android:build":  "npm run android:sync && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
-    "@capacitor/android": "^6.1.2",
-    "@capacitor/core": "^6.1.2",
-    "@capacitor/splash-screen": "^6.0.4",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/android": "^6.1.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.1.2",

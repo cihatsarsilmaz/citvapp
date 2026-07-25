@@ -19,9 +19,7 @@ local.properties
 *.ap_
 *.dex
 *.class
-# Exclude JARs except Gradle wrapper (required for CI builds)
 *.jar
-!android/gradle/wrapper/gradle-wrapper.jar
 *.war
 *.ear
 *.rar
