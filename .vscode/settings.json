@@ -1,0 +1,5 @@
+{
+  "gitlens.codeLens.enabled": true,
+  "gitlens.currentLine.enabled": false,
+  "gitlens.hovers.currentLine.over": "line"
+}
