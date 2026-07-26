@@ -1,0 +1,169 @@
+name: Publish package to GitHub Packages
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    environment:
+      name: npm-registry
+      url: https://npm.pkg.github.com/@cihatsarsilmaz
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@cihatsarsilmaz'
+          cache: 'npm'
+
+      - name: Verify Node.js installation
+        run: |
+          echo "Node version: $(node --version)"
+          echo "npm version: $(npm --version)"
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run linter
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Run tests
+        run: npm test
+        continue-on-error: false
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build package
+        run: npm run build --if-present
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify package.json configuration
+        run: |
+          echo "Package name: $(npm pkg get name)"
+          echo "Package version: $(npm pkg get version)"
+          echo "Registry: $(npm config get registry)"
+
+      - name: Publish to GitHub Packages
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release success comment
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const release = context.payload.release;
+            github.rest.repos.createReleaseComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              body: `✅ **Paket başarıyla yayınlandı!**
+
+📦 **Paket Bilgileri:**
+- Adı: \`@cihatsarsilmaz/citvapp\`
+- Sürüm: \`${release.tag_name}\`
+- Registry: npm.pkg.github.com
+
+🔗 **Erişim Linki:**
+[\`npm install @cihatsarsilmaz/citvapp@${release.tag_name}\`](https://github.com/cihatsarsilmaz/citvapp/packages)
+
+⚙️ **Build Detayları:**
+- Workflow: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+- Tetikleme: Release yayınlandı
+- Zaman: ${{ github.event.release.published_at }}`
+            });
+
+      - name: Upload release artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package-${{ github.event.release.tag_name }}
+          path: dist/
+          retention-days: 30
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const release = context.payload.release;
+            github.rest.repos.createReleaseComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              body: `❌ **Yayın başarısız oldu!**
+
+📋 **Hata Detayları:**
+- Sürüm: \`${release.tag_name}\`
+- Workflow: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+🔍 **Sorun Giderme:**
+1. [Workflow loglarını kontrol et](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+2. \`npm test\` çalıştırıldığını doğrula
+3. \`npm run build\` başarılı olup olmadığını kontrol et
+4. package.json scope ve registry ayarlarını doğrula`
+            });
+
+      - name: Create failure notification
+        if: failure()
+        run: |
+          echo "::error::npm publish workflow başarısız oldu!"
+          echo "::notice::Detaylar: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  quality-check:
+    name: Quality Assurance
+    runs-on: ubuntu-latest
+    needs: publish
+    if: always()
+
+    steps:
+      - name: Check publish status
+        run: |
+          if [ "${{ needs.publish.result }}" = "success" ]; then
+            echo "✅ Publish işlemi başarılı"
+            exit 0
+          else
+            echo "❌ Publish işlemi başarısız"
+            exit 1
+          fi
+
+      - name: Generate summary
+        if: always()
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # 📦 npm Publish Workflow Özeti
+          
+          | Durum | Sonuç |
+          |-------|-------|
+          | Publish | ${{ needs.publish.result }} |
+          | Package | @cihatsarsilmaz/citvapp |
+          | Registry | npm.pkg.github.com |
+          | Release | ${{ github.event.release.tag_name }} |
+          | Workflow | [Detaylar](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
+          EOF
