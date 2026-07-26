@@ -24,10 +24,19 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build web app
         run: npm run build
+
+      - name: Verify dist folder
+        run: |
+          echo "=== dist folder contents ==="
+          ls -la dist/
+          echo "=== index.html check ==="
+          test -f dist/index.html && echo "✅ index.html EXISTS" || (echo "❌ index.html MISSING" && exit 1)
+          echo "=== assets check ==="
+          ls -la dist/assets/ || echo "No assets folder"
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -38,8 +47,24 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Add Capacitor Android project (if not exists)
+        run: |
+          if [ ! -d "android" ]; then
+            echo "Android project not found, adding..."
+            npx cap add android
+          else
+            echo "Android project already exists, skipping add"
+          fi
+
       - name: Sync Capacitor Android project
         run: npx cap sync android
+
+      - name: Verify Android assets
+        run: |
+          echo "=== Android public assets ==="
+          ls -la android/app/src/main/assets/public/ || echo "No public assets folder"
+          echo "=== Android asset index.html ==="
+          test -f android/app/src/main/assets/public/index.html && echo "✅ index.html EXISTS in assets" || (echo "❌ index.html MISSING in assets" && exit 1)
 
       - name: Make Gradle wrapper executable
         run: chmod +x android/gradlew
@@ -68,9 +93,6 @@ jobs:
         run: |
           gh release create latest-debug \
             --title "Latest Debug Build" \
-            --notes "Automated debug APK build from the \`Kryptocasino\` branch.
-
-          **Commit:** \`${{ github.sha }}\`
-          **Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
+            --notes "Automated debug APK build from the \`Kryptocasino\` branch.\n\n**Commit:** \`${{ github.sha }}\`\n**Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
             --target ${{ github.sha }} \
             android/app/build/outputs/apk/debug/app-debug.apk
