@@ -10,7 +10,6 @@ export default defineConfig({
     target: "es2015",
     minify: "terser",
     cssMinify: true,
-    // Android WebView uyumluluğu için:
     modulePreload: false,
     rollupOptions: {
       output: {
@@ -23,6 +22,6 @@ export default defineConfig({
   },
   esbuild: {
     target: "es2015",
-    jsxInject: `import React from 'react'`,
+    // jsxInject KALDIRILDI - çift import hatası veriyordu
   },
 });
