@@ -1,186 +1,112 @@
-[![Download APK](https://img.shields.io/badge/Download-APK%20(Debug)-brightgreen?style=for-the-badge&logo=android)](https://github.com/cihatsarsilmaz/citvapp/releases/download/latest-debug/app-debug.apk)
-
-> Direct download: https://github.com/cihatsarsilmaz/citvapp/releases/download/latest-debug/app-debug.apk
-
----
-
 # AstrogameWAR — Kurulum ve Deploy Rehberi
 
-## Bu Proje İçinde Ne Var
+## Bu ZIP İçinde Ne Var
 
 ```
-citvapp/
-├── src/                    ← Oyun kodu (burada React bileşeni oluştur)
-├── android/                   ← Capacitor Android projesi
-├── public/                 ← Statik dosyalar (ikonlar, resimler)
-├── dist/                   ← Build çıktısı (APK/Web için)
-├── .github/workflows/       ← GitHub Actions (otomatik build)
-├── vite.config.js          ← Vite yapılandırması
-├── capacitor.config.json   ← Capacitor/Android ayarları
-├── package.json            ← Proje bağımlılıkları
-├── index.html             ← Ana HTML sayfası
-├── manifest.json            ← PWA manifestosu
-├── vercel.json             ← Vercel deploy ayarları
-├── netlify.toml            ← Netlify deploy ayarları
-└── README.md               ← Bu dosya
+astrowar-capacitor/
+├── src/AstrogameWAR.jsx     ← Oyun kodu (Firebase buraya)
+├── android/                 ← Hazır Android projesi (Capacitor)
+├── .github/workflows/
+│   ├── build-apk.yml        ← GitHub push → otomatik APK
+│   └── deploy-web.yml       ← GitHub push → otomatik web deploy
+├── vercel.json              ← Vercel yapılandırması
+├── netlify.toml             ← Netlify yapılandırması
+├── public/icons/            ← Uygulama ikonları (5 boyut)
+├── vite.config.js
+├── capacitor.config.json
+└── package.json
 ```
 
 ---
 
-## Hızlı Başlangıç
+## Adım 1 — Firebase Değerlerini Yaz
 
-### 1️⃣ Bağımlılıkları Yükle
+`src/AstrogameWAR.jsx` dosyasının en üstüne kendi değerlerini yapıştır:
+
+```js
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSy...",
+  authDomain:        "proje.firebaseapp.com",
+  projectId:         "proje-id",
+  storageBucket:     "proje.appspot.com",
+  messagingSenderId: "1234567890",
+  appId:             "1:...:web:...",
+};
+const ADMIN_UIDS = ["SENIN_FIREBASE_UID_IN"];
+const RECAPTCHA_ENTERPRISE_SITE_KEY = "6Lc...";
+```
+
+---
+
+## Adım 2 — GitHub'a Push Et → APK Otomatik Gelir
 
 ```bash
+cd astrowar-capacitor
 npm install
+git init
+git add .
+git commit -m "AstrogameWAR ilk commit"
+git remote add origin https://github.com/KULLANICI/astrogamewar.git
+git push -u origin main
 ```
 
-### 2️⃣ Geliştirme Sunucusunu Başlat
+GitHub → **Actions** sekmesine git → "Build Android APK" workflow çalışıyor →
+Tamamlanınca **Artifacts** bölümünden `app-debug.apk` indir → telefona yükle.
 
+---
+
+## Adım 3 — Telefona Yükleme
+
+1. Android'de **Ayarlar → Güvenlik → Bilinmeyen kaynaklar** aktif et
+2. `app-debug.apk` dosyasını telefonuna aktar
+3. Dosyaya dokun → Yükle
+
+---
+
+## Web Deploy (Seçimlik)
+
+### Vercel (En kolay):
 ```bash
-npm run dev
-```
-
-Browser: http://localhost:5173
-
-### 3️⃣ Web Sürümünü Build Et
-
-```bash
+npm install -g vercel
 npm run build
+vercel --prod
 ```
 
-→ `dist/f�klasöründe optimize edilmiş dosyalar oluşur.
+### Netlify (Sürükle-bırak):
+1. `npm run build` çalıştır
+2. https://app.netlify.com/drop → `dist/` klasörünü sürükle
+
+### GitHub Pages (Otomatik):
+main'e push edince `deploy-web.yml` otomatik çalışır.
+GitHub → Settings → Pages → Source: GitHub Actions seç.
 
 ---
 
-## Android APK Oluşturma
+## Release APK (İmzalı, Play Store için)
 
-### A) GitHub Actions ile (Otomatik — Tavsiye edilir)
+GitHub repo → Settings → Secrets → Actions:
 
-1. **Bu repoyu GitHub'a push et:**
-   ```bash
-   git add .
-   git commit -m "Initial commit"
-   git push origin Kryptocasino
-   ```
+```
+KEYSTORE_BASE64    = base64 ile encode edilmiş keystore
+KEYSTORE_PASSWORD  = keystore şifresi
+KEY_ALIAS          = key takma adı
+KEY_PASSWORD       = key şifresi
+```
 
-2. **GitHub repo → Actions sekmesine git**
-   - Workflow: "Build Android APK" gözükecek
-   - Tamamlanınca **Artifacts** bölümünden `app-debug.apk` indir
-
-### B) Lokal Olarak (Manuel)
-
-**Gereklilikler:**
-- Java Development Kit (JDK) 11+
-- Android SDK
-- Gradle
-
-**Adımlar:**
-
+Sonra bir versiyon etiketi push et:
 ```bash
-# 1. Android projesi ekle (bir kez)
-npm run android:add
-
-# 2. Web kodunu build et ve Android'e sync et
-npm run android:sync
-
-# 3. Android Studio'da açabilir veya CLI ile build et
-npm run android:build
-
-# Veya doğrudan:
-cd android
-./gradlew assembleDebug
+git tag v1.0.0
+git push origin v1.0.0
 ```
-
-→ APK: `android/app/build/outputs/apk/debug/app-debug.apk`
-
----
-
-## APK'yı Telefona Yükle
-
-1. **Android Ayarları → Güvenlik → Bilinmeyen Kaynaklar** ✓
-2. APK dosyasını telefonuna aktar (USB/email/WhatsApp)
-3. Dosyaya dokun → **Yükle**
-4. Uygulamayı aç
+→ Actions imzalı `app-release.apk` üretir.
 
 ---
 
-## Web Deploy
+## Sorun Giderme
 
-### Vercel (En Kolay)
-
-```bash
-npm run deploy:vercel
-```
-
-### Netlify (Sürükle-Bırak)
-
-```bash
-npm run deploy:netlify
-```
-
-### GitHub Pages (Ücretsiz Hosting)
-
-```bash
-npm run deploy:gh
-```
-
-→ GitHub → Settings → Pages → Source: GitHub Actions seç
-
----
-
-## Dosya Yapısı Detaylı
-
-| Dosya | Amaç |
-|-------|------|
-| `vite.config.js` | Vite build ayarları (React, base path vs.) |
-| `capacitor.config.json` | Android app ID, icon, splash screen |
-| `package.json` | Dependencies ve script komutları |
-| `index.html` | Ana HTML, PWA linkler |
-| `manifest.json` | PWA metadata (Ana ekrana ekle) |
-| `src/main.jsx` | React giriş noktası |
-| `android/` | Capacitor tarafından oluşturulan Android projesi |
-| `.github/workflows/` | GitHub Actions CI/CD yapılandırması |
-
----
-
-## Yaygın Sorunlar
-
-| ❌ Sorun | ✅ Çözüm |
-|--------|----------|
-| **APK'da beyaz ekran** | `vite.config.js`'de `base: "./"` kontrolü |
-| **npm install başarısız** | Node.js 16+ ile dene, `npm cache clean --force` |
-| **GitHub Actions hatası** | Actions loguna bak, genelde JDK/SDK eksik |
-| **Telefonda yüklenmiyor** | "Bilinmeyen kaynaklar" iznini aç |
-| **Android Studio projesi açılmıyor** | `npm run android:sync` ile sync et |
-
----
-
-## İleri Ayarlar
-
-### Release APK (Play Store Için)
-
-**Gerekli:** Keystore dosyası
-
-```bash
-keytool -genkey -v -keystore release.keystore -keyalg RSA -keysize 2048 -validity 10000
-```
-
-Sonra GitHub Secrets'e ekle:
-- `KEYSTORE_BASE64`
-- `KEYSTORE_PASSWORD`
-- `KEY_ALIAS`
-- `KEY_PASSWORD`
-
----
-
-## Kaynaklar
-
-- [Vite Dokumentasyon](https://vitejs.dev)
-- [Capacitor Docs](https://capacitorjs.com)
-- [React Docs](https://react.dev)
-- [PWA Basics](https://web.dev/progressive-web-apps/)
-
----
-
-**Sorular?** Lütfen Issues aç 🚀�
+| Sorun | Çözüm |
+|-------|-------|
+| APK'da beyaz ekran | `vite.config.js`'de `base: "./"` satırını silme |
+| Firebase bağlanmıyor | Admin paneli (⚙) hangi alanın eksik olduğunu gösterir |
+| GitHub Actions başarısız | Actions loguna bak, genellikle Java/SDK hatası |
+| Telefona yüklenmiyor | Bilinmeyen kaynaklar iznini aç |

@@ -24,7 +24,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build web app
         run: npm run build
@@ -93,9 +93,6 @@ jobs:
         run: |
           gh release create latest-debug \
             --title "Latest Debug Build" \
-            --notes "Automated debug APK build from the \`Kryptocasino\` branch.
-
-          **Commit:** \`${{ github.sha }}\`
-          **Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
+            --notes "Automated debug APK build from the \`Kryptocasino\` branch.\n\n**Commit:** \`${{ github.sha }}\`\n**Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
             --target ${{ github.sha }} \
             android/app/build/outputs/apk/debug/app-debug.apk
