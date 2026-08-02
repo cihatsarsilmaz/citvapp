@@ -150,7 +150,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.id,
-              body: `✅ **Paket başarıyla GitHub Packages\'a yayınlandı!**
+              body: `✅ **Paket başarıyla GitHub Packages'a yayınlandı!**
 
 📦 **Paket Bilgileri:**
 - **Adı:** \`${packageName}\`
@@ -273,8 +273,8 @@ npm install ${packageName}@${packageVersion}
           - [Release Sayfası](${{ github.event.release.html_url }})
           
           ---
-          **Workflow Tamamlanma Zamanı:** ${{ github.event.release.published_at }}  
-          **Tetikleyen Kullanıcı:** @${{ github.actor }}  
+          **Workflow Tamamlanma Zamanı:** ${{ github.event.release.published_at }}
+          **Tetikleyen Kullanıcı:** @${{ github.actor }}
           **Commit SHA:** ${{ github.sha }}
           EOF
 

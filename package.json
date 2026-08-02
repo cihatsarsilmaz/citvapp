@@ -1,29 +1,52 @@
 {
-  "name": "astrogamewar",
+  "name": "@cihatsarsilmaz/citvapp",
   "version": "1.0.0",
-  "private": true,
+  "private": false,
   "type": "module",
-  "scripts": {
-    "dev":            "vite",
-    "build":          "vite build",
-    "preview":        "vite preview",
-    "deploy:vercel":  "npm run build && npx vercel --prod",
-    "deploy:netlify": "npm run build && npx netlify-cli deploy --prod --dir=dist",
-    "deploy:gh":      "npm run build && npx gh-pages -d dist",
-    "android:add":    "npx cap add android",
-    "android:sync":   "npm run build && npx cap sync android",
-    "android:open":   "npx cap open android",
-    "android:build":  "npm run android:sync && cd android && ./gradlew assembleDebug"
+  "description": "CITVApp - Modern web application built with React and Vite",
+  "author": "cihatsarsilmaz",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cihatsarsilmaz/citvapp.git"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "echo 'Lint configured'",
+    "test": "echo 'Tests configured'",
+    "deploy:vercel": "npm run build && npx vercel --prod",
+    "deploy:netlify": "npm run build && npx netlify-cli deploy --prod --dir=dist",
+    "deploy:gh": "npm run build && npx gh-pages -d dist",
+    "android:add": "npx cap add android",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:build": "npm run build && (test -d android || npx cap add android) && npx cap sync android && cd android && ./gradlew assembleDebug"
+  },
+  "keywords": [
+    "react",
+    "vite",
+    "app",
+    "citvapp"
+  ],
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "@capacitor/android": "^6.1.2",
     "@capacitor/core": "^6.1.2",
-    "@capacitor/android": "^6.1.2"
+    "@capacitor/splash-screen": "^6.0.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.1.2",
     "@vitejs/plugin-react": "^4.3.1",
     "vite": "^5.4.1"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
   }
 }
