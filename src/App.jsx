@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { GAMES } from "./games";
 import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playSymbol, playStop, playWin, playMiss, playClick } from "./audio";
 import { settle, UNIT, WILD, STAR } from "./paytable";
 import { payRows, payout, RULES } from "./combos";
 import { spinReels, applyHouse, emptySession, HOUSE_EDGE, WIN_CAP } from "./house";
+import Admin from "./Admin";
 import "./styles.css";
 
 const PREVIEW = ["🍬", "⚡", "💎", "🦈", "💰", STAR, WILD];
@@ -13,6 +14,7 @@ function strip(mid) {
 }
 
 export default function App() {
+  const [hash, setHash] = useState(typeof location !== "undefined" ? location.hash : "");
   const [game, setGame] = useState(null);
   const [cols, setCols] = useState([strip(WILD), strip(STAR), strip("💰")]);
   const [spinning, setSpinning] = useState(false);
@@ -23,11 +25,25 @@ export default function App() {
   const [balance, setBalance] = useState(1000);
   const [session, setSession] = useState(emptySession());
 
+  useEffect(() => {
+    const onHash = () => setHash(location.hash);
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
   const prize = useMemo(() => 250000 * ante, [ante]);
   const rows = useMemo(() => (game ? payRows(game.emoji) : []), [game]);
   const edgePct = Math.round(HOUSE_EDGE * 100);
   const rtpShow = session.wagered ? Math.round((session.paid / session.wagered) * 100) : 0;
   const mids = cols.map((c) => c[1]);
+
+  if (hash.includes("admin")) {
+    return (
+      <div className="app">
+        <Admin session={session} setSession={setSession} balance={balance} setBalance={setBalance} emptySession={emptySession} />
+      </div>
+    );
+  }
 
   function openGame(g) {
     setGame(g);
@@ -57,7 +73,7 @@ export default function App() {
     const gap = speed === "fast" ? 140 : speed === "slow" ? 280 : 200;
     const next = spinReels(game.emoji, session.cool > 0);
     const t = setInterval(() => {
-      setCols((prev) => prev.map((col, i) => (col.locked ? col : strip(rnd()))));
+      setCols((prev) => prev.map((col) => (col.locked ? col : strip(rnd()))));
     }, 60);
     [0, 1, 2].forEach((i) => {
       setTimeout(() => {
@@ -102,7 +118,6 @@ export default function App() {
           <b>{prize.toLocaleString("tr-TR")} ₺</b>
         </div>
       </header>
-
       <div className="ledger">
         <div><span>Oyuncu</span><b>{balance}</b></div>
         <div><span>Kasa</span><b className="hot">{session.vault}</b></div>
@@ -110,13 +125,12 @@ export default function App() {
         <div><span>Bahis</span><b>{UNIT * ante}</b></div>
       </div>
       <div className="vaultbar"><i style={{ width: `${Math.min(100, 38 + session.vault / 8)}%` }} /></div>
-
       {!game && (
         <>
           <div className="billboard">
             <span>18 sahne</span>
             <strong>Karakter Köşesi açık</strong>
-            <em>Tema seç, makaraya gir</em>
+            <em><a href="#admin" style={{ color: "inherit" }}>admin</a></em>
           </div>
           <section className="grid">
             {GAMES.map((g) => (
@@ -130,21 +144,16 @@ export default function App() {
           </section>
         </>
       )}
-
       {game && (
         <section className="scene">
           <div className={"cabinet " + (won ? "win" : "") + (spinning ? " busy" : "")} style={{ "--c": game.color }}>
-            <div className="chrome">
-              <b>CITV</b>
-              <span>{game.character}</span>
-              <b>SLOT</b>
-            </div>
+            <div className="chrome"><b>CITV</b><span>{game.character}</span><b>SLOT</b></div>
             <div className="lights"><i /><i /><i /><i /><i /><i /><i /></div>
             <p className="welcome">{greet}</p>
             <div className={"window " + (spinning ? "spin" : "")}>
               <div className="payline" />
               {cols.map((col, i) => (
-                <div key={i} className={"col " + (hit.includes(i) ? "hit" : "") + (col.locked ? " lock" : "")}>
+                <div key={i} className={"col " + (hit.includes(i) ? "hit" : "")}>
                   <span className="dim">{col[0]}</span>
                   <span className="mid">{col[1]}</span>
                   <span className="dim">{col[2]}</span>
@@ -155,51 +164,10 @@ export default function App() {
             <div className="row">
               <button className="act" onClick={spin} disabled={spinning}>{spinning ? "…" : "SPIN"}</button>
               <button className="act ghost" onClick={() => { playClick(); setAnte((n) => (n >= 10 ? 1 : n + 1)); }}>ANTE x{ante}</button>
-              <button className="act ghost" onClick={() => { playClick(); setSpeed((s) => (s === "normal" ? "fast" : s === "fast" ? "slow" : "normal")); }}>
-                HIZ {speed}
-              </button>
+              <button className="act ghost" onClick={() => { playClick(); setSpeed((s) => (s === "normal" ? "fast" : s === "fast" ? "slow" : "normal")); }}>HIZ {speed}</button>
               <button className="act ghost" onClick={back}>LOBİ</button>
             </div>
-            <div className="sfxrow">
-              {PREVIEW.map((s) => (
-                <button key={s} className="sfx" onClick={() => playSymbol(s)}>{s}</button>
-              ))}
-            </div>
-            <div className="ptwrap">
-              <table className="pay">
-                <thead>
-                  <tr>
-                    <th>Simge</th>
-                    <th>3'lü</th>
-                    <th>Tablo</th>
-                    <th>Kasa sonra</th>
-                    <th>2'li</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.id || r.name}>
-                      <td><button className="sfx" onClick={() => playSymbol(r.s)}>{r.s}</button> {r.name}</td>
-                      <td>x{r.three}</td>
-                      <td>{payout(r.three, ante)}</td>
-                      <td>{Math.floor(Math.min(payout(r.three, ante), UNIT * ante * WIN_CAP) * (1 - HOUSE_EDGE))}</td>
-                      <td>{r.two ? payout(r.two, ante) : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <ul className="notes">{RULES.map((n) => <li key={n}>{n}</li>)}</ul>
           </div>
-          <aside className="corner" style={{ "--c": game.color }}>
-            <div className="avatar">{game.emoji}</div>
-            <div>
-              <p className="cname">{game.character}</p>
-              <p className="ctitle">{game.title}</p>
-              <p className="cquote">“{game.quote}”</p>
-            </div>
-            <button className="listen" onClick={() => playTheme(game.freq, false)}>▶ DİNLE</button>
-          </aside>
         </section>
       )}
     </div>
