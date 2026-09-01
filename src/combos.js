@@ -1,27 +1,30 @@
-import { WILD, STAR } from "./paytable";
+import { UNIT, WILD, STAR } from "./paytable";
 
-const LOW = ["🍬", "⚡", "💎", "🦈", "💰"];
+export const LOW = [
+  { id: "candy", s: "🍬", name: "Şeker" },
+  { id: "bolt", s: "⚡", name: "Şimşek" },
+  { id: "gem", s: "💎", name: "Mücevher" },
+  { id: "shark", s: "🦈", name: "Köpekbalığı" },
+  { id: "bag", s: "💰", name: "Kese" },
+];
 
-/** theme = açık oyunun emojisi */
-export function comboCatalog(theme) {
+export function payRows(theme) {
   return [
-    { id: "w3", pat: `${WILD}${WILD}${WILD}`, name: "Üç joker", rule: "3 joker", mult: 20 },
-    { id: "t3", pat: `${theme}${theme}${theme}`, name: "Üç tema", rule: "3 tema", mult: 12 },
-    { id: "tw", pat: `${theme}${WILD}${theme}`, name: "Tema + joker", rule: "joker temayı tamamlar", mult: 12 },
-    { id: "wt", pat: `${WILD}${theme}${theme}`, name: "Joker solda tema", rule: "joker = tema", mult: 12 },
-    { id: "tw2", pat: `${theme}${theme}${WILD}`, name: "Joker sağda tema", rule: "joker = tema", mult: 12 },
-    { id: "s3", pat: `${STAR}${STAR}${STAR}`, name: "Üç yıldız", rule: "3 yıldız", mult: 8 },
-    { id: "l3", pat: "AAA", name: "Üç düşük", rule: `${LOW.join(" ")} üçlüsü`, mult: 5 },
-    { id: "t2", pat: `${theme}${theme}—`, name: "İki tema soldan", rule: "sol hat, 3. serbest", mult: 2 },
-    { id: "t2w", pat: `${theme}${WILD}—`, name: "Tema+joker soldan", rule: "sol hat", mult: 2 },
-    { id: "l2", pat: "AA—", name: "İki düşük soldan", rule: "sol hat", mult: 1 },
-    { id: "miss", pat: "A B C", name: "Hat yok", rule: "sağ çift veya dağınık sayılmaz", mult: 0 },
+    { s: WILD, name: "Joker", three: 20, two: 0, note: "3 joker max. 2 joker tek başına ödemez; temayı tamamlar" },
+    { s: theme, name: "Tema (bu oyun)", three: 12, two: 2, note: "Joker ile karışık 3'lü de x12" },
+    { s: STAR, name: "Yıldız", three: 8, two: 1, note: "Joker yıldız yerine geçmez" },
+    ...LOW.filter((x) => x.s !== theme).map((x) => ({
+      s: x.s, name: x.name, three: 5, two: 1, note: "Düşük sembol",
+    })),
   ];
 }
 
-export const NOTES = [
-  "Tek hat: makara 1-2-3, sol → sağ.",
-  "Joker yalnız temayı tamamlar; yıldız veya düşük yerine geçmez (3 joker hariç).",
-  "Sağdaki 2'li (makara 2-3) ödeme vermez.",
-  "Bahis = 10 × ante. Kazanç = bahis × çarpan.",
+export function payout(mult, ante = 1) {
+  return UNIT * ante * mult;
+}
+
+export const RULES = [
+  "Hat: 3 makara, sol → sağ. Sağ çift (makara 2-3) ödemez.",
+  `Bahis = ${UNIT} × ante. Kazanç = bahis × çarpan.`,
+  "Joker yalnız tema ile birleşir. Yıldız/düşük + joker üçlüsü tema değilse 0 (3 joker hariç).",
 ];
