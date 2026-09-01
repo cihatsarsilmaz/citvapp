@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { GAMES } from "./games";
-import { playTheme, stopTheme } from "./audio";
+import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playSymbol, playStop, playWin, playMiss, playClick } from "./audio";
 import { settle, UNIT, WILD, STAR } from "./paytable";
 import { payRows, payout, RULES } from "./combos";
 import { spinReels, applyHouse, emptySession, HOUSE_EDGE, WIN_CAP } from "./house";
@@ -8,7 +8,6 @@ import "./styles.css";
 
 const PREVIEW = ["🍬", "⚡", "💎", "🦈", "💰", STAR, WILD];
 const rnd = () => PREVIEW[Math.floor(Math.random() * PREVIEW.length)];
-
 function strip(mid) {
   return [rnd(), mid, rnd()];
 }
@@ -35,10 +34,12 @@ export default function App() {
     setGreet(g.greeting);
     setCols([strip(g.emoji), strip(STAR), strip(WILD)]);
     setLast(null);
+    playClick();
     playTheme(g.freq, true);
   }
 
   function back() {
+    stopSpinLoop();
     stopTheme();
     setGame(null);
     setGreet("");
@@ -52,21 +53,36 @@ export default function App() {
     setBalance((n) => n - bet);
     setSpinning(true);
     setLast(null);
-    const ms = speed === "fast" ? 360 : speed === "slow" ? 1100 : 720;
+    playSpinLoop();
+    const gap = speed === "fast" ? 140 : speed === "slow" ? 280 : 200;
+    const next = spinReels(game.emoji, session.cool > 0);
     const t = setInterval(() => {
-      setCols([strip(rnd()), strip(rnd()), strip(rnd())]);
-    }, 64);
-    setTimeout(() => {
-      clearInterval(t);
-      const next = spinReels(game.emoji, session.cool > 0);
-      setCols([strip(next[0]), strip(next[1]), strip(next[2])]);
-      const raw = settle(next, game, ante);
-      const result = applyHouse(raw, session);
-      setLast(result);
-      setSession(result.session);
-      setBalance((n) => n + result.win);
-      setSpinning(false);
-    }, ms);
+      setCols((prev) => prev.map((col, i) => (col.locked ? col : strip(rnd()))));
+    }, 60);
+    [0, 1, 2].forEach((i) => {
+      setTimeout(() => {
+        setCols((prev) => {
+          const copy = prev.map((c) => [...c]);
+          copy[i] = strip(next[i]);
+          copy[i].locked = true;
+          return copy;
+        });
+        playStop();
+        playSymbol(next[i]);
+        if (i === 2) {
+          clearInterval(t);
+          stopSpinLoop();
+          const raw = settle(next, game, ante);
+          const result = applyHouse(raw, session);
+          setLast(result);
+          setSession(result.session);
+          setBalance((n) => n + result.win);
+          setSpinning(false);
+          if (result.win) playWin(result.mult >= 5 ? 2 : 1);
+          else playMiss();
+        }
+      }, 280 + i * gap);
+    });
   }
 
   const hit = last?.hit || [];
@@ -128,7 +144,7 @@ export default function App() {
             <div className={"window " + (spinning ? "spin" : "")}>
               <div className="payline" />
               {cols.map((col, i) => (
-                <div key={i} className={"col " + (hit.includes(i) ? "hit" : "")}>
+                <div key={i} className={"col " + (hit.includes(i) ? "hit" : "") + (col.locked ? " lock" : "")}>
                   <span className="dim">{col[0]}</span>
                   <span className="mid">{col[1]}</span>
                   <span className="dim">{col[2]}</span>
@@ -138,11 +154,16 @@ export default function App() {
             <p className="result">{last ? (won ? `+${last.win} · ${last.label}` : last.label) : mids.join(" ")}</p>
             <div className="row">
               <button className="act" onClick={spin} disabled={spinning}>{spinning ? "…" : "SPIN"}</button>
-              <button className="act ghost" onClick={() => setAnte((n) => (n >= 10 ? 1 : n + 1))}>ANTE x{ante}</button>
-              <button className="act ghost" onClick={() => setSpeed((s) => (s === "normal" ? "fast" : s === "fast" ? "slow" : "normal"))}>
+              <button className="act ghost" onClick={() => { playClick(); setAnte((n) => (n >= 10 ? 1 : n + 1)); }}>ANTE x{ante}</button>
+              <button className="act ghost" onClick={() => { playClick(); setSpeed((s) => (s === "normal" ? "fast" : s === "fast" ? "slow" : "normal")); }}>
                 HIZ {speed}
               </button>
               <button className="act ghost" onClick={back}>LOBİ</button>
+            </div>
+            <div className="sfxrow">
+              {PREVIEW.map((s) => (
+                <button key={s} className="sfx" onClick={() => playSymbol(s)}>{s}</button>
+              ))}
             </div>
             <div className="ptwrap">
               <table className="pay">
@@ -158,7 +179,7 @@ export default function App() {
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.id || r.name}>
-                      <td>{r.s} {r.name}</td>
+                      <td><button className="sfx" onClick={() => playSymbol(r.s)}>{r.s}</button> {r.name}</td>
                       <td>x{r.three}</td>
                       <td>{payout(r.three, ante)}</td>
                       <td>{Math.floor(Math.min(payout(r.three, ante), UNIT * ante * WIN_CAP) * (1 - HOUSE_EDGE))}</td>
