@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { GAMES } from "./games";
 import { playTheme, stopTheme } from "./audio";
+import { settle, UNIT } from "./paytable";
 import "./styles.css";
 
 const SYMBOLS = ["🍬", "⚡", "💎", "🦈", "💰", "⭐", "🎰"];
@@ -12,6 +13,8 @@ export default function App() {
   const [ante, setAnte] = useState(1);
   const [speed, setSpeed] = useState("normal");
   const [greet, setGreet] = useState("");
+  const [last, setLast] = useState(null);
+  const [balance, setBalance] = useState(1000);
 
   const prize = useMemo(() => 250000 * ante, [ante]);
 
@@ -19,6 +22,7 @@ export default function App() {
     setGame(g);
     setGreet(g.greeting);
     setReels([g.emoji, "⭐", "💰"]);
+    setLast(null);
     playTheme(g.freq, true);
   }
 
@@ -26,10 +30,14 @@ export default function App() {
     stopTheme();
     setGame(null);
     setGreet("");
+    setLast(null);
   }
 
   function spin() {
     if (spinning || !game) return;
+    const bet = UNIT * ante;
+    if (balance < bet) return;
+    setBalance((n) => n - bet);
     setSpinning(true);
     const ms = speed === "fast" ? 280 : speed === "slow" ? 900 : 520;
     const t = setInterval(() => {
@@ -41,7 +49,15 @@ export default function App() {
     }, 70);
     setTimeout(() => {
       clearInterval(t);
-      setReels([game.emoji, game.emoji, SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]]);
+      const next = [
+        SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+        SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+        SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+      ];
+      setReels(next);
+      const result = settle(next, game, ante);
+      setLast(result);
+      setBalance((n) => n + result.win);
       setSpinning(false);
     }, ms);
   }
@@ -51,7 +67,7 @@ export default function App() {
       <header className="top">
         <div>
           <h1>CITV Slot</h1>
-          <div className="sub">18 oyun · 18 karakter · kompakt sahne</div>
+          <div className="sub">18 oyun · paytable · demo bakiye {balance}</div>
         </div>
         <div className="prize">
           <span>Turnuva ödülü</span>
@@ -80,6 +96,7 @@ export default function App() {
                 <div key={i} className="reel">{s}</div>
               ))}
             </div>
+            <p className="result">{last ? (last.win ? `+${last.win} · ${last.label}` : `0 · bahis ${last.bet}`) : `bahis ${UNIT * ante}`}</p>
             <div className="row">
               <button className="act" onClick={spin} disabled={spinning}>{spinning ? "..." : "SPIN"}</button>
               <button className="act ghost" onClick={() => setAnte((n) => (n >= 10 ? 1 : n + 1))}>ANTE x{ante}</button>
@@ -89,8 +106,8 @@ export default function App() {
               <button className="act ghost" onClick={back}>LOBİ</button>
             </div>
             <ul className="features">
-              <li>Tema: {game.theme}</li>
-              <li>Doğrulama: karakter · ses · spin · ante · hız</li>
+              <li>Paytable: 3 tema x12 · 3 yıldız x8 · 3 joker x20 · 2 tema x2</li>
+              <li>Tema: {game.theme} · birim {UNIT}</li>
             </ul>
           </div>
 
@@ -105,7 +122,6 @@ export default function App() {
             </div>
             <button className="listen" onClick={() => playTheme(game.freq, false)}>▶ DİNLE</button>
           </aside>
-          <div className="meta">CITV Slot önizleme · tipografi 32 / 14 / 12.5 / 10 · ödül 23px</div>
         </section>
       )}
     </div>
