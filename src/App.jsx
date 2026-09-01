@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { GAMES } from "./games";
 import { playTheme, stopTheme } from "./audio";
 import { settle, UNIT, WILD, STAR } from "./paytable";
+import { comboCatalog, NOTES } from "./combos";
 import "./styles.css";
 
 const POOL = ["🍬", "⚡", "💎", "🦈", "💰", STAR, WILD];
@@ -17,6 +18,7 @@ export default function App() {
   const [balance, setBalance] = useState(1000);
 
   const prize = useMemo(() => 250000 * ante, [ante]);
+  const combos = useMemo(() => (game ? comboCatalog(game.emoji) : []), [game]);
 
   function openGame(g) {
     setGame(g);
@@ -69,7 +71,7 @@ export default function App() {
       <header className="top">
         <div>
           <h1>CITV Slot</h1>
-          <div className="sub">sol → sağ tek hat · joker {WILD} · bakiye {balance}</div>
+          <div className="sub">kombinasyonlar · sol → sağ · bakiye {balance}</div>
         </div>
         <div className="prize">
           <span>Turnuva ödülü</span>
@@ -109,14 +111,15 @@ export default function App() {
             </div>
             <table className="pay">
               <tbody>
-                <tr><td>3× {game.emoji} tema</td><td>x12</td></tr>
-                <tr><td>3× {WILD} joker</td><td>x20</td></tr>
-                <tr><td>3× {STAR}</td><td>x8</td></tr>
-                <tr><td>3× diğer</td><td>x5</td></tr>
-                <tr><td>2× sol hat tema/{WILD}</td><td>x2</td></tr>
-                <tr><td>2× sol hat diğer</td><td>x1</td></tr>
+                {combos.map((c) => (
+                  <tr key={c.id}>
+                    <td>{c.pat} · {c.name}</td>
+                    <td>x{c.mult}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
+            <ul className="notes">{NOTES.map((n) => <li key={n}>{n}</li>)}</ul>
           </div>
           <aside className="corner">
             <div className="avatar" style={{ background: game.color + "22", boxShadow: `0 0 18px ${game.color}66` }}>{game.emoji}</div>
