@@ -3,9 +3,10 @@ import { GAMES } from "./games";
 import { playTheme, stopTheme } from "./audio";
 import { settle, UNIT, WILD, STAR } from "./paytable";
 import { payRows, payout, RULES } from "./combos";
+import { spinReels, applyHouse, emptySession, HOUSE_EDGE, WIN_CAP } from "./house";
 import "./styles.css";
 
-const POOL = ["🍬", "⚡", "💎", "🦈", "💰", STAR, WILD];
+const PREVIEW = ["🍬", "⚡", "💎", "🦈", "💰", STAR, WILD];
 
 export default function App() {
   const [game, setGame] = useState(null);
@@ -16,9 +17,12 @@ export default function App() {
   const [greet, setGreet] = useState("");
   const [last, setLast] = useState(null);
   const [balance, setBalance] = useState(1000);
+  const [session, setSession] = useState(emptySession());
 
   const prize = useMemo(() => 250000 * ante, [ante]);
   const rows = useMemo(() => (game ? payRows(game.emoji) : []), [game]);
+  const edgePct = Math.round(HOUSE_EDGE * 100);
+  const rtpShow = session.wagered ? Math.round((session.paid / session.wagered) * 100) : 0;
 
   function openGame(g) {
     setGame(g);
@@ -41,24 +45,22 @@ export default function App() {
     if (balance < bet) return;
     setBalance((n) => n - bet);
     setSpinning(true);
-    const ms = speed === "fast" ? 280 : speed === "slow" ? 900 : 520;
+    const ms = speed === "fast" ? 320 : speed === "slow" ? 980 : 620;
     const t = setInterval(() => {
       setReels([
-        POOL[Math.floor(Math.random() * POOL.length)],
-        POOL[Math.floor(Math.random() * POOL.length)],
-        POOL[Math.floor(Math.random() * POOL.length)],
+        PREVIEW[Math.floor(Math.random() * PREVIEW.length)],
+        PREVIEW[Math.floor(Math.random() * PREVIEW.length)],
+        PREVIEW[Math.floor(Math.random() * PREVIEW.length)],
       ]);
     }, 70);
     setTimeout(() => {
       clearInterval(t);
-      const next = [
-        POOL[Math.floor(Math.random() * POOL.length)],
-        POOL[Math.floor(Math.random() * POOL.length)],
-        POOL[Math.floor(Math.random() * POOL.length)],
-      ];
+      const next = spinReels(game.emoji, session.cool > 0);
       setReels(next);
-      const result = settle(next, game, ante);
+      const raw = settle(next, game, ante);
+      const result = applyHouse(raw, session);
       setLast(result);
+      setSession(result.session);
       setBalance((n) => n + result.win);
       setSpinning(false);
     }, ms);
@@ -68,21 +70,31 @@ export default function App() {
 
   return (
     <div className="app">
+      <div className="ambient" aria-hidden />
       <header className="top">
         <div>
-          <h1>CITV Slot</h1>
-          <div className="sub">ödeme tablosu · ante x{ante} · bahis {UNIT * ante} · bakiye {balance}</div>
+          <p className="kicker">CITV Slot · kasa hattı</p>
+          <h1>Kasa önce</h1>
+          <div className="sub">kenar %{edgePct} · tavan {WIN_CAP}x bahis · soğuma {session.cool}</div>
         </div>
         <div className="prize">
-          <span>Turnuva ödülü</span>
+          <span>Turnuva vitrini</span>
           <b>{prize.toLocaleString("tr-TR")} ₺</b>
         </div>
       </header>
 
+      <div className="ledger">
+        <div><span>Oyuncu</span><b>{balance}</b></div>
+        <div><span>Kasa kasası</span><b className="hot">{session.vault}</b></div>
+        <div><span>Oturum RTP</span><b>{session.wagered ? `%${rtpShow}` : "—"}</b></div>
+        <div><span>Bahis</span><b>{UNIT * ante}</b></div>
+      </div>
+      <div className="vaultbar"><i style={{ width: `${Math.min(100, 40 + session.vault / 8)}%` }} /></div>
+
       {!game && (
         <section className="grid">
           {GAMES.map((g) => (
-            <button key={g.id} className="card" onClick={() => openGame(g)}>
+            <button key={g.id} className="card" onClick={() => openGame(g)} style={{ "--c": g.color }}>
               <div className="em">{g.emoji}</div>
               <div className="nm">{g.name}</div>
               <div className="ch">{g.character} · tema {g.emoji}</div>
@@ -93,14 +105,15 @@ export default function App() {
 
       {game && (
         <section className="scene">
-          <div className="hero" style={{ boxShadow: `inset 0 0 0 1px ${game.color}33` }}>
+          <div className="cabinet" style={{ "--c": game.color }}>
+            <div className="lights"><i /><i /><i /><i /><i /></div>
             <p className="welcome">{greet}</p>
-            <div className="reels">
+            <div className={"glass " + (spinning ? "spin" : "")}>
               {reels.map((s, i) => (
                 <div key={i} className={hit.includes(i) ? "reel hit" : "reel"}>{s}</div>
               ))}
             </div>
-            <p className="result">{last ? (last.win ? `+${last.win} · ${last.label}` : last.label) : `bahis ${UNIT * ante}`}</p>
+            <p className="result">{last ? (last.win ? `+${last.win} · ${last.label}` : last.label) : "kasa bekliyor"}</p>
             <div className="row">
               <button className="act" onClick={spin} disabled={spinning}>{spinning ? "..." : "SPIN"}</button>
               <button className="act ghost" onClick={() => setAnte((n) => (n >= 10 ? 1 : n + 1))}>ANTE x{ante}</button>
@@ -115,9 +128,9 @@ export default function App() {
                   <tr>
                     <th>Simge</th>
                     <th>3'lü</th>
-                    <th>3'lü ödeme</th>
-                    <th>2'li sol</th>
-                    <th>2'li ödeme</th>
+                    <th>Tablo</th>
+                    <th>Kasa sonra</th>
+                    <th>2'li</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -126,7 +139,7 @@ export default function App() {
                       <td>{r.s} {r.name}</td>
                       <td>x{r.three}</td>
                       <td>{payout(r.three, ante)}</td>
-                      <td>{r.two ? `x${r.two}` : "—"}</td>
+                      <td>{Math.floor(Math.min(payout(r.three, ante), UNIT * ante * WIN_CAP) * (1 - HOUSE_EDGE))}</td>
                       <td>{r.two ? payout(r.two, ante) : "—"}</td>
                     </tr>
                   ))}
@@ -135,8 +148,8 @@ export default function App() {
             </div>
             <ul className="notes">{RULES.map((n) => <li key={n}>{n}</li>)}</ul>
           </div>
-          <aside className="corner">
-            <div className="avatar" style={{ background: game.color + "22", boxShadow: `0 0 18px ${game.color}66` }}>{game.emoji}</div>
+          <aside className="corner" style={{ "--c": game.color }}>
+            <div className="avatar">{game.emoji}</div>
             <div>
               <p className="cname">{game.character}</p>
               <p className="ctitle">{game.title}</p>

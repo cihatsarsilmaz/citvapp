@@ -10,11 +10,11 @@ export const LOW = [
 
 export function payRows(theme) {
   return [
-    { s: WILD, name: "Joker", three: 20, two: 0, note: "3 joker max. 2 joker tek başına ödemez; temayı tamamlar" },
-    { s: theme, name: "Tema (bu oyun)", three: 12, two: 2, note: "Joker ile karışık 3'lü de x12" },
-    { s: STAR, name: "Yıldız", three: 8, two: 1, note: "Joker yıldız yerine geçmez" },
+    { s: WILD, name: "Joker", three: 20, two: 0 },
+    { s: theme, name: "Tema", three: 12, two: 2 },
+    { s: STAR, name: "Yıldız", three: 8, two: 1 },
     ...LOW.filter((x) => x.s !== theme).map((x) => ({
-      s: x.s, name: x.name, three: 5, two: 1, note: "Düşük sembol",
+      s: x.s, name: x.name, three: 5, two: 1,
     })),
   ];
 }
@@ -24,7 +24,7 @@ export function payout(mult, ante = 1) {
 }
 
 export const RULES = [
-  "Hat: 3 makara, sol → sağ. Sağ çift (makara 2-3) ödemez.",
-  `Bahis = ${UNIT} × ante. Kazanç = bahis × çarpan.`,
-  "Joker yalnız tema ile birleşir. Yıldız/düşük + joker üçlüsü tema değilse 0 (3 joker hariç).",
+  "Tablo vitrindir. Ödenen: min(kazanç, 3×bahis) sonra %32 kasa kesintisi.",
+  "Makara ağırlıklı: eşleşme kırılır. Kazançtan sonra 3 spin soğuma (zorunlu miss).",
+  "Oturum RTP kasaya akar. Sağ çift ödemez. Joker yalnız temayı tamamlar.",
 ];
