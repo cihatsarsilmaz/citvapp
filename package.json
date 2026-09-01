@@ -3,7 +3,7 @@
   "version": "1.1.0",
   "private": false,
   "type": "module",
-  "description": "CITV Slot — 18 oyun, karakter sahneleri, kompakt lobi",
+  "description": "CITV Slot — 18 oyun, karakter sahneleri. AstrogameWAR değil.",
   "author": "cihatsarsilmaz",
   "license": "MIT",
   "repository": {
@@ -19,11 +19,20 @@
     "preview": "vite preview",
     "lint": "echo 'Lint configured'",
     "test": "echo 'Tests configured'",
+    "deploy:vercel": "npm run build && npx vercel --prod",
+    "deploy:netlify": "npm run build && npx netlify-cli deploy --prod --dir=dist",
     "deploy:gh": "npm run build && npx gh-pages -d dist",
+    "android:add": "npx cap add android",
     "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android",
     "android:build": "npm run build && (test -d android || npx cap add android) && npx cap sync android && cd android && ./gradlew assembleDebug"
   },
-  "keywords": ["citv", "slot", "react", "vite"],
+  "keywords": [
+    "citv-slot",
+    "slot",
+    "react",
+    "vite"
+  ],
   "dependencies": {
     "@capacitor/android": "^6.1.2",
     "@capacitor/core": "^6.1.2",
