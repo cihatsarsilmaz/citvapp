@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
 import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playSymbol, playStop, playWin, playMiss, playClick } from "./audio";
-import { UNIT, WILD, STAR } from "./paytable";
-import { spinGrid, applyHouse, emptySession, HOUSE_EDGE, WIN_CAP } from "./house";
-import { evalLines, COLS, ROWS, LINES, LOW } from "./engine";
+import { UNIT } from "./paytable";
+import { spinGrid, applyHouse, emptySession } from "./house";
+import { evalLines, COLS, LINES, LOW } from "./engine";
+import { WILD, STAR } from "./paytable";
 import Admin from "./Admin";
 import "./styles.css";
 
@@ -15,13 +16,13 @@ export default function App() {
   const [hash, setHash] = useState(typeof location !== "undefined" ? location.hash : "");
   const [game, setGame] = useState(null);
   const [grid, setGrid] = useState(blank());
-  const [lock, setLock] = useState([false, false, false, false, false]);
+  const [lock, setLock] = useState([0, 0, 0, 0, 0]);
   const [spinning, setSpinning] = useState(false);
   const [ante, setAnte] = useState(1);
-  const [speed, setSpeed] = useState("normal");
   const [last, setLast] = useState(null);
   const [balance, setBalance] = useState(1000);
   const [session, setSession] = useState(emptySession());
+  const lockRef = useRef([0, 0, 0, 0, 0]);
 
   useEffect(() => {
     const onHash = () => setHash(location.hash);
@@ -57,26 +58,26 @@ export default function App() {
   }
 
   function spin() {
-    if (spinning || !game) return;
-    if (balance < bet) return;
+    if (spinning || !game || balance < bet) return;
     setBalance((n) => n - bet);
     setSpinning(true);
     setLast(null);
-    setLock([false, false, false, false, false]);
+    lockRef.current = [0, 0, 0, 0, 0];
+    setLock([0, 0, 0, 0, 0]);
     playSpinLoop();
     const next = spinGrid(game.emoji, session.cool > 0);
-    const gap = speed === "fast" ? 90 : speed === "slow" ? 180 : 130;
-    const t = setInterval(() => {
-      setGrid((prev) => prev.map((col, c) => (lock[c] ? col : [rnd(), rnd(), rnd()])));
-    }, 50);
+    const tick = setInterval(() => {
+      setGrid((prev) => prev.map((col, c) => (lockRef.current[c] ? col : [rnd(), rnd(), rnd()])));
+    }, 48);
     for (let c = 0; c < COLS; c++) {
       setTimeout(() => {
-        setLock((L) => { const n = [...L]; n[c] = true; return n; });
+        lockRef.current[c] = 1;
+        setLock((L) => { const n = [...L]; n[c] = 1; return n; });
         setGrid((prev) => { const copy = prev.map((col) => [...col]); copy[c] = next[c]; return copy; });
         playStop();
         playSymbol(next[c][1]);
         if (c === COLS - 1) {
-          clearInterval(t);
+          clearInterval(tick);
           stopSpinLoop();
           const ev = evalLines(next, game.emoji, bet);
           const result = applyHouse(ev, bet, session);
@@ -84,44 +85,36 @@ export default function App() {
           setSession(result.session);
           setBalance((n) => n + result.win);
           setSpinning(false);
-          if (result.win) playWin(2); else playMiss();
+          result.win ? playWin(2) : playMiss();
         }
-      }, 240 + c * gap);
+      }, 220 + c * 140);
     }
   }
 
   return (
     <div className="app wide">
-      <div className="ambient" aria-hidden />
-      <header className="top">
-        <div>
-          <p className="kicker">CITV Slot · keçe salon</p>
-          <h1>{game ? game.name : "Masaya otur"}</h1>
-        </div>
-        <a className="admin-link" href="#admin">kasa</a>
-      </header>
-
       {!game && (
-        <section className="grid">
-          {GAMES.map((g) => (
-            <button key={g.id} className="card" onClick={() => openGame(g)} style={{ "--c": g.color }}>
-              <div className="ribbon" />
-              <div className="em">{g.emoji}</div>
-              <div className="nm">{g.name}</div>
-              <div className="ch">{g.character}</div>
-            </button>
-          ))}
-        </section>
+        <>
+          <header className="top">
+            <div>
+              <p className="kicker">CITV Slot</p>
+              <h1>Masaya otur</h1>
+            </div>
+          </header>
+          <section className="grid">
+            {GAMES.map((g) => (
+              <button key={g.id} className="card" onClick={() => openGame(g)} style={{ "--c": g.color }}>
+                <div className="em">{g.emoji}</div>
+                <div className="nm">{g.name}</div>
+              </button>
+            ))}
+          </section>
+        </>
       )}
 
       {game && (
         <section className="stage" style={{ "--c": game.color }}>
           <div className="jackpot">JACKPOT {jack} ₺</div>
-          <div className="hud">
-            <span>FİŞ {balance}</span>
-            <span>KASA {session.vault}</span>
-            <span>{LINES} HAT</span>
-          </div>
           <div className={"window five " + (spinning ? "spin" : "") + (last?.win ? " win" : "")}>
             {grid.map((col, c) => (
               <div key={c} className={"reelcol " + (lock[c] ? "lock" : "")}>
@@ -132,17 +125,16 @@ export default function App() {
             ))}
           </div>
           <p className={"bang " + (last && !last.win ? "miss" : "")}>
-            {last ? (last.win ? `WIN ${last.win}` : last.label) : spinning ? "…" : "ÇEVİR"}
+            {last ? (last.win ? `WIN ${last.win}` : "—") : spinning ? "" : game.name}
           </p>
           <div className="dock">
             <div className="meter"><em>FİŞ</em><b>{balance}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.max(1, n - 1)); }}>−</button>
             <div className="meter"><em>BAHİS</em><b>{bet}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.min(10, n + 1)); }}>+</button>
-            <button className="spinbtn" onClick={spin} disabled={spinning}>{spinning ? "…" : "SPIN"}</button>
+            <button className="spinbtn" onClick={spin} disabled={spinning}>SPIN</button>
             <div className="meter"><em>KAZANÇ</em><b>{last?.win || 0}</b></div>
-            <button className="act ghost" onClick={() => { playClick(); setSpeed((s) => (s === "normal" ? "fast" : s === "fast" ? "slow" : "normal")); }}>{speed}</button>
-            <button className="act ghost" onClick={back}>LOBİ</button>
+            <button className="act ghost" onClick={back}>←</button>
           </div>
         </section>
       )}
