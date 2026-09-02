@@ -9,9 +9,13 @@ function pick(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
+function lows(theme) {
+  return LOW.filter((s) => s !== theme);
+}
+
 function strip(theme, wilds, themes, stars) {
   const s = [];
-  LOW.forEach((sym) => {
+  lows(theme).forEach((sym) => {
     s.push(sym, sym, sym);
   });
   for (let i = 0; i < themes; i++) s.push(theme);
@@ -32,21 +36,22 @@ export function stripsFor(theme) {
 
 function window3(reel, stop) {
   const n = reel.length;
-  const up = reel[(stop - 1 + n) % n];
-  const mid = reel[stop % n];
-  const down = reel[(stop + 1) % n];
-  return [up, mid, down];
+  return [
+    reel[(stop - 1 + n) % n],
+    reel[stop % n],
+    reel[(stop + 1) % n],
+  ];
 }
 
 export function spinGrid(theme, forceMiss) {
   const strips = stripsFor(theme);
+  const filler = lows(theme);
   const grid = [];
   for (let c = 0; c < COLS; c++) {
     const reel = strips[c];
-    const stop = Math.floor(Math.random() * reel.length);
-    const col = window3(reel, stop);
+    const col = window3(reel, Math.floor(Math.random() * reel.length));
     if (forceMiss && c > 0) {
-      col[1] = pick(LOW.filter((s) => s !== grid[0][1]));
+      col[1] = pick(filler.filter((s) => s !== grid[0][1]));
     }
     grid.push(col);
   }
@@ -60,7 +65,7 @@ export function applyHouse(evaled, bet, session) {
     win: paid,
     raw: evaled.total,
     hits: evaled.hits,
-    label: paid ? `${evaled.label} · kasa kesti` : evaled.label,
+    label: evaled.label,
     session: {
       spins: session.spins + 1,
       wagered: session.wagered + bet,
