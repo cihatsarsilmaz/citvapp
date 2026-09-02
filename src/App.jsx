@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
 import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playSymbol, playStop, playWin, playMiss, playClick, setMuted } from "./audio";
 import { UNIT, WILD, STAR } from "./paytable";
-import { spinGrid, applyHouse, emptySession, WIN_CAP, HOUSE_EDGE, COOLDOWN } from "./house";
+import { spinGrid, applyHouse, emptySession } from "./house";
 import { evalLines, COLS, LOW } from "./engine";
 import { loadState, saveState } from "./store";
 import Admin from "./Admin";
@@ -79,9 +79,9 @@ export default function App() {
     }
     const my = ++gen.current;
     const fast = turboRef.current;
-    const base = fast ? 90 : 220;
-    const step = fast ? 70 : 140;
-    const gap = fast ? 180 : 420;
+    const base = fast ? 70 : 160;
+    const step = fast ? 55 : 100;
+    const gap = fast ? 160 : 300;
     busy.current = true;
     setSpinning(true);
     setBalance((n) => n - b);
@@ -175,7 +175,7 @@ export default function App() {
     if (!n) clearTimers();
   }
 
-  const line = last ? (last.win ? game.quote : "Az kaldı. Bir spin daha.") : game?.greeting;
+  const spinLine = spinning ? "SPIN" : last ? (last.win ? `WIN ${last.win}` : "0") : game?.name;
   const stageCls = "stage" + (last?.win ? " hot" : "") + (last && !last.win ? " shake" : "");
 
   return (
@@ -184,7 +184,7 @@ export default function App() {
         <>
           <header className="top">
             <div>
-              <p className="kicker">CITV Slot · RTP ~%57 · tavan {WIN_CAP}x</p>
+              <p className="kicker">CITV Slot</p>
               <h1>Masaya otur</h1>
             </div>
             <div className="meter"><em>FİŞ</em><b>{balance}</b></div>
@@ -195,7 +195,7 @@ export default function App() {
                 <div className="ribbon" />
                 <div className="em">{g.emoji}</div>
                 <div className="nm">{g.name}</div>
-                <div className="tag">{g.character} · 8x</div>
+                <div className="tag">{g.character}</div>
               </button>
             ))}
           </section>
@@ -205,8 +205,7 @@ export default function App() {
         <section className={stageCls} style={{ "--c": game.color }}>
           <div className="lamps"><i /><i /><i /><i /><i /><i /><i /></div>
           <div className="jackpot">JACKPOT {jack} ₺</div>
-          <p className="face">{game.emoji} {game.character} — {line}</p>
-          <p className="payhint">şerit · tavan {WIN_CAP}x · soğuma {COOLDOWN} · kesim %{Math.round(HOUSE_EDGE * 100)} · RTP ~%57</p>
+          <p className="face">{game.emoji} {game.character}</p>
           <div className={"window five " + (spinning ? "spin" : "") + (last?.win ? " win" : "")}>
             {grid.map((col, c) => (
               <div key={c} className={"reelcol " + (lock[c] ? "lock" : "")}>
@@ -218,12 +217,10 @@ export default function App() {
           </div>
           <p className="trail">
             {(trail.length ? trail : [null, null, null, null, null]).slice(0, 5).map((v, i) => (
-              <b key={i} className={v ? "on" : ""}>{v == null ? "·" : v || "—"}</b>
+              <b key={i} className={v ? "on" : ""}>{v == null ? "·" : v}</b>
             ))}
           </p>
-          <p className={"bang " + (last && !last.win ? "miss" : "")}>
-            {last ? (last.win ? `WIN ${last.win}` : "—") : spinning ? "" : game.name}
-          </p>
+          <p className={"bang " + (last && !last.win ? "miss" : "")}>{spinLine}</p>
           <div className="dock">
             <div className="meter"><em>FİŞ</em><b>{balance}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.max(1, n - 1)); }}>−</button>
