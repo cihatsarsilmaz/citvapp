@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">AstrogameWAR</string>
-    <string name="title_activity_main">AstrogameWAR</string>
-    <string name="package_name">com.astrogamewar.app</string>
-    <string name="custom_url_scheme">com.astrogamewar.app</string>
+    <string name="app_name">CITV Slot</string>
+    <string name="title_activity_main">CITV Slot</string>
+    <string name="package_name">com.citvslot.app</string>
+    <string name="custom_url_scheme">com.citvslot.app</string>
 </resources>

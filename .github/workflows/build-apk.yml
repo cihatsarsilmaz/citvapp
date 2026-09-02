@@ -6,13 +6,18 @@ on:
       - Kryptocasino
   workflow_dispatch:
 
+concurrency:
+  group: citv-apk-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
 jobs:
   build-apk:
-    name: Build Debug + Release APK
+    name: Build CITV Slot Debug APK
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repository
@@ -31,12 +36,7 @@ jobs:
 
       - name: Verify dist folder
         run: |
-          echo "=== dist folder contents ==="
-          ls -la dist/
-          echo "=== index.html check ==="
           test -f dist/index.html && echo "index.html EXISTS" || (echo "index.html MISSING" && exit 1)
-          echo "=== assets check ==="
-          ls -la dist/assets/ || echo "No assets folder"
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -47,50 +47,30 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Add Capacitor Android project (if not exists)
-        run: |
-          if [ ! -d "android" ]; then
-            echo "Android project not found, adding..."
-            npx cap add android
-          else
-            echo "Android project already exists, skipping add"
-          fi
-
       - name: Sync Capacitor Android project
         run: npx cap sync android
 
-      - name: Verify Android assets
+      - name: Ensure Gradle wrapper jar
         run: |
-          echo "=== Android public assets ==="
-          ls -la android/app/src/main/assets/public/ || echo "No public assets folder"
-          test -f android/app/src/main/assets/public/index.html && echo "index.html EXISTS in assets" || (echo "index.html MISSING in assets" && exit 1)
-
-      - name: Make Gradle wrapper executable
-        run: chmod +x android/gradlew
+          mkdir -p android/gradle/wrapper
+          if [ ! -s android/gradle/wrapper/gradle-wrapper.jar ]; then
+            echo "gradle-wrapper.jar missing — downloading official Gradle 8.2.1 wrapper"
+            curl -fsSL -o android/gradle/wrapper/gradle-wrapper.jar \
+              "https://raw.githubusercontent.com/gradle/gradle/v8.2.1/gradle/wrapper/gradle-wrapper.jar"
+          fi
+          test -s android/gradle/wrapper/gradle-wrapper.jar
+          ls -lh android/gradle/wrapper/
+          chmod +x android/gradlew
 
       - name: Build debug APK
-        run: cd android && ./gradlew assembleDebug
-
-      - name: Build unsigned release APK
-        run: cd android && ./gradlew assembleRelease
-        continue-on-error: true
+        run: cd android && ./gradlew :app:assembleDebug --no-daemon -x lint
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: citv-debug-apk
+          name: citv-slot-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          retention-days: 30
-
-      - name: Upload release APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: citv-release-apk
-          path: |
-            android/app/build/outputs/apk/release/app-release-unsigned.apk
-            android/app/build/outputs/apk/release/app-release.apk
-          if-no-files-found: warn
           retention-days: 30
 
       - name: Delete existing latest-debug release (if any)
@@ -99,39 +79,12 @@ jobs:
         run: gh release delete latest-debug --yes --cleanup-tag || true
         continue-on-error: true
 
-      - name: Delete existing latest-release release (if any)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release delete latest-release --yes --cleanup-tag || true
-        continue-on-error: true
-
       - name: Create latest-debug GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create latest-debug \
             --title "CITV Slot Latest Debug Build" \
-            --notes "Automated debug APK from \`Kryptocasino\`.\n\n**Commit:** \`${{ github.sha }}\`\n**Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
+            --notes "CITV Slot debug APK (\`Kryptocasino\`).\n\n**Commit:** \`${{ github.sha }}\`\n**Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
             --target ${{ github.sha }} \
             android/app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Create latest-release GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          REL=""
-          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
-            REL=android/app/build/outputs/apk/release/app-release.apk
-          elif [ -f android/app/build/outputs/apk/release/app-release-unsigned.apk ]; then
-            REL=android/app/build/outputs/apk/release/app-release-unsigned.apk
-          fi
-          if [ -n "$REL" ]; then
-            gh release create latest-release \
-              --title "CITV Slot Latest Release Build" \
-              --notes "Automated release APK from \`Kryptocasino\` (unsigned unless signing is configured).\n\n**Commit:** \`${{ github.sha }}\`\n**Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
-              --target ${{ github.sha }} \
-              "$REL"
-          else
-            echo "Release APK not found; skipping latest-release."
-          fi
-        continue-on-error: true
