@@ -22,6 +22,7 @@ export default function App() {
   const [spinning, setSpinning] = useState(false);
   const [ante, setAnte] = useState(1);
   const [last, setLast] = useState(null);
+  const [trail, setTrail] = useState([]);
   const [balance, setBalance] = useState(saved.balance);
   const [session, setSession] = useState(saved.session);
   const [auto, setAuto] = useState(false);
@@ -102,6 +103,7 @@ export default function App() {
           const ev = evalLines(next, s.game.emoji, b);
           const result = applyHouse(ev, b, snap);
           setLast(result);
+          setTrail((t) => [result.win, ...t].slice(0, 5));
           setSession(result.session);
           setBalance((n) => n + result.win);
           busy.current = false;
@@ -139,6 +141,7 @@ export default function App() {
     setGame(g);
     setGrid(blank());
     setLast(null);
+    setTrail([]);
     setAuto(false);
     autoRef.current = false;
     playClick();
@@ -165,13 +168,17 @@ export default function App() {
     if (!n) clearTimers();
   }
 
+  const line = last
+    ? (last.win ? game.quote : "Az kaldı. Bir spin daha.")
+    : game?.greeting;
+
   return (
     <div className="app wide">
       {!game && (
         <>
           <header className="top">
             <div>
-              <p className="kicker">CITV Slot · tavan {WIN_CAP}x</p>
+              <p className="kicker">CITV Slot · RTP ~%57 · tavan {WIN_CAP}x</p>
               <h1>Masaya otur</h1>
             </div>
             <div className="meter"><em>FİŞ</em><b>{balance}</b></div>
@@ -192,8 +199,8 @@ export default function App() {
         <section className="stage" style={{ "--c": game.color }}>
           <div className="lamps"><i /><i /><i /><i /><i /><i /><i /></div>
           <div className="jackpot">JACKPOT {jack} ₺</div>
-          <p className="face">{game.emoji} {game.character} — {game.greeting}</p>
-          <p className="payhint">5 hat · tavan {WIN_CAP}x · soğuma {COOLDOWN} · kasa %{Math.round(HOUSE_EDGE * 100)}</p>
+          <p className="face">{game.emoji} {game.character} — {line}</p>
+          <p className="payhint">şerit · tavan {WIN_CAP}x · soğuma {COOLDOWN} · kesim %{Math.round(HOUSE_EDGE * 100)} · RTP ~%57</p>
           <div className={"window five " + (spinning ? "spin" : "") + (last?.win ? " win" : "")}>
             {grid.map((col, c) => (
               <div key={c} className={"reelcol " + (lock[c] ? "lock" : "")}>
@@ -203,6 +210,11 @@ export default function App() {
               </div>
             ))}
           </div>
+          <p className="trail">
+            {(trail.length ? trail : [null, null, null, null, null]).slice(0, 5).map((v, i) => (
+              <b key={i} className={v ? "on" : ""}>{v == null ? "·" : v || "—"}</b>
+            ))}
+          </p>
           <p className={"bang " + (last && !last.win ? "miss" : "")}>
             {last ? (last.win ? `WIN ${last.win}` : "—") : spinning ? "" : game.name}
           </p>
