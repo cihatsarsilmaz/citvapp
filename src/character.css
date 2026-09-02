@@ -22,6 +22,17 @@
   filter: blur(6px);
   z-index: 1;
 }
+.actor .ring {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  z-index: 1;
+  background: conic-gradient(from -90deg, color-mix(in srgb, var(--c) 90%, #ffe08a) calc(var(--bond, 0) * 360deg), #ffffff14 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent 62%, #000 64%);
+  mask: radial-gradient(farthest-side, transparent 62%, #000 64%);
+  opacity: .85;
+}
 .actor .cflash {
   position: absolute;
   right: 22%;
@@ -84,11 +95,17 @@
 .mood-miss .body { animation: missbow .4s ease; }
 .mood-win .body { animation: winjump .5s ease; }
 .mood-c .body { animation: croar .55s ease; }
+.mood-collect .body { animation: gather .7s ease; }
 .mood-bonus .body { animation: bonuslive 1.1s ease-in-out infinite; }
 .mood-bonuswin .body { animation: bonuswin .6s ease; }
 @keyframes missbow { 40% { transform: rotate(12deg) translateY(6px) scale(.92); } }
 @keyframes winjump { 40% { transform: translateY(-14px) scale(1.18); } }
 @keyframes croar { 30% { transform: scale(1.28) rotate(-8deg); } 60% { transform: scale(1.12) rotate(8deg); } }
+@keyframes gather {
+  20% { transform: scale(.86) translateY(4px); }
+  55% { transform: scale(1.22) rotate(-8deg); }
+  100% { transform: scale(1.06); }
+}
 @keyframes bonuslive {
   0%,100% { transform: translateY(0) rotate(-4deg) scale(1.05); }
   50% { transform: translateY(-10px) rotate(6deg) scale(1.12); }
@@ -97,6 +114,7 @@
 
 .stage.bonus .aura { animation: aurapulse .8s ease-in-out infinite; opacity: 1; }
 .stage.cmult .aura { background: radial-gradient(circle, #ffe08acc, transparent 70%); }
+.stage.collect .ring { filter: drop-shadow(0 0 10px #ffe08a); }
 @keyframes aurapulse { 50% { transform: scale(1.35); opacity: .9; } }
 
 .fx-rain::after, .fx-bolt::after, .fx-dust::after, .fx-bubble::after,
@@ -111,38 +129,55 @@
 }
 .mood-bonus .aura.fx-rain::after,
 .mood-c .aura.fx-rain::after,
+.mood-collect .aura.fx-rain::after,
 .mood-bonus .aura.fx-bolt::after,
 .mood-c .aura.fx-bolt::after,
+.mood-collect .aura.fx-bolt::after,
 .mood-bonus .aura.fx-dust::after,
 .mood-c .aura.fx-dust::after,
+.mood-collect .aura.fx-dust::after,
 .mood-bonus .aura.fx-bubble::after,
 .mood-c .aura.fx-bubble::after,
+.mood-collect .aura.fx-bubble::after,
 .mood-bonus .aura.fx-coin::after,
 .mood-c .aura.fx-coin::after,
+.mood-collect .aura.fx-coin::after,
 .mood-bonus .aura.fx-veil::after,
 .mood-c .aura.fx-veil::after,
+.mood-collect .aura.fx-veil::after,
 .mood-bonus .aura.fx-moon::after,
 .mood-c .aura.fx-moon::after,
+.mood-collect .aura.fx-moon::after,
 .mood-bonus .aura.fx-ember::after,
 .mood-c .aura.fx-ember::after,
+.mood-collect .aura.fx-ember::after,
 .mood-bonus .aura.fx-leaf::after,
 .mood-c .aura.fx-leaf::after,
+.mood-collect .aura.fx-leaf::after,
 .mood-bonus .aura.fx-sand::after,
 .mood-c .aura.fx-sand::after,
+.mood-collect .aura.fx-sand::after,
 .mood-bonus .aura.fx-spray::after,
 .mood-c .aura.fx-spray::after,
+.mood-collect .aura.fx-spray::after,
 .mood-bonus .aura.fx-scan::after,
 .mood-c .aura.fx-scan::after,
+.mood-collect .aura.fx-scan::after,
 .mood-bonus .aura.fx-slash::after,
 .mood-c .aura.fx-slash::after,
+.mood-collect .aura.fx-slash::after,
 .mood-bonus .aura.fx-frost::after,
 .mood-c .aura.fx-frost::after,
+.mood-collect .aura.fx-frost::after,
 .mood-bonus .aura.fx-roar::after,
 .mood-c .aura.fx-roar::after,
+.mood-collect .aura.fx-roar::after,
 .mood-bonus .aura.fx-confetti::after,
 .mood-c .aura.fx-confetti::after,
+.mood-collect .aura.fx-confetti::after,
 .mood-bonus .aura.fx-spark::after,
-.mood-c .aura.fx-spark::after {
+.mood-c .aura.fx-spark::after,
+.mood-collect .aura.fx-spark::after {
   opacity: 1;
   background:
     radial-gradient(2px 8px at 20% 10%, #fff8, transparent),
