@@ -1,4 +1,4 @@
-import { WILD, STAR } from "./paytable";
+import { WILD, STAR, PAY2, PAY3, PAY4, PAY5 } from "./paytable";
 
 export const COLS = 5;
 export const ROWS = 3;
@@ -14,11 +14,6 @@ export const LINE_MAP = [
   [2, 1, 0, 1, 2],
 ];
 
-export const PAY2 = { wild: 1, theme: 1, star: 0, low: 0 };
-export const PAY3 = { wild: 8, theme: 5, star: 3, low: 1 };
-export const PAY4 = { wild: 14, theme: 8, star: 5, low: 2 };
-export const PAY5 = { wild: 20, theme: 12, star: 8, low: 4 };
-
 function kind(sym, theme) {
   if (sym === WILD) return "wild";
   if (sym === theme) return "theme";
@@ -33,9 +28,18 @@ function match(a, b, theme) {
   return false;
 }
 
+export function countSym(grid, sym) {
+  let n = 0;
+  for (let c = 0; c < grid.length; c++) {
+    for (let r = 0; r < grid[c].length; r++) if (grid[c][r] === sym) n++;
+  }
+  return n;
+}
+
 export function evalLines(grid, theme, bet) {
   const hits = [];
   let total = 0;
+  let themeHit = false;
   LINE_MAP.forEach((rows, li) => {
     const seq = rows.map((r, c) => grid[c][r]);
     let n = 1;
@@ -43,15 +47,29 @@ export function evalLines(grid, theme, bet) {
       if (match(seq[0], seq[i], theme) && match(seq[i - 1], seq[i], theme)) n++;
       else break;
     }
-    if (n < 2) return;
+    if (n < 3) return;
     const core = seq.find((s) => s !== WILD) || WILD;
-    const table = n === 5 ? PAY5 : n === 4 ? PAY4 : n === 3 ? PAY3 : PAY2;
+    const table = n === 5 ? PAY5 : n === 4 ? PAY4 : PAY3;
     const k = kind(core, theme);
     const mult = table[k] || 0;
     if (!mult) return;
+    if (k === "theme") themeHit = true;
     const win = bet * mult;
     total += win;
-    hits.push({ line: li, n, mult, win, cells: rows.map((r, c) => (c < n ? `${c}:${r}` : null)).filter(Boolean) });
+    hits.push({
+      line: li,
+      n,
+      kind: k,
+      mult,
+      win,
+      cells: rows.map((r, c) => (c < n ? `${c}:${r}` : null)).filter(Boolean),
+    });
   });
-  return { total, hits, label: hits.length ? `${hits.length} hat · ${hits.map((h) => `${h.n}`).join("+")}` : "hat yok" };
+  return {
+    total,
+    hits,
+    themeHit,
+    stars: countSym(grid, STAR),
+    themes: countSym(grid, theme),
+  };
 }
