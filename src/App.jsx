@@ -11,6 +11,7 @@ import { kitOf } from "./kits";
 import { loadRecents, pushRecent } from "./recents";
 import { lockAt, starsLocked, markCell } from "./pace";
 import { holdKeys } from "./bond";
+import { loadLedger, book } from "./ledger";
 import Character from "./Character";
 import Gate from "./Gate";
 import Jackpot from "./Jackpot";
@@ -53,8 +54,9 @@ export default function App() {
   const gen = useRef(0);
   const pending = useRef(null);
   const taps = useRef(0);
+  const ledger = useRef(loadLedger());
   const live = useRef({});
-  live.current = { game, balance, ante, session };
+  live.current = { game, balance, ante, session, ledger: ledger.current };
   autoRef.current = auto;
   turboRef.current = turbo;
   const isLive = mode === LIVE;
@@ -114,7 +116,9 @@ export default function App() {
       balance: s.balance,
       ante: s.ante,
       turbo: turboRef.current,
+      ledger: ledger.current,
     });
+    ledger.current = book(ledger.current, snap.inBonus ? 0 : b, result.win, result.gift);
     setLast(result);
     setSession(result.session);
     setBalance((n) => n + result.win);
@@ -123,7 +127,14 @@ export default function App() {
     pending.current = null;
     taps.current = 0;
     setHeld(holdKeys(next, result.extra));
-    if (result.collect) {
+    if (result.rare) {
+      setMood("c");
+      setJoy("jack");
+      playJack();
+    } else if (result.gift) {
+      setMood("win");
+      playWin(2);
+    } else if (result.collect) {
       setMood("collect");
       playExtra();
     } else if (result.bonus) {
@@ -341,6 +352,8 @@ export default function App() {
     session.inBonus || last?.bonus ? "bonus" : "",
     last?.cMult > 1 ? "cmult" : "",
     last?.collect ? "collect" : "",
+    last?.rare ? "rare" : "",
+    "floor",
   ].filter(Boolean).join(" ");
   const lamps = Math.max(5, Math.min(12, session.inBonus ? session.bonusLeft || 6 : 7));
 
