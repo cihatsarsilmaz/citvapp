@@ -1,11 +1,17 @@
-# CITV Slot — CEO
+# CITV Slot CEO — öneriler
 
-Ürün: citvapp / Kryptocasino
 Canlı: https://cihatsarsilmaz.github.io/citvapp/
-Admin: #admin  PIN CITV2026 (istemci)
 
-Motor: 5x3, 5 hat, kasa %32, tavan 4x, soğuma 3
-Akış: lobi → masa → SPIN/AUTO → WIN/—
-AUTO: busy ref + timer abort; Space tek dinleyici
+## Bitti
+- 5x3 + 5 hat (3 kutu kalktı)
+- Keçe salon, jackpot rayı, WIN
+- Kasa %32 / tavan 4x / soğuma
+- AUTO abort + Space tek dinleyici
+- Saatlik tur yalnız Slot
+- Masa ödeme satırı
 
-Saatlik tur: yalnız bu repo. Astro yok.
+## Şimdi değil (bilinçli)
+- Gerçek para / sunucu kasa
+- 243-way veya scatter bonus
+- Harici ses dosyası
+- APK store paket bu tur
