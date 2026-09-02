@@ -9,7 +9,7 @@ import { getMode, LIVE } from "./coin";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
 import { loadRecents, pushRecent } from "./recents";
-import { lockAt, starsLocked, markCell } from "./pace";
+import { lockAt, starsLocked, markCell, spinTempo } from "./pace";
 import { holdKeys } from "./bond";
 import { loadLedger, book } from "./ledger";
 import Character from "./Character";
@@ -108,84 +108,95 @@ export default function App() {
 
   function finishSpin(my, next, b, snap) {
     if (gen.current !== my) return;
-    stopSpinLoop();
-    const s = live.current;
-    const k = kitOf(s.game);
-    const ev = evalLines(next, s.game.emoji, b, k);
-    const result = applyHouse(ev, b, snap, {
-      balance: s.balance,
-      ante: s.ante,
-      turbo: turboRef.current,
-      ledger: ledger.current,
-    });
-    ledger.current = book(ledger.current, snap.inBonus ? 0 : b, result.win, result.gift);
-    setLast(result);
-    setSession(result.session);
-    setBalance((n) => n + result.win);
-    busy.current = false;
-    setSpinning(false);
-    pending.current = null;
-    taps.current = 0;
-    setHeld(holdKeys(next, result.extra));
-    if (result.rare) {
-      setMood("c");
-      setJoy("jack");
-      playJack();
-    } else if (result.gift) {
-      setMood("win");
-      playWin(2);
-    } else if (result.collect) {
-      setMood("collect");
-      playExtra();
-    } else if (result.bonus) {
-      setMood("bonus");
-      setJoy("bonus");
-      playBonusIn();
-    } else if (result.jack) {
-      setMood("win");
-      setJoy("jack");
-      playJack();
-    } else if (result.extra) {
-      setMood("bonus");
-      playExtra();
-    } else if (result.cMult > 1) setMood("c");
-    else if (result.win) setMood(result.session.inBonus ? "bonuswin" : "win");
-    else setMood("miss");
-    if (result.win) {
-      playWin(result.cMult > 1 ? 3 : 2);
-      tapWin(result.cMult > 1 ? 2 : 1);
-    } else if (!result.bonus && !result.collect) playMiss();
-    if (autoRef.current && gen.current === my) {
-      const gap = turboRef.current ? 140 : 260;
-      timers.current.push(setTimeout(runSpin, gap));
+    try {
+      stopSpinLoop();
+      const s = live.current;
+      const k = kitOf(s.game);
+      const ev = evalLines(next, s.game.emoji, b, k);
+      const result = applyHouse(ev, b, snap, {
+        balance: s.balance,
+        ante: s.ante,
+        turbo: turboRef.current,
+        ledger: ledger.current,
+      });
+      ledger.current = book(ledger.current, snap.inBonus ? 0 : b, result.win, result.gift);
+      setLast(result);
+      setSession(result.session);
+      setBalance((n) => n + result.win);
+      setHeld(holdKeys(next, result.extra));
+      if (result.rare) {
+        setMood("c");
+        setJoy("jack");
+        playJack();
+      } else if (result.gift) {
+        setMood("win");
+        playWin(2);
+      } else if (result.collect) {
+        setMood("collect");
+        playExtra();
+      } else if (result.bonus) {
+        setMood("bonus");
+        setJoy("bonus");
+        playBonusIn();
+      } else if (result.jack) {
+        setMood("win");
+        setJoy("jack");
+        playJack();
+      } else if (result.extra) {
+        setMood("bonus");
+        playExtra();
+      } else if (result.cMult > 1) setMood("c");
+      else if (result.win) setMood(result.session.inBonus ? "bonuswin" : "win");
+      else setMood("miss");
+      if (result.win) {
+        playWin(result.cMult > 1 ? 3 : 2);
+        tapWin(result.cMult > 1 ? 2 : 1);
+      } else if (!result.bonus && !result.collect) playMiss();
+      if (autoRef.current && gen.current === my) {
+        const gap = turboRef.current ? 220 : 380;
+        timers.current.push(setTimeout(runSpin, gap));
+      }
+    } catch {
+      setMood("miss");
+    } finally {
+      busy.current = false;
+      setSpinning(false);
+      pending.current = null;
+      taps.current = 0;
+      stopSpinLoop();
     }
   }
 
   function lockCol(my, c, next) {
     if (gen.current !== my) return;
-    if (lockRef.current[c]) return;
+    if (lockRef.current[c]) {
+      if (lockRef.current.every(Boolean)) {
+        const p = pending.current;
+        if (p && p.my === my) finishSpin(my, next, p.bet, p.snap);
+      }
+      return;
+    }
     const s = live.current;
     const k = kitOf(s.game);
-    const nCols = k.cols || next.length;
     lockRef.current[c] = 1;
     setLock((L) => {
-      const n = [...L];
+      const n = L.length === next.length ? [...L] : Array(next.length).fill(0);
       n[c] = 1;
       return n;
     });
     setGrid((prev) => {
       const copy = prev.map((col) => [...col]);
-      copy[c] = next[c];
+      if (next[c]) copy[c] = next[c];
       return copy;
     });
-    const mid = Math.floor((next[c].length - 1) / 2);
-    playClash(next[c][mid], k.voice);
+    const mid = Math.floor(((next[c] || []).length - 1) / 2);
+    playClash((next[c] || [])[mid], k.voice);
     tapLock();
-    if (c < nCols - 1 && starsLocked(next, lockRef.current) >= 2) {
+    if (!lockRef.current.every(Boolean) && starsLocked(next, lockRef.current) >= 2) {
       playExtra();
       setMood("c");
     }
-    if (c === nCols - 1) {
+    if (lockRef.current.every(Boolean)) {
       const p = pending.current;
       if (p && p.my === my) finishSpin(my, next, p.bet, p.snap);
     }
@@ -199,6 +210,11 @@ export default function App() {
       const id = setTimeout(() => lockCol(my, c, next), lockAt(c, nCols, base, step, turbo));
       timers.current.push(id);
     }
+    const worst = lockAt(nCols - 1, nCols, base, step, turbo) + 700;
+    timers.current.push(setTimeout(() => {
+      if (gen.current !== my || !pending.current || pending.current.my !== my) return;
+      for (let c = 0; c < next.length; c++) lockCol(my, c, next);
+    }, worst));
   }
 
   function runSpin() {
@@ -216,19 +232,19 @@ export default function App() {
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
     const fast = turboRef.current;
-    const base = fast ? 50 : 140;
-    const step = fast ? 42 : 88;
+    const { base, step } = spinTempo(fast);
     busy.current = true;
     setSpinning(true);
     setMood(s.session.inBonus ? "bonus" : "spin");
     if (!free) setBalance((n) => n - b);
     setLast(null);
     setHeld([]);
-    lockRef.current = Array(k.cols || 5).fill(0);
-    setLock(Array(k.cols || 5).fill(0));
+    const nCols = k.cols || 5;
+    lockRef.current = Array(nCols).fill(0);
+    setLock(Array(nCols).fill(0));
     taps.current = 0;
     stopTheme();
-    playSpinLoop(s.game.freq ? s.game.freq[0] : 90);
+    playSpinLoop();
     tapSpin();
     const snap = s.session;
     const style = readStyle(snap, s.balance, s.ante, fast);
@@ -253,10 +269,13 @@ export default function App() {
       return;
     }
     const first = lockRef.current.findIndex((v) => !v);
-    if (first < 0) return;
+    if (first < 0) {
+      lockCol(my, 0, next);
+      return;
+    }
     lockCol(my, first, next);
     for (let c = first + 1; c < next.length; c++) {
-      const id = setTimeout(() => lockCol(my, c, next), (c - first) * 32);
+      const id = setTimeout(() => lockCol(my, c, next), (c - first) * 55);
       timers.current.push(id);
     }
   }
@@ -300,7 +319,7 @@ export default function App() {
     setRecents(pushRecent(g.id));
     playClick();
     tapTick();
-    playTheme(g.freq, true);
+    playTheme(g.freq);
     try { history.pushState({ citv: "stage" }, ""); } catch {}
   }
 
@@ -328,7 +347,7 @@ export default function App() {
     const n = !autoRef.current;
     autoRef.current = n;
     setAuto(n);
-    if (n && !busy.current && !boot) timers.current.push(setTimeout(runSpin, 70));
+    if (n && !busy.current && !boot) timers.current.push(setTimeout(runSpin, 90));
     if (!n) {
       timers.current.forEach((id) => clearTimeout(id));
       timers.current = [];
