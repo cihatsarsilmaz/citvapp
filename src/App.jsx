@@ -10,6 +10,8 @@ import "./styles.css";
 const POOL = [...LOW, STAR, WILD];
 const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
 const blank = () => Array.from({ length: COLS }, () => [rnd(), rnd(), rnd()]);
+const START = 2500;
+const TOPUP = 500;
 
 export default function App() {
   const [hash, setHash] = useState(typeof location !== "undefined" ? location.hash : "");
@@ -19,7 +21,7 @@ export default function App() {
   const [spinning, setSpinning] = useState(false);
   const [ante, setAnte] = useState(1);
   const [last, setLast] = useState(null);
-  const [balance, setBalance] = useState(1000);
+  const [balance, setBalance] = useState(START);
   const [session, setSession] = useState(emptySession());
   const [auto, setAuto] = useState(false);
   const lockRef = useRef([0, 0, 0, 0, 0]);
@@ -44,6 +46,7 @@ export default function App() {
   const bet = UNIT * ante;
   const hitSet = useMemo(() => new Set((last?.hits || []).flatMap((h) => h.cells)), [last]);
   const jack = (250000 + session.vault * 17).toLocaleString("tr-TR");
+  const broke = balance < bet;
 
   function runSpin() {
     const s = live.current;
@@ -146,21 +149,28 @@ export default function App() {
     if (!n) clearTimers();
   }
 
+  function refill() {
+    playClick();
+    setBalance((n) => n + TOPUP);
+  }
+
   return (
     <div className="app wide">
       {!game && (
         <>
           <header className="top">
             <div>
-              <p className="kicker">CITV Slot</p>
+              <p className="kicker">CITV Slot · tavan {WIN_CAP}x</p>
               <h1>Masaya otur</h1>
             </div>
+            <div className="meter"><em>FİŞ</em><b>{balance}</b></div>
           </header>
           <section className="grid">
             {GAMES.map((g) => (
               <button key={g.id} className="card" onClick={() => openGame(g)} style={{ "--c": g.color }}>
                 <div className="em">{g.emoji}</div>
                 <div className="nm">{g.name}</div>
+                <div className="tag">5×3 · {WIN_CAP}x</div>
               </button>
             ))}
           </section>
@@ -168,8 +178,9 @@ export default function App() {
       )}
       {game && (
         <section className="stage" style={{ "--c": game.color }}>
+          <div className="lamps"><i /><i /><i /><i /><i /><i /><i /></div>
           <div className="jackpot">JACKPOT {jack} ₺</div>
-          <p className="payhint">5 hat · soldan 3/4/5 · tavan {WIN_CAP}x · soğuma {COOLDOWN} · kasa %{Math.round(HOUSE_EDGE * 100)}</p>
+          <p className="payhint">5 hat · tavan {WIN_CAP}x · soğuma {COOLDOWN} · kasa %{Math.round(HOUSE_EDGE * 100)}</p>
           <div className={"window five " + (spinning ? "spin" : "") + (last?.win ? " win" : "")}>
             {grid.map((col, c) => (
               <div key={c} className={"reelcol " + (lock[c] ? "lock" : "")}>
@@ -187,9 +198,10 @@ export default function App() {
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.max(1, n - 1)); }}>−</button>
             <div className="meter"><em>BAHİS</em><b>{bet}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.min(10, n + 1)); }}>+</button>
-            <button className="spinbtn" onClick={runSpin} disabled={spinning}>SPIN</button>
+            <button className="spinbtn" onClick={runSpin} disabled={spinning || broke}>SPIN</button>
             <button className={"act ghost " + (auto ? "on" : "")} onClick={toggleAuto}>{auto ? "DUR" : "AUTO"}</button>
             <div className="meter"><em>KAZANÇ</em><b>{last?.win || 0}</b></div>
+            {broke && <button className="act" onClick={refill}>+{TOPUP}</button>}
             <button className="act ghost" onClick={back}>←</button>
           </div>
         </section>
