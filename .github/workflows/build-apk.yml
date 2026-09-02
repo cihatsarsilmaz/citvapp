@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: Build Debug APK
+    name: Build Debug + Release APK
     runs-on: ubuntu-latest
 
     steps:
@@ -34,7 +34,7 @@ jobs:
           echo "=== dist folder contents ==="
           ls -la dist/
           echo "=== index.html check ==="
-          test -f dist/index.html && echo "✅ index.html EXISTS" || (echo "❌ index.html MISSING" && exit 1)
+          test -f dist/index.html && echo "index.html EXISTS" || (echo "index.html MISSING" && exit 1)
           echo "=== assets check ==="
           ls -la dist/assets/ || echo "No assets folder"
 
@@ -63,8 +63,7 @@ jobs:
         run: |
           echo "=== Android public assets ==="
           ls -la android/app/src/main/assets/public/ || echo "No public assets folder"
-          echo "=== Android asset index.html ==="
-          test -f android/app/src/main/assets/public/index.html && echo "✅ index.html EXISTS in assets" || (echo "❌ index.html MISSING in assets" && exit 1)
+          test -f android/app/src/main/assets/public/index.html && echo "index.html EXISTS in assets" || (echo "index.html MISSING in assets" && exit 1)
 
       - name: Make Gradle wrapper executable
         run: chmod +x android/gradlew
@@ -72,27 +71,67 @@ jobs:
       - name: Build debug APK
         run: cd android && ./gradlew assembleDebug
 
-      - name: Upload APK artifact
+      - name: Build unsigned release APK
+        run: cd android && ./gradlew assembleRelease
+        continue-on-error: true
+
+      - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
+          name: citv-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
 
-      - name: Delete existing "latest-debug" release (if any)
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: citv-release-apk
+          path: |
+            android/app/build/outputs/apk/release/app-release-unsigned.apk
+            android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Delete existing latest-debug release (if any)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release delete latest-debug --yes --cleanup-tag || true
+        run: gh release delete latest-debug --yes --cleanup-tag || true
         continue-on-error: true
 
-      - name: Create GitHub Release and upload APK
+      - name: Delete existing latest-release release (if any)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete latest-release --yes --cleanup-tag || true
+        continue-on-error: true
+
+      - name: Create latest-debug GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create latest-debug \
-            --title "Latest Debug Build" \
-            --notes "Automated debug APK build from the \`Kryptocasino\` branch.\n\n**Commit:** \`${{ github.sha }}\`\n**Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
+            --title "CITV Slot Latest Debug Build" \
+            --notes "Automated debug APK from \`Kryptocasino\`.\n\n**Commit:** \`${{ github.sha }}\`\n**Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
             --target ${{ github.sha }} \
             android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Create latest-release GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REL=""
+          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+            REL=android/app/build/outputs/apk/release/app-release.apk
+          elif [ -f android/app/build/outputs/apk/release/app-release-unsigned.apk ]; then
+            REL=android/app/build/outputs/apk/release/app-release-unsigned.apk
+          fi
+          if [ -n "$REL" ]; then
+            gh release create latest-release \
+              --title "CITV Slot Latest Release Build" \
+              --notes "Automated release APK from \`Kryptocasino\` (unsigned unless signing is configured).\n\n**Commit:** \`${{ github.sha }}\`\n**Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
+              --target ${{ github.sha }} \
+              "$REL"
+          else
+            echo "Release APK not found; skipping latest-release."
+          fi
+        continue-on-error: true
