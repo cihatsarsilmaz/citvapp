@@ -9,11 +9,42 @@ function pick(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
+function strip(theme, wilds, themes, stars) {
+  const s = [];
+  LOW.forEach((sym) => {
+    s.push(sym, sym, sym);
+  });
+  for (let i = 0; i < themes; i++) s.push(theme);
+  for (let i = 0; i < stars; i++) s.push(STAR);
+  for (let i = 0; i < wilds; i++) s.push(WILD);
+  return s;
+}
+
+export function stripsFor(theme) {
+  return [
+    strip(theme, 3, 3, 2),
+    strip(theme, 2, 2, 2),
+    strip(theme, 2, 2, 1),
+    strip(theme, 1, 1, 1),
+    strip(theme, 1, 1, 1),
+  ];
+}
+
+function window3(reel, stop) {
+  const n = reel.length;
+  const up = reel[(stop - 1 + n) % n];
+  const mid = reel[stop % n];
+  const down = reel[(stop + 1) % n];
+  return [up, mid, down];
+}
+
 export function spinGrid(theme, forceMiss) {
-  const pool = [...LOW, ...LOW, theme, STAR, WILD];
+  const strips = stripsFor(theme);
   const grid = [];
   for (let c = 0; c < COLS; c++) {
-    const col = [pick(pool), pick(pool), pick(pool)];
+    const reel = strips[c];
+    const stop = Math.floor(Math.random() * reel.length);
+    const col = window3(reel, stop);
     if (forceMiss && c > 0) {
       col[1] = pick(LOW.filter((s) => s !== grid[0][1]));
     }
