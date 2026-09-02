@@ -45,6 +45,7 @@ html, body, #root {
   display: grid; grid-template-rows: repeat(3, 1fr); gap: 4px;
   background: #120206; border-radius: 10px; padding: 4px;
   border: 1px solid #5a2030;
+  contain: layout paint;
 }
 .reelcol.lock {
   border-color: #f0d78a;
@@ -65,7 +66,10 @@ html, body, #root {
   animation: pop .28s ease;
 }
 @keyframes pop { 50% { transform: scale(1.14); } }
-.window.spin .reelcol:not(.lock) .cell { filter: blur(2px) brightness(1.18); }
+.window.spin .reelcol:not(.lock) .cell {
+  opacity: .72;
+  transform: translateY(2px);
+}
 .bang {
   text-align: center; font-size: 28px; font-weight: 800; margin: 6px 0 2px;
   color: #ffe08a; min-height: 1.25em; text-shadow: 0 0 22px #ffb020cc;
