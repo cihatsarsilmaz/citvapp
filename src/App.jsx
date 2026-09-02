@@ -83,6 +83,7 @@ export default function App() {
     setLast(null);
     lockRef.current = [0, 0, 0, 0, 0];
     setLock([0, 0, 0, 0, 0]);
+    stopTheme();
     playSpinLoop();
     const snap = s.session;
     const next = spinGrid(s.game.emoji, snap.cool > 0);
