@@ -39,6 +39,7 @@ html, body, #root {
   background: radial-gradient(circle at 50% 0%, #3a141c, #050102);
   border: 3px solid #e8c056;
   box-shadow: inset 0 0 44px #000d;
+  contain: layout paint;
 }
 .window.five.win { animation: winpulse .5s ease 3; }
 @keyframes winpulse { 50% { box-shadow: 0 0 48px #ffd36acc, inset 0 0 24px #ffb02066; } }
@@ -68,8 +69,11 @@ html, body, #root {
 }
 @keyframes pop { 50% { transform: scale(1.14); } }
 .window.spin .reelcol:not(.lock) .cell {
-  opacity: .72;
-  transform: translateY(2px);
+  animation: reel .14s linear infinite;
+}
+@keyframes reel {
+  from { transform: translateY(-7px); opacity: .6; }
+  to { transform: translateY(7px); opacity: .9; }
 }
 .trail {
   display: flex; justify-content: center; gap: 6px; margin: 0;
@@ -109,4 +113,8 @@ button.act.on { border-color: #e8c056; color: #ffe08a; box-shadow: 0 0 10px #e0b
   .cell { min-height: 50px; font-size: 22px; }
   .spinbtn { width: 70px; height: 70px; }
   .bang { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .window.spin .reelcol:not(.lock) .cell,
+  .lamps i, .stage.shake, .window.five.win, .cell.hit { animation: none; }
 }

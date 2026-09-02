@@ -33,7 +33,6 @@ export default function App() {
   const autoRef = useRef(false);
   const turboRef = useRef(false);
   const timers = useRef([]);
-  const tickRef = useRef(null);
   const gen = useRef(0);
   const live = useRef({});
   live.current = { game, balance, ante, session };
@@ -47,10 +46,6 @@ export default function App() {
     gen.current += 1;
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
-    if (tickRef.current) {
-      clearInterval(tickRef.current);
-      tickRef.current = null;
-    }
     stopSpinLoop();
   }
 
@@ -91,11 +86,6 @@ export default function App() {
     playSpinLoop();
     const snap = s.session;
     const next = spinGrid(s.game.emoji, snap.cool > 0);
-    if (tickRef.current) clearInterval(tickRef.current);
-    tickRef.current = setInterval(() => {
-      if (gen.current !== my) return;
-      setGrid((prev) => prev.map((col, c) => (lockRef.current[c] ? col : [rnd(), rnd(), rnd()])));
-    }, 50);
     for (let c = 0; c < COLS; c++) {
       const id = setTimeout(() => {
         if (gen.current !== my) return;
@@ -103,9 +93,8 @@ export default function App() {
         setLock((L) => { const n = [...L]; n[c] = 1; return n; });
         setGrid((prev) => { const copy = prev.map((col) => [...col]); copy[c] = next[c]; return copy; });
         playStop();
-        playSymbol(next[c][1]);
+        if (!fast) playSymbol(next[c][1]);
         if (c === COLS - 1) {
-          if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
           stopSpinLoop();
           const ev = evalLines(next, s.game.emoji, b);
           const result = applyHouse(ev, b, snap);
