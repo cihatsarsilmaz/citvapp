@@ -14,6 +14,7 @@ export const LINE_MAP = [
   [2, 1, 0, 1, 2],
 ];
 
+export const PAY2 = { wild: 1, theme: 1, star: 0, low: 0 };
 export const PAY3 = { wild: 8, theme: 5, star: 3, low: 1 };
 export const PAY4 = { wild: 14, theme: 8, star: 5, low: 2 };
 export const PAY5 = { wild: 20, theme: 12, star: 8, low: 4 };
@@ -42,13 +43,15 @@ export function evalLines(grid, theme, bet) {
       if (match(seq[0], seq[i], theme) && match(seq[i - 1], seq[i], theme)) n++;
       else break;
     }
-    if (n < 3) return;
+    if (n < 2) return;
     const core = seq.find((s) => s !== WILD) || WILD;
-    const table = n === 5 ? PAY5 : n === 4 ? PAY4 : PAY3;
-    const mult = table[kind(core, theme)] || table.low;
+    const table = n === 5 ? PAY5 : n === 4 ? PAY4 : n === 3 ? PAY3 : PAY2;
+    const k = kind(core, theme);
+    const mult = table[k] || 0;
+    if (!mult) return;
     const win = bet * mult;
     total += win;
     hits.push({ line: li, n, mult, win, cells: rows.map((r, c) => (c < n ? `${c}:${r}` : null)).filter(Boolean) });
   });
-  return { total, hits, label: hits.length ? `${hits.length} hat · ${hits.map((h) => `${h.n}x`).join(" ")}` : "hat yok" };
+  return { total, hits, label: hits.length ? `${hits.length} hat · ${hits.map((h) => `${h.n}`).join("+")}` : "hat yok" };
 }
