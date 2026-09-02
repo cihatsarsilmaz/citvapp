@@ -10,6 +10,7 @@ import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
 import { loadRecents, pushRecent } from "./recents";
 import { lockAt, starsLocked, markCell } from "./pace";
+import { holdKeys } from "./bond";
 import Character from "./Character";
 import Gate from "./Gate";
 import Jackpot from "./Jackpot";
@@ -43,6 +44,7 @@ export default function App() {
   const [mood, setMood] = useState("idle");
   const [joy, setJoy] = useState(null);
   const [recents, setRecents] = useState(loadRecents);
+  const [held, setHeld] = useState([]);
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
@@ -99,6 +101,7 @@ export default function App() {
 
   const bet = UNIT * ante;
   const hitSet = useMemo(() => new Set((last?.hits || []).flatMap((h) => h.cells || [])), [last]);
+  const holdSet = useMemo(() => new Set(held), [held]);
   const broke = balance < bet && !(session.inBonus);
 
   function finishSpin(my, next, b, snap) {
@@ -119,7 +122,11 @@ export default function App() {
     setSpinning(false);
     pending.current = null;
     taps.current = 0;
-    if (result.bonus) {
+    setHeld(holdKeys(next, result.extra));
+    if (result.collect) {
+      setMood("collect");
+      playExtra();
+    } else if (result.bonus) {
       setMood("bonus");
       setJoy("bonus");
       playBonusIn();
@@ -136,7 +143,7 @@ export default function App() {
     if (result.win) {
       playWin(result.cMult > 1 ? 3 : 2);
       tapWin(result.cMult > 1 ? 2 : 1);
-    } else if (!result.bonus) playMiss();
+    } else if (!result.bonus && !result.collect) playMiss();
     if (autoRef.current && gen.current === my) {
       const gap = turboRef.current ? 140 : 260;
       timers.current.push(setTimeout(runSpin, gap));
@@ -205,6 +212,7 @@ export default function App() {
     setMood(s.session.inBonus ? "bonus" : "spin");
     if (!free) setBalance((n) => n - b);
     setLast(null);
+    setHeld([]);
     lockRef.current = Array(k.cols || 5).fill(0);
     setLock(Array(k.cols || 5).fill(0));
     taps.current = 0;
@@ -273,6 +281,7 @@ export default function App() {
     setGrid(blank(k.cols, k.rows));
     setLock(Array(k.cols).fill(0));
     setLast(null);
+    setHeld([]);
     setAuto(false);
     autoRef.current = false;
     setMood("idle");
@@ -293,6 +302,7 @@ export default function App() {
     setGame(null);
     setBoot(false);
     setLast(null);
+    setHeld([]);
     setSpinning(false);
     setMood("idle");
     setJoy(null);
@@ -330,6 +340,7 @@ export default function App() {
     last && !last.win && !spinning ? "shake" : "",
     session.inBonus || last?.bonus ? "bonus" : "",
     last?.cMult > 1 ? "cmult" : "",
+    last?.collect ? "collect" : "",
   ].filter(Boolean).join(" ");
   const lamps = Math.max(5, Math.min(12, session.inBonus ? session.bonusLeft || 6 : 7));
 
@@ -363,12 +374,12 @@ export default function App() {
           <div className="bevel" />
           <div className="lamps">{Array.from({ length: lamps }, (_, i) => <i key={i} />)}</div>
           <Jackpot kit={kit} vault={session.vault} hit={!!last?.jack} />
-          <Character game={game} mood={mood} />
+          <Character game={game} mood={mood} bond={session.bond || 0} />
           <div className={"window five " + (spinning ? "spin" : "") + (showWin ? " win" : "")} onPointerDown={nudgeStage}>
             {grid.map((col, c) => (
               <div key={c} className={"reelcol " + (lock[c] ? "lock" : "")}>
                 {col.map((s, r) => (
-                  <div key={r} className={"cell" + markCell(s) + (hitSet.has(`${c}:${r}`) ? " hit" : "")}>{s}</div>
+                  <div key={r} className={"cell" + markCell(s) + (hitSet.has(`${c}:${r}`) ? " hit drop" : "") + (holdSet.has(`${c}:${r}`) ? " hold" : "")}>{s}</div>
                 ))}
               </div>
             ))}

@@ -13,6 +13,21 @@
 .cell.wild {
   box-shadow: 0 0 16px #f472b6aa, inset 0 0 0 1px #f472b666;
 }
+.cell.hold {
+  box-shadow: 0 0 22px #ffe08a, inset 0 0 0 2px #ffe08a;
+  animation: holdpulse .9s ease-in-out infinite;
+}
+.cell.drop {
+  animation: drop .42s ease;
+}
+@keyframes holdpulse {
+  50% { filter: brightness(1.18); transform: scale(1.04); }
+}
+@keyframes drop {
+  0% { transform: translate3d(0, -8px, 0) scale(1.08); }
+  70% { transform: translate3d(0, 3px, 0) scale(1.02); }
+  100% { transform: none; }
+}
 .card.recent {
   box-shadow: 0 0 0 1px var(--c), 0 12px 28px #0008;
 }
@@ -72,5 +87,5 @@
   .stage.c6 .cell, .stage.r4 .cell { min-height: 40px; font-size: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .jp.hit, .joy { animation: none; }
+  .jp.hit, .joy, .cell.hold, .cell.drop { animation: none; }
 }
