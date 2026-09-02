@@ -5,7 +5,6 @@ import { UNIT, WILD, STAR } from "./paytable";
 import { spinGrid, applyHouse, emptySession, WIN_CAP, HOUSE_EDGE, COOLDOWN } from "./house";
 import { evalLines, COLS, LOW } from "./engine";
 import Admin from "./Admin";
-import "./styles.css";
 
 const POOL = [...LOW, STAR, WILD];
 const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
@@ -28,23 +27,34 @@ export default function App() {
   const busy = useRef(false);
   const autoRef = useRef(false);
   const timers = useRef([]);
+  const tickRef = useRef(null);
+  const gen = useRef(0);
   const live = useRef({});
   live.current = { game, balance, ante, session };
   autoRef.current = auto;
 
   function clearTimers() {
+    gen.current += 1;
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
+    if (tickRef.current) {
+      clearInterval(tickRef.current);
+      tickRef.current = null;
+    }
+    stopSpinLoop();
   }
 
   useEffect(() => {
     const onHash = () => setHash(location.hash);
     window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+      clearTimers();
+    };
   }, []);
 
   const bet = UNIT * ante;
-  const hitSet = useMemo(() => new Set((last?.hits || []).flatMap((h) => h.cells)), [last]);
+  const hitSet = useMemo(() => new Set((last?.hits || []).flatMap((h) => h.cells || [])), [last]);
   const jack = (250000 + session.vault * 17).toLocaleString("tr-TR");
   const broke = balance < bet;
 
@@ -57,6 +67,7 @@ export default function App() {
       setAuto(false);
       return;
     }
+    const my = ++gen.current;
     busy.current = true;
     setSpinning(true);
     setBalance((n) => n - b);
@@ -66,18 +77,24 @@ export default function App() {
     playSpinLoop();
     const snap = s.session;
     const next = spinGrid(s.game.emoji, snap.cool > 0);
-    const tick = setInterval(() => {
+    if (tickRef.current) clearInterval(tickRef.current);
+    tickRef.current = setInterval(() => {
+      if (gen.current !== my) return;
       setGrid((prev) => prev.map((col, c) => (lockRef.current[c] ? col : [rnd(), rnd(), rnd()])));
     }, 48);
     for (let c = 0; c < COLS; c++) {
       const id = setTimeout(() => {
+        if (gen.current !== my) return;
         lockRef.current[c] = 1;
         setLock((L) => { const n = [...L]; n[c] = 1; return n; });
         setGrid((prev) => { const copy = prev.map((col) => [...col]); copy[c] = next[c]; return copy; });
         playStop();
         playSymbol(next[c][1]);
         if (c === COLS - 1) {
-          clearInterval(tick);
+          if (tickRef.current) {
+            clearInterval(tickRef.current);
+            tickRef.current = null;
+          }
           stopSpinLoop();
           const ev = evalLines(next, s.game.emoji, b);
           const result = applyHouse(ev, b, snap);
@@ -87,7 +104,7 @@ export default function App() {
           busy.current = false;
           setSpinning(false);
           result.win ? playWin(2) : playMiss();
-          if (autoRef.current) {
+          if (autoRef.current && gen.current === my) {
             const nxt = setTimeout(runSpin, 420);
             timers.current.push(nxt);
           }
@@ -119,6 +136,7 @@ export default function App() {
   function openGame(g) {
     clearTimers();
     busy.current = false;
+    setSpinning(false);
     setGame(g);
     setGrid(blank());
     setLast(null);
@@ -133,7 +151,6 @@ export default function App() {
     busy.current = false;
     autoRef.current = false;
     setAuto(false);
-    stopSpinLoop();
     stopTheme();
     setGame(null);
     setLast(null);
@@ -145,7 +162,10 @@ export default function App() {
     const n = !autoRef.current;
     autoRef.current = n;
     setAuto(n);
-    if (n && !busy.current) setTimeout(runSpin, 80);
+    if (n && !busy.current) {
+      const id = setTimeout(runSpin, 80);
+      timers.current.push(id);
+    }
     if (!n) clearTimers();
   }
 
@@ -168,6 +188,7 @@ export default function App() {
           <section className="grid">
             {GAMES.map((g) => (
               <button key={g.id} className="card" onClick={() => openGame(g)} style={{ "--c": g.color }}>
+                <div className="ribbon" />
                 <div className="em">{g.emoji}</div>
                 <div className="nm">{g.name}</div>
                 <div className="tag">5×3 · {WIN_CAP}x</div>
