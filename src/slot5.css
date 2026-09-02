@@ -32,6 +32,7 @@ html, body, #root {
   color: #1a0808; background: linear-gradient(180deg, #fff0b8, #c9a24a 68%, #8a6818);
   border-radius: 9px; padding: 8px; box-shadow: 0 3px 0 #5a3a08;
 }
+.face { margin: 0; text-align: center; font-size: 13px; color: #f6e6c8; }
 .window.five {
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 10px;
   border-radius: 16px;
@@ -70,6 +71,15 @@ html, body, #root {
   opacity: .72;
   transform: translateY(2px);
 }
+.trail {
+  display: flex; justify-content: center; gap: 6px; margin: 0;
+}
+.trail b {
+  min-width: 36px; text-align: center; font-size: 11px;
+  padding: 3px 6px; border-radius: 6px;
+  background: #1a080c; color: #c9a070; font-weight: 700;
+}
+.trail b.on { color: #1a0808; background: #e0b84a; }
 .bang {
   text-align: center; font-size: 28px; font-weight: 800; margin: 6px 0 2px;
   color: #ffe08a; min-height: 1.25em; text-shadow: 0 0 22px #ffb020cc;
