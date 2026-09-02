@@ -24,9 +24,11 @@ export default function App() {
   const [auto, setAuto] = useState(false);
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
+  const autoRef = useRef(false);
   const timers = useRef([]);
   const live = useRef({});
-  live.current = { game, balance, ante, session, auto };
+  live.current = { game, balance, ante, session };
+  autoRef.current = auto;
 
   function clearTimers() {
     timers.current.forEach((id) => clearTimeout(id));
@@ -48,6 +50,7 @@ export default function App() {
     if (!s.game || busy.current) return;
     const b = UNIT * s.ante;
     if (s.balance < b) {
+      autoRef.current = false;
       setAuto(false);
       return;
     }
@@ -59,14 +62,13 @@ export default function App() {
     setLock([0, 0, 0, 0, 0]);
     playSpinLoop();
     const snap = s.session;
-    const theme = s.game.emoji;
-    const next = spinGrid(theme, snap.cool > 0);
+    const next = spinGrid(s.game.emoji, snap.cool > 0);
     const tick = setInterval(() => {
       setGrid((prev) => prev.map((col, c) => (lockRef.current[c] ? col : [rnd(), rnd(), rnd()])));
     }, 48);
-    timers.current.push(tick);
     for (let c = 0; c < COLS; c++) {
       const id = setTimeout(() => {
+        if (!busy.current && c !== COLS - 1) return;
         lockRef.current[c] = 1;
         setLock((L) => { const n = [...L]; n[c] = 1; return n; });
         setGrid((prev) => { const copy = prev.map((col) => [...col]); copy[c] = next[c]; return copy; });
@@ -75,7 +77,7 @@ export default function App() {
         if (c === COLS - 1) {
           clearInterval(tick);
           stopSpinLoop();
-          const ev = evalLines(next, theme, b);
+          const ev = evalLines(next, s.game.emoji, b);
           const result = applyHouse(ev, b, snap);
           setLast(result);
           setSession(result.session);
@@ -83,9 +85,9 @@ export default function App() {
           busy.current = false;
           setSpinning(false);
           result.win ? playWin(2) : playMiss();
-          if (live.current.auto) {
-            const n = setTimeout(runSpin, 420);
-            timers.current.push(n);
+          if (autoRef.current) {
+            const nxt = setTimeout(runSpin, 420);
+            timers.current.push(nxt);
           }
         }
       }, 220 + c * 140);
@@ -113,23 +115,36 @@ export default function App() {
   }
 
   function openGame(g) {
+    clearTimers();
+    busy.current = false;
     setGame(g);
     setGrid(blank());
     setLast(null);
     setAuto(false);
+    autoRef.current = false;
     playClick();
     playTheme(g.freq, true);
   }
 
   function back() {
-    setAuto(false);
-    busy.current = false;
     clearTimers();
+    busy.current = false;
+    autoRef.current = false;
+    setAuto(false);
     stopSpinLoop();
     stopTheme();
-    setSpinning(false);
     setGame(null);
     setLast(null);
+    setSpinning(false);
+  }
+
+  function toggleAuto() {
+    playClick();
+    const n = !autoRef.current;
+    autoRef.current = n;
+    setAuto(n);
+    if (n && !busy.current) setTimeout(runSpin, 80);
+    if (!n) clearTimers();
   }
 
   return (
@@ -173,15 +188,7 @@ export default function App() {
             <div className="meter"><em>BAHİS</em><b>{bet}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.min(10, n + 1)); }}>+</button>
             <button className="spinbtn" onClick={runSpin} disabled={spinning}>SPIN</button>
-            <button className={"act ghost " + (auto ? "on" : "")} onClick={() => {
-              playClick();
-              setAuto((a) => {
-                const n = !a;
-                if (!n) clearTimers();
-                else if (!busy.current) timers.current.push(setTimeout(runSpin, 80));
-                return n;
-              });
-            }}>{auto ? "DUR" : "AUTO"}</button>
+            <button className={"act ghost " + (auto ? "on" : "")} onClick={toggleAuto}>{auto ? "DUR" : "AUTO"}</button>
             <div className="meter"><em>KAZANÇ</em><b>{last?.win || 0}</b></div>
             <button className="act ghost" onClick={back}>←</button>
           </div>

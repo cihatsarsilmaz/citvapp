@@ -1,15 +1,11 @@
-# CEO hattı
+# CITV Slot — CEO
 
-İki ürün. Karıştırma.
+Ürün: citvapp / Kryptocasino
+Canlı: https://cihatsarsilmaz.github.io/citvapp/
+Admin: #admin  PIN CITV2026 (istemci)
 
-## CITV Slot (`citvapp`)
-- Canlı: https://cihatsarsilmaz.github.io/citvapp/
-- Şimdi: lobi, karakter, ses, paytable demo, bakiye
-- Sırada: ağırlıklı makara, ses dosyası, kasa/cüzdan (Astro TON ile paylaşılmaz)
+Motor: 5x3, 5 hat, kasa %32, tavan 4x, soğuma 3
+Akış: lobi → masa → SPIN/AUTO → WIN/—
+AUTO: busy ref + timer abort; Space tek dinleyici
 
-## AstrogameWAR (`astrowar-capacitor`)
-- Şimdi: v10 görsel, TON yatırma, Play CI
-- Açık: issue #18 (helpers snippet dump — collaborator isteği değil)
-- Sırada: v11 helpers tek kaynak, #18 kapat
-
-Saatlik tur 00:00–23:00 Europe/Istanbul.
+Saatlik tur: yalnız bu repo. Astro yok.
