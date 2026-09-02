@@ -95,7 +95,7 @@ export default function App() {
     tickRef.current = setInterval(() => {
       if (gen.current !== my) return;
       setGrid((prev) => prev.map((col, c) => (lockRef.current[c] ? col : [rnd(), rnd(), rnd()])));
-    }, fast ? 32 : 48);
+    }, 50);
     for (let c = 0; c < COLS; c++) {
       const id = setTimeout(() => {
         if (gen.current !== my) return;
