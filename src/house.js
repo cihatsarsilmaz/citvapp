@@ -1,9 +1,9 @@
 import { WILD, STAR } from "./paytable";
-import { LOW, COLS, ROWS } from "./engine";
+import { LOW, COLS } from "./engine";
 
 export const HOUSE_EDGE = 0.32;
-export const WIN_CAP = 4;
-export const COOLDOWN = 3;
+export const WIN_CAP = 8;
+export const COOLDOWN = 1;
 
 function pick(list) {
   return list[Math.floor(Math.random() * list.length)];
