@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
 import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playSymbol, playStop, playWin, playMiss, playClick, setMuted } from "./audio";
 import { UNIT } from "./paytable";
@@ -7,7 +7,9 @@ import { evalLines, COLS, LOW } from "./engine";
 import { loadState, saveState } from "./store";
 import { getMode, LIVE } from "./coin";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
+import { kitOf } from "./kits";
 import Character from "./Character";
+import Gate from "./Gate";
 import Admin from "./Admin";
 
 const POOL = [...LOW];
@@ -20,6 +22,7 @@ const saved = loadState({ balance: START, session: emptySession(), muted: false 
 export default function App() {
   const [hash, setHash] = useState(typeof location !== "undefined" ? location.hash : "");
   const [game, setGame] = useState(null);
+  const [boot, setBoot] = useState(false);
   const [grid, setGrid] = useState(blank());
   const [lock, setLock] = useState([0, 0, 0, 0, 0]);
   const [spinning, setSpinning] = useState(false);
@@ -45,6 +48,7 @@ export default function App() {
   autoRef.current = auto;
   turboRef.current = turbo;
   const isLive = mode === LIVE;
+  const kit = kitOf(game);
 
   useEffect(() => { setMuted(mute); }, [mute]);
   useEffect(() => { saveState({ balance, session, muted: mute }); }, [balance, session, mute]);
@@ -55,6 +59,8 @@ export default function App() {
     timers.current = [];
     stopSpinLoop();
   }
+
+  const closeGate = useCallback(() => setBoot(false), []);
 
   useEffect(() => {
     const onHash = () => {
@@ -141,7 +147,7 @@ export default function App() {
 
   function runSpin() {
     const s = live.current;
-    if (!s.game || busy.current) return;
+    if (!s.game || busy.current || boot) return;
     const free = !!(s.session && s.session.inBonus);
     const b = UNIT * s.ante;
     if (!free && s.balance < b) {
@@ -175,6 +181,7 @@ export default function App() {
   }
 
   function nudgeStage() {
+    if (boot) return;
     const p = pending.current;
     if (!p || !busy.current) return;
     tap(11);
@@ -200,13 +207,14 @@ export default function App() {
     const key = (e) => {
       if (e.code === "Space" && live.current.game) {
         e.preventDefault();
+        if (boot) return;
         if (busy.current) nudgeStage();
         else runSpin();
       }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, []);
+  }, [boot]);
 
   if (hash.includes("admin")) {
     return (
@@ -221,6 +229,7 @@ export default function App() {
     busy.current = false;
     setSpinning(false);
     setGame(g);
+    setBoot(true);
     setGrid(blank());
     setLast(null);
     setAuto(false);
@@ -239,6 +248,7 @@ export default function App() {
     setAuto(false);
     stopTheme();
     setGame(null);
+    setBoot(false);
     setLast(null);
     setSpinning(false);
     setMood("idle");
@@ -253,7 +263,7 @@ export default function App() {
     const n = !autoRef.current;
     autoRef.current = n;
     setAuto(n);
-    if (n && !busy.current) timers.current.push(setTimeout(runSpin, 70));
+    if (n && !busy.current && !boot) timers.current.push(setTimeout(runSpin, 70));
     if (!n) {
       timers.current.forEach((id) => clearTimeout(id));
       timers.current = [];
@@ -269,7 +279,9 @@ export default function App() {
   const showWin = !spinning && last && last.win > 0;
   const stageCls = [
     "stage",
+    "lux",
     "g-" + (game?.id || ""),
+    "kit-" + kit.extra,
     last?.win ? "hot" : "",
     last && !last.win && !spinning ? "shake" : "",
     session.inBonus || last?.bonus ? "bonus" : "",
@@ -289,7 +301,7 @@ export default function App() {
           </header>
           <section className="grid">
             {GAMES.map((g) => (
-              <button key={g.id} className={"card g-" + g.id} onClick={() => openGame(g)} style={{ "--c": g.color }}>
+              <button key={g.id} className={"card lux g-" + g.id} onClick={() => openGame(g)} style={{ "--c": g.color }}>
                 <div className="ribbon" />
                 <div className={"em mot-" + g.motion}>{g.emoji}</div>
                 <div className="nm">{g.name}</div>
@@ -299,8 +311,10 @@ export default function App() {
           </section>
         </>
       )}
+      {game && boot && <Gate game={game} onDone={closeGate} />}
       {game && (
         <section className={stageCls} style={{ "--c": game.color, "--sky": game.sky }}>
+          <div className="bevel" />
           <div className="lamps"><i /><i /><i /><i /><i /><i /><i /></div>
           <Character game={game} mood={mood} />
           <div
@@ -318,24 +332,24 @@ export default function App() {
           <p className={"bang " + (showWin ? "" : "quiet")}>
             {showWin ? (last.cMult > 1 ? `${last.win} ×${last.cMult}` : last.win) : ""}
           </p>
-          <div className="dock">
-            <div className="meter"><em>CITV</em><b>{balance}</b></div>
-            <button className="act ghost tick" onPointerDown={() => bumpAnte(-1)}>−</button>
-            <div className="meter tickface"><em>{ante}</em><b>{bet}</b></div>
-            <button className="act ghost tick" onPointerDown={() => bumpAnte(1)}>+</button>
-            <button className="spinbtn tick" onPointerDown={() => { if (spinning) nudgeStage(); else runSpin(); }} disabled={broke && !spinning}>
-              {spinning ? "" : "SPIN"}
+          <div className={"dock lux kit-" + kit.extra}>
+            <div className="well"><em>CITV</em><b>{balance}</b></div>
+            <button className="key tick" onPointerDown={() => bumpAnte(-1)}>−</button>
+            <div className="well step"><em>{ante}</em><b>{bet}</b></div>
+            <button className="key tick" onPointerDown={() => bumpAnte(1)}>+</button>
+            <button className="plunger tick" onPointerDown={() => { if (spinning) nudgeStage(); else runSpin(); }} disabled={broke && !spinning}>
+              {spinning ? "" : kit.spin}
             </button>
-            <button className={"act ghost tick " + (auto ? "on" : "")} onPointerDown={toggleAuto}>{auto ? "■" : "▶"}</button>
+            <button className={"key latch tick " + (auto ? "on" : "")} onPointerDown={toggleAuto}>{auto ? "■" : "▶"}</button>
             <button
-              className={"act ghost tick " + (turbo ? "on" : "")}
+              className={"key latch tick " + (turbo ? "on" : "")}
               onPointerDown={() => { playClick(); tapTick(); setTurbo((t) => !t); }}
             >{turbo ? "▶▶" : "▶"}</button>
             {broke && !isLive && !session.inBonus && (
-              <button className="act tick" onPointerDown={() => { playClick(); tapTick(); setBalance((n) => n + TOPUP); }}>+</button>
+              <button className="key fill tick" onPointerDown={() => { playClick(); tapTick(); setBalance((n) => n + TOPUP); }}>+</button>
             )}
-            <button className="act ghost tick" onPointerDown={() => { playClick(); tapTick(); setMute((m) => !m); }}>{mute ? "·" : "♪"}</button>
-            <button className="act ghost tick" onPointerDown={() => back(false)}>←</button>
+            <button className="key tick" onPointerDown={() => { playClick(); tapTick(); setMute((m) => !m); }}>{mute ? "·" : "♪"}</button>
+            <button className="key tick" onPointerDown={() => back(false)}>←</button>
           </div>
         </section>
       )}

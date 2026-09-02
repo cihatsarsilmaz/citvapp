@@ -1,0 +1,70 @@
+.gate {
+  position: fixed; inset: 0; z-index: 40;
+  display: grid; place-items: center;
+  background:
+    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--c) 35%, transparent), transparent 42%),
+    linear-gradient(180deg, var(--sky, #12060a), #050204);
+  cursor: pointer;
+}
+.gate .halo {
+  position: absolute; width: 168px; height: 168px; border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--c) 70%, #e8c056);
+  box-shadow: 0 0 0 8px #e8c05614, 0 0 48px color-mix(in srgb, var(--c) 40%, transparent);
+  animation: halo 1s ease-out both;
+}
+.gate .filigree {
+  position: absolute; width: 220px; height: 220px; border-radius: 50%;
+  border: 1px dashed #e8c05655;
+  animation: spinslow 4s linear infinite;
+}
+.gate .mark {
+  font-size: 64px; line-height: 1; z-index: 2;
+  filter: drop-shadow(0 8px 18px #000c);
+  animation: markin .55s ease both;
+}
+.gate .bar {
+  position: absolute; bottom: 18%;
+  width: 88px; height: 2px; border-radius: 99px;
+  background: linear-gradient(90deg, transparent, var(--c), #e8c056, transparent);
+  animation: bar 1s ease both;
+}
+@keyframes halo { from { transform: scale(.7); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes markin { from { transform: scale(.6) translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes bar { from { transform: scaleX(.2); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes spinslow { to { transform: rotate(360deg); } }
+
+.gate.load-pour .mark { animation: pour .7s ease both; }
+.gate.load-flash .halo { animation: flash .45s ease both; }
+.gate.load-bloom .halo { animation: bloom .8s ease both; }
+.gate.load-dive .mark { animation: dive .7s ease both; }
+.gate.load-unfurl .filigree { animation: unfurl .8s ease both; }
+.gate.load-dust .mark { filter: drop-shadow(0 0 16px #fb923c); }
+.gate.load-mist .gate, .gate.load-mist { backdrop-filter: blur(2px); }
+.gate.load-howl .mark { animation: howl .7s ease both; }
+.gate.load-ignite .halo { box-shadow: 0 0 60px #f97316cc; }
+.gate.load-grow .mark { animation: grow .8s ease both; }
+.gate.load-rise .mark { animation: rise .75s ease both; }
+.gate.load-tide .mark { animation: tide .8s ease both; }
+.gate.load-scan .bar { width: 140px; animation: scan 0.7s linear infinite; }
+.gate.load-draw .mark { animation: draw .5s steps(3) both; }
+.gate.load-freeze .halo { border-width: 2px; }
+.gate.load-roar .mark { animation: roar .7s ease both; }
+.gate.load-curtain .filigree { border-radius: 8px; width: 70vw; height: 70vh; }
+.gate.load-unlock .bar { width: 40px; height: 40px; border-radius: 8px; border: 2px solid #e8c056; background: transparent; }
+
+@keyframes pour { from { transform: translateY(-24px) scale(.8); } to { transform: none; } }
+@keyframes flash { 0%,100% { opacity: 1; } 40% { opacity: .2; transform: scale(1.2); } }
+@keyframes bloom { from { transform: scale(.4); } to { transform: scale(1.05); } }
+@keyframes dive { from { transform: translateY(-30px); opacity: 0; } to { transform: none; } }
+@keyframes unfurl { from { transform: scale(.2) rotate(-40deg); } to { transform: rotate(20deg); } }
+@keyframes howl { 50% { transform: scale(1.18) rotate(-8deg); } }
+@keyframes grow { from { transform: scale(.4); } to { transform: scale(1); } }
+@keyframes rise { from { transform: translateY(28px); } to { transform: none; } }
+@keyframes tide { 50% { transform: translateY(8px) rotate(-6deg); } }
+@keyframes scan { from { transform: translateX(-20px); } to { transform: translateX(20px); } }
+@keyframes draw { from { transform: rotate(-25deg); } to { transform: none; } }
+@keyframes roar { 40% { transform: scale(1.3); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .gate *, .gate { animation: none !important; }
+}
