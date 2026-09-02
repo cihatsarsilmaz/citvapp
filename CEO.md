@@ -1,17 +1,12 @@
-# CITV Slot CEO — öneriler
+# CITV Slot CEO — web + CITV coin
 
 Canlı: https://cihatsarsilmaz.github.io/citvapp/
+Kanal: **yalnız web**.
 
 ## Bitti
-- 5x3 + 5 hat (3 kutu kalktı)
-- Keçe salon, jackpot rayı, WIN
-- Kasa %32 / tavan 4x / soğuma
-- AUTO abort + Space tek dinleyici
-- Saatlik tur yalnız Slot
-- Masa ödeme satırı
-
-## Şimdi değil (bilinçli)
-- Gerçek para / sunucu kasa
-- 243-way veya scatter bonus
-- Harici ses dosyası
-- APK store paket bu tur
+- Sıkı uyarlanabilir kasa + C + bonus
+- 18 sahne / canlı karakter
+- Oyuna girişte kısa kapı (dokunarak geç)
+- 18 yükleme hareketi + 18 lüks kit (sprinkle…lock)
+- Profesyonel dock: well / key / plunger
+- Ödeme tablosuna dokunulmadı
