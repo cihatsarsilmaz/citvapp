@@ -60,7 +60,7 @@ export default function Admin({
       <p className="notes">Dağıtım bitince LIVE aç. Cüzdan ve claim burada durur; zincir sözleşmesi bu repoda yok.</p>
       <div className="row">
         <button className="act" onClick={goLive}>LIVE aç</button>
-        <button className="act ghost" onClick={goDemo}>DEMO’ya dön</button>
+        <button className="act ghost" onClick={goDemo}>DEMO'ya dön</button>
       </div>
       <form className="admin-form" onSubmit={(e) => { e.preventDefault(); saveWallet(wallet); saveClaim(claim); }}>
         <input placeholder="cüzdan adresi" value={wallet} onChange={(e) => setWallet(e.target.value)} />
@@ -72,7 +72,7 @@ export default function Admin({
         <button className="act ghost" onClick={() => setBalance(0)}>Oyuncuyu sıfırla</button>
         <button className="act ghost" onClick={() => setSession(emptySession())}>Oturumu sıfırla</button>
         <button className="act ghost" onClick={() => setSession((s) => ({ ...s, cool: 0 }))}>Soğumayı aç</button>
-        <button className="act ghost" onClick={() => { sessionStorage.removeItem("citv-admin"); setOk(false); }}Çık</button>
+        <button className="act ghost" onClick={() => { sessionStorage.removeItem("citv-admin"); setOk(false); }}>Cikis</button>
         <a className="act ghost" href="./" style={{ display: "inline-block", textDecoration: "none" }} onClick={() => { location.hash = ""; }}>Lobi</a>
       </div>
     </section>

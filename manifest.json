@@ -1,7 +1,7 @@
 {
   "name": "CITV Slot",
-  "short_name": "CITV Slot",
-  "description": "18 slot, 18 karakter, Karakter Köşesi",
+  "short_name": "CITV",
+  "description": "18 slot, 18 karakter, CITV coin — yalnız web",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
