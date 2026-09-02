@@ -23,8 +23,15 @@ export default function App() {
   const [session, setSession] = useState(emptySession());
   const [auto, setAuto] = useState(false);
   const lockRef = useRef([0, 0, 0, 0, 0]);
+  const busy = useRef(false);
+  const timers = useRef([]);
   const live = useRef({});
-  live.current = { game, balance, ante, session, spinning, auto };
+  live.current = { game, balance, ante, session, auto };
+
+  function clearTimers() {
+    timers.current.forEach((id) => clearTimeout(id));
+    timers.current = [];
+  }
 
   useEffect(() => {
     const onHash = () => setHash(location.hash);
@@ -38,21 +45,28 @@ export default function App() {
 
   function runSpin() {
     const s = live.current;
-    if (!s.game || s.spinning) return;
+    if (!s.game || busy.current) return;
     const b = UNIT * s.ante;
-    if (s.balance < b) { setAuto(false); return; }
-    setBalance((n) => n - b);
+    if (s.balance < b) {
+      setAuto(false);
+      return;
+    }
+    busy.current = true;
     setSpinning(true);
+    setBalance((n) => n - b);
     setLast(null);
     lockRef.current = [0, 0, 0, 0, 0];
     setLock([0, 0, 0, 0, 0]);
     playSpinLoop();
-    const next = spinGrid(s.game.emoji, s.session.cool > 0);
+    const snap = s.session;
+    const theme = s.game.emoji;
+    const next = spinGrid(theme, snap.cool > 0);
     const tick = setInterval(() => {
       setGrid((prev) => prev.map((col, c) => (lockRef.current[c] ? col : [rnd(), rnd(), rnd()])));
     }, 48);
+    timers.current.push(tick);
     for (let c = 0; c < COLS; c++) {
-      setTimeout(() => {
+      const id = setTimeout(() => {
         lockRef.current[c] = 1;
         setLock((L) => { const n = [...L]; n[c] = 1; return n; });
         setGrid((prev) => { const copy = prev.map((col) => [...col]); copy[c] = next[c]; return copy; });
@@ -61,26 +75,34 @@ export default function App() {
         if (c === COLS - 1) {
           clearInterval(tick);
           stopSpinLoop();
-          const ev = evalLines(next, s.game.emoji, b);
-          const result = applyHouse(ev, b, live.current.session);
+          const ev = evalLines(next, theme, b);
+          const result = applyHouse(ev, b, snap);
           setLast(result);
           setSession(result.session);
           setBalance((n) => n + result.win);
+          busy.current = false;
           setSpinning(false);
           result.win ? playWin(2) : playMiss();
-          if (live.current.auto) setTimeout(runSpin, 420);
+          if (live.current.auto) {
+            const n = setTimeout(runSpin, 420);
+            timers.current.push(n);
+          }
         }
       }, 220 + c * 140);
+      timers.current.push(id);
     }
   }
 
   useEffect(() => {
     const key = (e) => {
-      if (e.code === "Space" && game) { e.preventDefault(); runSpin(); }
+      if (e.code === "Space" && live.current.game) {
+        e.preventDefault();
+        runSpin();
+      }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  });
+  }, []);
 
   if (hash.includes("admin")) {
     return (
@@ -101,8 +123,11 @@ export default function App() {
 
   function back() {
     setAuto(false);
+    busy.current = false;
+    clearTimers();
     stopSpinLoop();
     stopTheme();
+    setSpinning(false);
     setGame(null);
     setLast(null);
   }
@@ -148,9 +173,15 @@ export default function App() {
             <div className="meter"><em>BAHİS</em><b>{bet}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.min(10, n + 1)); }}>+</button>
             <button className="spinbtn" onClick={runSpin} disabled={spinning}>SPIN</button>
-            <button className={"act ghost " + (auto ? "on" : "")} onClick={() => { playClick(); setAuto((a) => { const n = !a; if (n && !spinning) setTimeout(runSpin, 80); return n; }); }}>
-              {auto ? "DUR" : "AUTO"}
-            </button>
+            <button className={"act ghost " + (auto ? "on" : "")} onClick={() => {
+              playClick();
+              setAuto((a) => {
+                const n = !a;
+                if (!n) clearTimers();
+                else if (!busy.current) timers.current.push(setTimeout(runSpin, 80));
+                return n;
+              });
+            }}>{auto ? "DUR" : "AUTO"}</button>
             <div className="meter"><em>KAZANÇ</em><b>{last?.win || 0}</b></div>
             <button className="act ghost" onClick={back}>←</button>
           </div>
