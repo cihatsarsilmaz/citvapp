@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
-import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playSymbol, playStop, playWin, playMiss, playClick } from "./audio";
+import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playSymbol, playStop, playWin, playMiss, playClick, setMuted } from "./audio";
 import { UNIT, WILD, STAR } from "./paytable";
 import { spinGrid, applyHouse, emptySession, WIN_CAP, HOUSE_EDGE, COOLDOWN } from "./house";
 import { evalLines, COLS, LOW } from "./engine";
+import { loadState, saveState } from "./store";
 import Admin from "./Admin";
 
 const POOL = [...LOW, STAR, WILD];
@@ -11,6 +12,7 @@ const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
 const blank = () => Array.from({ length: COLS }, () => [rnd(), rnd(), rnd()]);
 const START = 2500;
 const TOPUP = 500;
+const saved = loadState({ balance: START, session: emptySession(), muted: false });
 
 export default function App() {
   const [hash, setHash] = useState(typeof location !== "undefined" ? location.hash : "");
@@ -20,9 +22,10 @@ export default function App() {
   const [spinning, setSpinning] = useState(false);
   const [ante, setAnte] = useState(1);
   const [last, setLast] = useState(null);
-  const [balance, setBalance] = useState(START);
-  const [session, setSession] = useState(emptySession());
+  const [balance, setBalance] = useState(saved.balance);
+  const [session, setSession] = useState(saved.session);
   const [auto, setAuto] = useState(false);
+  const [mute, setMute] = useState(saved.muted);
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
@@ -32,6 +35,9 @@ export default function App() {
   const live = useRef({});
   live.current = { game, balance, ante, session };
   autoRef.current = auto;
+
+  useEffect(() => { setMuted(mute); }, [mute]);
+  useEffect(() => { saveState({ balance, session, muted: mute }); }, [balance, session, mute]);
 
   function clearTimers() {
     gen.current += 1;
@@ -91,10 +97,7 @@ export default function App() {
         playStop();
         playSymbol(next[c][1]);
         if (c === COLS - 1) {
-          if (tickRef.current) {
-            clearInterval(tickRef.current);
-            tickRef.current = null;
-          }
+          if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
           stopSpinLoop();
           const ev = evalLines(next, s.game.emoji, b);
           const result = applyHouse(ev, b, snap);
@@ -105,8 +108,7 @@ export default function App() {
           setSpinning(false);
           result.win ? playWin(2) : playMiss();
           if (autoRef.current && gen.current === my) {
-            const nxt = setTimeout(runSpin, 420);
-            timers.current.push(nxt);
+            timers.current.push(setTimeout(runSpin, 420));
           }
         }
       }, 220 + c * 140);
@@ -116,10 +118,7 @@ export default function App() {
 
   useEffect(() => {
     const key = (e) => {
-      if (e.code === "Space" && live.current.game) {
-        e.preventDefault();
-        runSpin();
-      }
+      if (e.code === "Space" && live.current.game) { e.preventDefault(); runSpin(); }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
@@ -162,16 +161,8 @@ export default function App() {
     const n = !autoRef.current;
     autoRef.current = n;
     setAuto(n);
-    if (n && !busy.current) {
-      const id = setTimeout(runSpin, 80);
-      timers.current.push(id);
-    }
+    if (n && !busy.current) timers.current.push(setTimeout(runSpin, 80));
     if (!n) clearTimers();
-  }
-
-  function refill() {
-    playClick();
-    setBalance((n) => n + TOPUP);
   }
 
   return (
@@ -191,7 +182,7 @@ export default function App() {
                 <div className="ribbon" />
                 <div className="em">{g.emoji}</div>
                 <div className="nm">{g.name}</div>
-                <div className="tag">5×3 · {WIN_CAP}x</div>
+                <div className="tag">{g.character} · 8x</div>
               </button>
             ))}
           </section>
@@ -201,6 +192,7 @@ export default function App() {
         <section className="stage" style={{ "--c": game.color }}>
           <div className="lamps"><i /><i /><i /><i /><i /><i /><i /></div>
           <div className="jackpot">JACKPOT {jack} ₺</div>
+          <p className="face">{game.emoji} {game.character} — {game.greeting}</p>
           <p className="payhint">5 hat · tavan {WIN_CAP}x · soğuma {COOLDOWN} · kasa %{Math.round(HOUSE_EDGE * 100)}</p>
           <div className={"window five " + (spinning ? "spin" : "") + (last?.win ? " win" : "")}>
             {grid.map((col, c) => (
@@ -222,7 +214,8 @@ export default function App() {
             <button className="spinbtn" onClick={runSpin} disabled={spinning || broke}>SPIN</button>
             <button className={"act ghost " + (auto ? "on" : "")} onClick={toggleAuto}>{auto ? "DUR" : "AUTO"}</button>
             <div className="meter"><em>KAZANÇ</em><b>{last?.win || 0}</b></div>
-            {broke && <button className="act" onClick={refill}>+{TOPUP}</button>}
+            {broke && <button className="act" onClick={() => { playClick(); setBalance((n) => n + TOPUP); }}>+{TOPUP}</button>}
+            <button className="act ghost" onClick={() => { playClick(); setMute((m) => !m); }}>{mute ? "AÇ" : "SUS"}</button>
             <button className="act ghost" onClick={back}>←</button>
           </div>
         </section>
