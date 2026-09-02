@@ -31,6 +31,7 @@ export default function App() {
 
   const bet = UNIT * ante;
   const hitSet = useMemo(() => new Set((last?.hits || []).flatMap((h) => h.cells)), [last]);
+  const jack = (250000 + session.vault * 17).toLocaleString("tr-TR");
 
   if (hash.includes("admin")) {
     return (
@@ -70,16 +71,8 @@ export default function App() {
     }, 50);
     for (let c = 0; c < COLS; c++) {
       setTimeout(() => {
-        setLock((L) => {
-          const n = [...L];
-          n[c] = true;
-          return n;
-        });
-        setGrid((prev) => {
-          const copy = prev.map((col) => [...col]);
-          copy[c] = next[c];
-          return copy;
-        });
+        setLock((L) => { const n = [...L]; n[c] = true; return n; });
+        setGrid((prev) => { const copy = prev.map((col) => [...col]); copy[c] = next[c]; return copy; });
         playStop();
         playSymbol(next[c][1]);
         if (c === COLS - 1) {
@@ -91,8 +84,7 @@ export default function App() {
           setSession(result.session);
           setBalance((n) => n + result.win);
           setSpinning(false);
-          if (result.win) playWin(2);
-          else playMiss();
+          if (result.win) playWin(2); else playMiss();
         }
       }, 240 + c * gap);
     }
@@ -103,10 +95,10 @@ export default function App() {
       <div className="ambient" aria-hidden />
       <header className="top">
         <div>
-          <p className="kicker">CITV Slot · 5×3 · {LINES} hat</p>
-          <h1>{game ? game.name : "Salon"}</h1>
+          <p className="kicker">CITV Slot · keçe salon</p>
+          <h1>{game ? game.name : "Masaya otur"}</h1>
         </div>
-        <a className="admin-link" href="#admin">admin</a>
+        <a className="admin-link" href="#admin">kasa</a>
       </header>
 
       {!game && (
@@ -116,7 +108,7 @@ export default function App() {
               <div className="ribbon" />
               <div className="em">{g.emoji}</div>
               <div className="nm">{g.name}</div>
-              <div className="ch">{g.character} · 5×3</div>
+              <div className="ch">{g.character}</div>
             </button>
           ))}
         </section>
@@ -124,25 +116,26 @@ export default function App() {
 
       {game && (
         <section className="stage" style={{ "--c": game.color }}>
+          <div className="jackpot">JACKPOT {jack} ₺</div>
           <div className="hud">
-            <span>BAKİYE {balance}</span>
+            <span>FİŞ {balance}</span>
             <span>KASA {session.vault}</span>
-            <span>KENAR %{Math.round(HOUSE_EDGE * 100)}</span>
+            <span>{LINES} HAT</span>
           </div>
           <div className={"window five " + (spinning ? "spin" : "") + (last?.win ? " win" : "")}>
             {grid.map((col, c) => (
               <div key={c} className={"reelcol " + (lock[c] ? "lock" : "")}>
                 {col.map((s, r) => (
-                  <div key={r} className={"cell " + (hitSet.has(`${c}:${r}`) ? "hit" : "")}>
-                    {s}
-                  </div>
+                  <div key={r} className={"cell " + (hitSet.has(`${c}:${r}`) ? "hit" : "")}>{s}</div>
                 ))}
               </div>
             ))}
           </div>
-          <p className="result">{last ? (last.win ? `KAZANÇ ${last.win} · ${last.label}` : last.label) : `${LINES} sabit hat · soldan sağa`}</p>
+          <p className={"bang " + (last && !last.win ? "miss" : "")}>
+            {last ? (last.win ? `WIN ${last.win}` : last.label) : spinning ? "…" : "ÇEVİR"}
+          </p>
           <div className="dock">
-            <div className="meter"><em>BAKİYE</em><b>{balance}</b></div>
+            <div className="meter"><em>FİŞ</em><b>{balance}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.max(1, n - 1)); }}>−</button>
             <div className="meter"><em>BAHİS</em><b>{bet}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.min(10, n + 1)); }}>+</button>
@@ -151,14 +144,6 @@ export default function App() {
             <button className="act ghost" onClick={() => { playClick(); setSpeed((s) => (s === "normal" ? "fast" : s === "fast" ? "slow" : "normal")); }}>{speed}</button>
             <button className="act ghost" onClick={back}>LOBİ</button>
           </div>
-          <aside className="corner">
-            <div className="avatar">{game.emoji}</div>
-            <div>
-              <p className="cname">{game.character}</p>
-              <p className="ctitle">{ROWS} satır × {COLS} makara · tavan {WIN_CAP}x</p>
-            </div>
-            <button className="listen" onClick={() => playTheme(game.freq, false)}>▶</button>
-          </aside>
         </section>
       )}
     </div>
