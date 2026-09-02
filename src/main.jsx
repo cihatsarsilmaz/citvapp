@@ -5,6 +5,7 @@ import "./styles.css";
 import "./slot5.css";
 import "./character.css";
 import "./gate.css";
+import "./lux.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
