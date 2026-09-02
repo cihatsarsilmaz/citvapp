@@ -1,8 +1,14 @@
 import { STAR } from "./paytable";
 
 export function lockAt(c, nCols, base, step, turbo) {
-  const hold = !turbo && c === nCols - 1 ? 240 : 0;
+  const hold = c === nCols - 1 ? (turbo ? 90 : 280) : 0;
   return base + c * step + hold;
+}
+
+export function spinTempo(turbo) {
+  return turbo
+    ? { base: 110, step: 80 }
+    : { base: 180, step: 115 };
 }
 
 export function starsLocked(next, locks) {
