@@ -3,7 +3,7 @@ import { kitOf } from "./kits";
 
 export default function Gate({ game, onDone }) {
   const kit = kitOf(game);
-  const ms = Math.max(kit.ms || 900, 1320);
+  const ms = Math.max(kit.ms || 900, 1480);
   useEffect(() => {
     const t = setTimeout(onDone, ms);
     return () => clearTimeout(t);
@@ -19,6 +19,10 @@ export default function Gate({ game, onDone }) {
       <i className="depth d1" />
       <i className="depth d2" />
       <i className="depth d3" />
+      <i className="depth d4" />
+      <i className="depth d5" />
+      <i className="depth d6" />
+      <i className="depth d7" />
       <i className="halo" />
       <i className="filigree" />
       <b className="mark hero">{game.emoji}</b>

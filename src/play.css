@@ -1,3 +1,20 @@
+.stage.floor {
+  min-height: calc(100dvh - 12px);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+}
+.stage.floor .window {
+  margin-top: auto;
+}
+.stage.floor .dock {
+  margin-top: 6px;
+  position: sticky;
+  bottom: 0;
+}
+.stage.rare .window {
+  box-shadow: 0 0 48px #ffe08acc, inset 0 0 24px #ffb02066;
+}
 .window.five {
   grid-template-columns: repeat(var(--cols, 5), 1fr);
 }
