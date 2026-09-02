@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
 import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playSymbol, playStop, playWin, playMiss, playClick } from "./audio";
-import { UNIT } from "./paytable";
+import { UNIT, WILD, STAR } from "./paytable";
 import { spinGrid, applyHouse, emptySession } from "./house";
-import { evalLines, COLS, LINES, LOW } from "./engine";
-import { WILD, STAR } from "./paytable";
+import { evalLines, COLS, LOW } from "./engine";
 import Admin from "./Admin";
 import "./styles.css";
 
@@ -22,7 +21,10 @@ export default function App() {
   const [last, setLast] = useState(null);
   const [balance, setBalance] = useState(1000);
   const [session, setSession] = useState(emptySession());
+  const [auto, setAuto] = useState(false);
   const lockRef = useRef([0, 0, 0, 0, 0]);
+  const live = useRef({});
+  live.current = { game, balance, ante, session, spinning, auto };
 
   useEffect(() => {
     const onHash = () => setHash(location.hash);
@@ -34,38 +36,18 @@ export default function App() {
   const hitSet = useMemo(() => new Set((last?.hits || []).flatMap((h) => h.cells)), [last]);
   const jack = (250000 + session.vault * 17).toLocaleString("tr-TR");
 
-  if (hash.includes("admin")) {
-    return (
-      <div className="app">
-        <Admin session={session} setSession={setSession} balance={balance} setBalance={setBalance} emptySession={emptySession} />
-      </div>
-    );
-  }
-
-  function openGame(g) {
-    setGame(g);
-    setGrid(blank());
-    setLast(null);
-    playClick();
-    playTheme(g.freq, true);
-  }
-
-  function back() {
-    stopSpinLoop();
-    stopTheme();
-    setGame(null);
-    setLast(null);
-  }
-
-  function spin() {
-    if (spinning || !game || balance < bet) return;
-    setBalance((n) => n - bet);
+  function runSpin() {
+    const s = live.current;
+    if (!s.game || s.spinning) return;
+    const b = UNIT * s.ante;
+    if (s.balance < b) { setAuto(false); return; }
+    setBalance((n) => n - b);
     setSpinning(true);
     setLast(null);
     lockRef.current = [0, 0, 0, 0, 0];
     setLock([0, 0, 0, 0, 0]);
     playSpinLoop();
-    const next = spinGrid(game.emoji, session.cool > 0);
+    const next = spinGrid(s.game.emoji, s.session.cool > 0);
     const tick = setInterval(() => {
       setGrid((prev) => prev.map((col, c) => (lockRef.current[c] ? col : [rnd(), rnd(), rnd()])));
     }, 48);
@@ -79,16 +61,50 @@ export default function App() {
         if (c === COLS - 1) {
           clearInterval(tick);
           stopSpinLoop();
-          const ev = evalLines(next, game.emoji, bet);
-          const result = applyHouse(ev, bet, session);
+          const ev = evalLines(next, s.game.emoji, b);
+          const result = applyHouse(ev, b, live.current.session);
           setLast(result);
           setSession(result.session);
           setBalance((n) => n + result.win);
           setSpinning(false);
           result.win ? playWin(2) : playMiss();
+          if (live.current.auto) setTimeout(runSpin, 420);
         }
       }, 220 + c * 140);
     }
+  }
+
+  useEffect(() => {
+    const key = (e) => {
+      if (e.code === "Space" && game) { e.preventDefault(); runSpin(); }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  });
+
+  if (hash.includes("admin")) {
+    return (
+      <div className="app">
+        <Admin session={session} setSession={setSession} balance={balance} setBalance={setBalance} emptySession={emptySession} />
+      </div>
+    );
+  }
+
+  function openGame(g) {
+    setGame(g);
+    setGrid(blank());
+    setLast(null);
+    setAuto(false);
+    playClick();
+    playTheme(g.freq, true);
+  }
+
+  function back() {
+    setAuto(false);
+    stopSpinLoop();
+    stopTheme();
+    setGame(null);
+    setLast(null);
   }
 
   return (
@@ -111,7 +127,6 @@ export default function App() {
           </section>
         </>
       )}
-
       {game && (
         <section className="stage" style={{ "--c": game.color }}>
           <div className="jackpot">JACKPOT {jack} ₺</div>
@@ -132,7 +147,10 @@ export default function App() {
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.max(1, n - 1)); }}>−</button>
             <div className="meter"><em>BAHİS</em><b>{bet}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.min(10, n + 1)); }}>+</button>
-            <button className="spinbtn" onClick={spin} disabled={spinning}>SPIN</button>
+            <button className="spinbtn" onClick={runSpin} disabled={spinning}>SPIN</button>
+            <button className={"act ghost " + (auto ? "on" : "")} onClick={() => { playClick(); setAuto((a) => { const n = !a; if (n && !spinning) setTimeout(runSpin, 80); return n; }); }}>
+              {auto ? "DUR" : "AUTO"}
+            </button>
             <div className="meter"><em>KAZANÇ</em><b>{last?.win || 0}</b></div>
             <button className="act ghost" onClick={back}>←</button>
           </div>
