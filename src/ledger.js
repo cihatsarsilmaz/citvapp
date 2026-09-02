@@ -2,11 +2,14 @@
 const KEY = "citv-day-v1";
 const DAY_CAP = 0.45;
 
-export function dayKey() {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
+export function dayKey(now = Date.now()) {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return fmt.format(new Date(now));
 }
 
 export function emptyLedger() {
