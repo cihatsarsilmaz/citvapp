@@ -1,14 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
 import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playSymbol, playStop, playWin, playMiss, playClick, setMuted } from "./audio";
-import { UNIT, WILD, STAR } from "./paytable";
-import { spinGrid, applyHouse, emptySession } from "./house";
+import { UNIT } from "./paytable";
+import { spinGrid, applyHouse, emptySession, plan, readStyle } from "./house";
 import { evalLines, COLS, LOW } from "./engine";
 import { loadState, saveState } from "./store";
 import { getMode, LIVE } from "./coin";
+import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
+import Character from "./Character";
 import Admin from "./Admin";
 
-const POOL = [...LOW, STAR, WILD];
+const POOL = [...LOW];
 const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
 const blank = () => Array.from({ length: COLS }, () => [rnd(), rnd(), rnd()]);
 const START = 2500;
@@ -23,19 +25,21 @@ export default function App() {
   const [spinning, setSpinning] = useState(false);
   const [ante, setAnte] = useState(1);
   const [last, setLast] = useState(null);
-  const [trail, setTrail] = useState([]);
   const [balance, setBalance] = useState(saved.balance);
   const [session, setSession] = useState(saved.session);
   const [auto, setAuto] = useState(false);
   const [turbo, setTurbo] = useState(false);
   const [mute, setMute] = useState(saved.muted);
   const [mode, setModeTick] = useState(getMode());
+  const [mood, setMood] = useState("idle");
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
   const turboRef = useRef(false);
   const timers = useRef([]);
   const gen = useRef(0);
+  const pending = useRef(null);
+  const taps = useRef(0);
   const live = useRef({});
   live.current = { game, balance, ante, session };
   autoRef.current = auto;
@@ -71,64 +75,134 @@ export default function App() {
 
   const bet = UNIT * ante;
   const hitSet = useMemo(() => new Set((last?.hits || []).flatMap((h) => h.cells || [])), [last]);
-  const jack = (250000 + session.vault * 17).toLocaleString("tr-TR");
-  const broke = balance < bet;
+  const broke = balance < bet && !(session.inBonus);
+
+  function finishSpin(my, next, b, snap) {
+    if (gen.current !== my) return;
+    stopSpinLoop();
+    const s = live.current;
+    const ev = evalLines(next, s.game.emoji, b);
+    const result = applyHouse(ev, b, snap, {
+      balance: s.balance,
+      ante: s.ante,
+      turbo: turboRef.current,
+    });
+    setLast(result);
+    setSession(result.session);
+    setBalance((n) => n + result.win);
+    busy.current = false;
+    setSpinning(false);
+    pending.current = null;
+    taps.current = 0;
+    if (result.bonus) setMood("bonus");
+    else if (result.cMult > 1) setMood("c");
+    else if (result.win) setMood(result.session.inBonus ? "bonuswin" : "win");
+    else setMood("miss");
+    if (result.win) {
+      playWin(result.cMult > 1 ? 3 : 2);
+      tapWin(result.cMult > 1 ? 2 : 1);
+    } else playMiss();
+    if (autoRef.current && gen.current === my) {
+      const gap = turboRef.current ? 140 : 280;
+      timers.current.push(setTimeout(runSpin, gap));
+    }
+  }
+
+  function lockCol(my, c, next) {
+    if (gen.current !== my) return;
+    if (lockRef.current[c]) return;
+    lockRef.current[c] = 1;
+    setLock((L) => {
+      const n = [...L];
+      n[c] = 1;
+      return n;
+    });
+    setGrid((prev) => {
+      const copy = prev.map((col) => [...col]);
+      copy[c] = next[c];
+      return copy;
+    });
+    playStop();
+    tapLock();
+    if (!turboRef.current) playSymbol(next[c][1]);
+    if (c === COLS - 1) {
+      const p = pending.current;
+      if (p && p.my === my) finishSpin(my, next, p.bet, p.snap);
+    }
+  }
+
+  function armSpin(my, next, base, step) {
+    for (let c = 0; c < COLS; c++) {
+      if (lockRef.current[c]) continue;
+      const id = setTimeout(() => lockCol(my, c, next), base + c * step);
+      timers.current.push(id);
+    }
+  }
 
   function runSpin() {
     const s = live.current;
     if (!s.game || busy.current) return;
+    const free = !!(s.session && s.session.inBonus);
     const b = UNIT * s.ante;
-    if (s.balance < b) {
+    if (!free && s.balance < b) {
       autoRef.current = false;
       setAuto(false);
       return;
     }
     const my = ++gen.current;
+    timers.current.forEach((id) => clearTimeout(id));
+    timers.current = [];
     const fast = turboRef.current;
-    const base = fast ? 70 : 160;
-    const step = fast ? 55 : 100;
-    const gap = fast ? 160 : 300;
+    const base = fast ? 55 : 150;
+    const step = fast ? 48 : 95;
     busy.current = true;
     setSpinning(true);
-    setBalance((n) => n - b);
+    setMood(s.session.inBonus ? "bonus" : "spin");
+    if (!free) setBalance((n) => n - b);
     setLast(null);
     lockRef.current = [0, 0, 0, 0, 0];
     setLock([0, 0, 0, 0, 0]);
+    taps.current = 0;
     stopTheme();
     playSpinLoop();
+    tapSpin();
     const snap = s.session;
-    const next = spinGrid(s.game.emoji, snap.cool > 0);
-    for (let c = 0; c < COLS; c++) {
-      const id = setTimeout(() => {
-        if (gen.current !== my) return;
-        lockRef.current[c] = 1;
-        setLock((L) => { const n = [...L]; n[c] = 1; return n; });
-        setGrid((prev) => { const copy = prev.map((col) => [...col]); copy[c] = next[c]; return copy; });
-        playStop();
-        if (!fast) playSymbol(next[c][1]);
-        if (c === COLS - 1) {
-          stopSpinLoop();
-          const ev = evalLines(next, s.game.emoji, b);
-          const result = applyHouse(ev, b, snap);
-          setLast(result);
-          setTrail((t) => [result.win, ...t].slice(0, 5));
-          setSession(result.session);
-          setBalance((n) => n + result.win);
-          busy.current = false;
-          setSpinning(false);
-          result.win ? playWin(2) : playMiss();
-          if (autoRef.current && gen.current === my) {
-            timers.current.push(setTimeout(runSpin, gap));
-          }
-        }
-      }, base + c * step);
+    const style = readStyle(snap, s.balance, s.ante, fast);
+    const p = plan(style, snap);
+    const next = spinGrid(s.game.emoji, p.forceMiss && !snap.inBonus);
+    pending.current = { my, next, bet: b, snap };
+    armSpin(my, next, base, step);
+  }
+
+  function nudgeStage() {
+    const p = pending.current;
+    if (!p || !busy.current) return;
+    tap(11);
+    taps.current += 1;
+    timers.current.forEach((id) => clearTimeout(id));
+    timers.current = [];
+    const my = p.my;
+    const next = p.next;
+    if (taps.current >= 2) {
+      for (let c = 0; c < COLS; c++) lockCol(my, c, next);
+      return;
+    }
+    const first = lockRef.current.findIndex((v) => !v);
+    if (first < 0) return;
+    lockCol(my, first, next);
+    for (let c = first + 1; c < COLS; c++) {
+      const id = setTimeout(() => lockCol(my, c, next), (c - first) * 36);
       timers.current.push(id);
     }
   }
 
   useEffect(() => {
     const key = (e) => {
-      if (e.code === "Space" && live.current.game) { e.preventDefault(); runSpin(); }
+      if (e.code === "Space" && live.current.game) {
+        e.preventDefault();
+        if (busy.current) nudgeStage();
+        else runSpin();
+      }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
@@ -149,10 +223,11 @@ export default function App() {
     setGame(g);
     setGrid(blank());
     setLast(null);
-    setTrail([]);
     setAuto(false);
     autoRef.current = false;
+    setMood("idle");
     playClick();
+    tapTick();
     playTheme(g.freq, true);
     try { history.pushState({ citv: "stage" }, ""); } catch {}
   }
@@ -166,6 +241,7 @@ export default function App() {
     setGame(null);
     setLast(null);
     setSpinning(false);
+    setMood("idle");
     if (!fromPop) {
       try { if (history.state && history.state.citv === "stage") history.back(); } catch {}
     }
@@ -173,15 +249,32 @@ export default function App() {
 
   function toggleAuto() {
     playClick();
+    tapTick();
     const n = !autoRef.current;
     autoRef.current = n;
     setAuto(n);
-    if (n && !busy.current) timers.current.push(setTimeout(runSpin, 80));
-    if (!n) clearTimers();
+    if (n && !busy.current) timers.current.push(setTimeout(runSpin, 70));
+    if (!n) {
+      timers.current.forEach((id) => clearTimeout(id));
+      timers.current = [];
+    }
   }
 
-  const spinLine = spinning ? "SPIN" : last ? (last.win ? `WIN ${last.win}` : "0") : game?.name;
-  const stageCls = "stage" + (last?.win ? " hot" : "") + (last && !last.win ? " shake" : "");
+  function bumpAnte(d) {
+    playClick();
+    tapTick();
+    setAnte((n) => Math.min(10, Math.max(1, n + d)));
+  }
+
+  const showWin = !spinning && last && last.win > 0;
+  const stageCls = [
+    "stage",
+    "g-" + (game?.id || ""),
+    last?.win ? "hot" : "",
+    last && !last.win && !spinning ? "shake" : "",
+    session.inBonus || last?.bonus ? "bonus" : "",
+    last?.cMult > 1 ? "cmult" : "",
+  ].filter(Boolean).join(" ");
 
   return (
     <div className="app wide">
@@ -189,34 +282,31 @@ export default function App() {
         <>
           <header className="top">
             <div>
-              <p className="kicker">CITV Slot · {mode}</p>
+              <p className="kicker">CITV</p>
               <h1>Masaya otur</h1>
             </div>
-            <div className="meter"><em>FIS</em><b>{balance}</b></div>
+            <div className="meter"><em>CITV</em><b>{balance}</b></div>
           </header>
           <section className="grid">
             {GAMES.map((g) => (
-              <button key={g.id} className="card" onClick={() => openGame(g)} style={{ "--c": g.color }}>
+              <button key={g.id} className={"card g-" + g.id} onClick={() => openGame(g)} style={{ "--c": g.color }}>
                 <div className="ribbon" />
-                <div className="em">{g.emoji}</div>
+                <div className={"em mot-" + g.motion}>{g.emoji}</div>
                 <div className="nm">{g.name}</div>
                 <div className="tag">{g.character}</div>
-                <span
-                  className="listen"
-                  role="button"
-                  onClick={(e) => { e.stopPropagation(); playTheme(g.freq, false); }}
-                >DINLE</span>
               </button>
             ))}
           </section>
         </>
       )}
       {game && (
-        <section className={stageCls} style={{ "--c": game.color }}>
+        <section className={stageCls} style={{ "--c": game.color, "--sky": game.sky }}>
           <div className="lamps"><i /><i /><i /><i /><i /><i /><i /></div>
-          <div className="jackpot">JACKPOT {jack}</div>
-          <p className="face">{game.emoji} {game.character}</p>
-          <div className={"window five " + (spinning ? "spin" : "") + (last?.win ? " win" : "")}>
+          <Character game={game} mood={mood} />
+          <div
+            className={"window five " + (spinning ? "spin" : "") + (showWin ? " win" : "")}
+            onPointerDown={nudgeStage}
+          >
             {grid.map((col, c) => (
               <div key={c} className={"reelcol " + (lock[c] ? "lock" : "")}>
                 {col.map((s, r) => (
@@ -225,24 +315,27 @@ export default function App() {
               </div>
             ))}
           </div>
-          <p className="trail">
-            {(trail.length ? trail : [null, null, null, null, null]).slice(0, 5).map((v, i) => (
-              <b key={i} className={v ? "on" : ""}>{v == null ? "·" : v}</b>
-            ))}
+          <p className={"bang " + (showWin ? "" : "quiet")}>
+            {showWin ? (last.cMult > 1 ? `${last.win} ×${last.cMult}` : last.win) : ""}
           </p>
-          <p className={"bang " + (last && !last.win ? "miss" : "")}>{spinLine}</p>
           <div className="dock">
-            <div className="meter"><em>FIS</em><b>{balance}</b></div>
-            <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.max(1, n - 1)); }}>−</button>
-            <div className="meter"><em>BAHIS</em><b>{bet}</b></div>
-            <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.min(10, n + 1)); }}>+</button>
-            <button className="spinbtn" onClick={runSpin} disabled={spinning || broke}>SPIN</button>
-            <button className={"act ghost " + (auto ? "on" : "")} onClick={toggleAuto}>{auto ? "DUR" : "AUTO"}</button>
-            <button className={"act ghost " + (turbo ? "on" : "")} onClick={() => { playClick(); setTurbo((t) => !t); }}>{turbo ? "TURBO" : "NORM"}</button>
-            <div className="meter"><em>KAZANC</em><b>{last?.win || 0}</b></div>
-            {broke && !isLive && <button className="act" onClick={() => { playClick(); setBalance((n) => n + TOPUP); }}>+{TOPUP}</button>}
-            <button className="act ghost" onClick={() => { playClick(); setMute((m) => !m); }}>{mute ? "AC" : "SUS"}</button>
-            <button className="act ghost" onClick={() => back(false)}>←</button>
+            <div className="meter"><em>CITV</em><b>{balance}</b></div>
+            <button className="act ghost tick" onPointerDown={() => bumpAnte(-1)}>−</button>
+            <div className="meter tickface"><em>{ante}</em><b>{bet}</b></div>
+            <button className="act ghost tick" onPointerDown={() => bumpAnte(1)}>+</button>
+            <button className="spinbtn tick" onPointerDown={() => { if (spinning) nudgeStage(); else runSpin(); }} disabled={broke && !spinning}>
+              {spinning ? "" : "SPIN"}
+            </button>
+            <button className={"act ghost tick " + (auto ? "on" : "")} onPointerDown={toggleAuto}>{auto ? "■" : "▶"}</button>
+            <button
+              className={"act ghost tick " + (turbo ? "on" : "")}
+              onPointerDown={() => { playClick(); tapTick(); setTurbo((t) => !t); }}
+            >{turbo ? "▶▶" : "▶"}</button>
+            {broke && !isLive && !session.inBonus && (
+              <button className="act tick" onPointerDown={() => { playClick(); tapTick(); setBalance((n) => n + TOPUP); }}>+</button>
+            )}
+            <button className="act ghost tick" onPointerDown={() => { playClick(); tapTick(); setMute((m) => !m); }}>{mute ? "·" : "♪"}</button>
+            <button className="act ghost tick" onPointerDown={() => back(false)}>←</button>
           </div>
         </section>
       )}
