@@ -68,7 +68,6 @@ export default function App() {
     }, 48);
     for (let c = 0; c < COLS; c++) {
       const id = setTimeout(() => {
-        if (!busy.current && c !== COLS - 1) return;
         lockRef.current[c] = 1;
         setLock((L) => { const n = [...L]; n[c] = 1; return n; });
         setGrid((prev) => { const copy = prev.map((col) => [...col]); copy[c] = next[c]; return copy; });
@@ -170,6 +169,7 @@ export default function App() {
       {game && (
         <section className="stage" style={{ "--c": game.color }}>
           <div className="jackpot">JACKPOT {jack} ₺</div>
+          <p className="payhint">5 hat · soldan 3/4/5 · tema {game.emoji} 5’li x12 · kasa %32</p>
           <div className={"window five " + (spinning ? "spin" : "") + (last?.win ? " win" : "")}>
             {grid.map((col, c) => (
               <div key={c} className={"reelcol " + (lock[c] ? "lock" : "")}>
