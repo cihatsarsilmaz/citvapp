@@ -64,7 +64,7 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
         <div><span>Kasa</span><b className="hot">{session.vault}</b></div>
         <div><span>Spin</span><b>{session.spins}</b></div>
       </div>
-      <p className="notes">LIVE ray (Issue #24): dağıtım bitince VITE_CITV_BALANCE_URL + cüzdan. Şu an sunucu spin yok.</p>
+      <p className="notes">LIVE ray: dağıtım bitince VITE_CITV_BALANCE_URL. Şu an sunucu spin yok.</p>
       <div className="row">
         <button className={"act " + (mode === LIVE ? "" : "ghost")} onClick={toggleLive}>{mode === LIVE ? "LIVE AÇIK" : "LIVE AÇ"}</button>
         <input
