@@ -5,6 +5,7 @@ import { UNIT, WILD, STAR } from "./paytable";
 import { spinGrid, applyHouse, emptySession } from "./house";
 import { evalLines, COLS, LOW } from "./engine";
 import { loadState, saveState } from "./store";
+import { TICKER, DEMO, LIVE, loadMode, saveMode, formatCitv, loadWallet } from "./coin";
 import Admin from "./Admin";
 
 const POOL = [...LOW, STAR, WILD];
@@ -12,7 +13,7 @@ const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
 const blank = () => Array.from({ length: COLS }, () => [rnd(), rnd(), rnd()]);
 const START = 2500;
 const TOPUP = 500;
-const saved = loadState({ balance: START, session: emptySession(), muted: false });
+const saved = loadState({ balance: START, session: emptySession(), muted: false, mode: DEMO });
 
 export default function App() {
   const [hash, setHash] = useState(typeof location !== "undefined" ? location.hash : "");
@@ -28,6 +29,7 @@ export default function App() {
   const [auto, setAuto] = useState(false);
   const [turbo, setTurbo] = useState(false);
   const [mute, setMute] = useState(saved.muted);
+  const [mode, setMode] = useState(saved.mode || loadMode());
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
@@ -35,12 +37,15 @@ export default function App() {
   const timers = useRef([]);
   const gen = useRef(0);
   const live = useRef({});
-  live.current = { game, balance, ante, session };
+  live.current = { game, balance, ante, session, mode };
   autoRef.current = auto;
   turboRef.current = turbo;
 
   useEffect(() => { setMuted(mute); }, [mute]);
-  useEffect(() => { saveState({ balance, session, muted: mute }); }, [balance, session, mute]);
+  useEffect(() => {
+    saveState({ balance, session, muted: mute, mode });
+    saveMode(mode);
+  }, [balance, session, mute, mode]);
 
   function clearTimers() {
     gen.current += 1;
@@ -60,8 +65,9 @@ export default function App() {
 
   const bet = UNIT * ante;
   const hitSet = useMemo(() => new Set((last?.hits || []).flatMap((h) => h.cells || [])), [last]);
-  const jack = (250000 + session.vault * 17).toLocaleString("tr-TR");
+  const jack = formatCitv(250000 + session.vault * 17);
   const broke = balance < bet;
+  const demo = mode !== LIVE;
 
   function runSpin() {
     const s = live.current;
@@ -126,7 +132,15 @@ export default function App() {
   if (hash.includes("admin")) {
     return (
       <div className="app">
-        <Admin session={session} setSession={setSession} balance={balance} setBalance={setBalance} emptySession={emptySession} />
+        <Admin
+          session={session}
+          setSession={setSession}
+          balance={balance}
+          setBalance={setBalance}
+          emptySession={emptySession}
+          mode={mode}
+          setMode={setMode}
+        />
       </div>
     );
   }
@@ -167,6 +181,7 @@ export default function App() {
 
   const spinLine = spinning ? "SPIN" : last ? (last.win ? `WIN ${last.win}` : "0") : game?.name;
   const stageCls = "stage" + (last?.win ? " hot" : "") + (last && !last.win ? " shake" : "");
+  const wallet = loadWallet();
 
   return (
     <div className="app wide">
@@ -174,11 +189,16 @@ export default function App() {
         <>
           <header className="top">
             <div>
-              <p className="kicker">CITV Slot</p>
+              <p className="kicker">CITV Slot · web</p>
               <h1>Masaya otur</h1>
             </div>
-            <div className="meter"><em>FİŞ</em><b>{balance}</b></div>
+            <div className="meter"><em>{TICKER}</em><b>{balance.toLocaleString("tr-TR")}</b></div>
           </header>
+          <p className="notes" style={{ margin: "0 0 12px" }}>
+            {demo
+              ? "DEMO rayı — dağıtım bitince gerçek CITV buraya bağlanır. Mağaza yok."
+              : `LIVE · ${wallet ? wallet.slice(0, 8) + "…" : "cüzdan bekleniyor"}`}
+          </p>
           <section className="grid">
             {GAMES.map((g) => (
               <button key={g.id} className="card" onClick={() => openGame(g)} style={{ "--c": g.color }}>
@@ -194,7 +214,7 @@ export default function App() {
       {game && (
         <section className={stageCls} style={{ "--c": game.color }}>
           <div className="lamps"><i /><i /><i /><i /><i /><i /><i /></div>
-          <div className="jackpot">JACKPOT {jack} ₺</div>
+          <div className="jackpot">JACKPOT {jack}</div>
           <p className="face">{game.emoji} {game.character}</p>
           <div className={"window five " + (spinning ? "spin" : "") + (last?.win ? " win" : "")}>
             {grid.map((col, c) => (
@@ -212,7 +232,7 @@ export default function App() {
           </p>
           <p className={"bang " + (last && !last.win ? "miss" : "")}>{spinLine}</p>
           <div className="dock">
-            <div className="meter"><em>FİŞ</em><b>{balance}</b></div>
+            <div className="meter"><em>{TICKER}</em><b>{balance.toLocaleString("tr-TR")}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.max(1, n - 1)); }}>−</button>
             <div className="meter"><em>BAHİS</em><b>{bet}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.min(10, n + 1)); }}>+</button>
@@ -220,7 +240,7 @@ export default function App() {
             <button className={"act ghost " + (auto ? "on" : "")} onClick={toggleAuto}>{auto ? "DUR" : "AUTO"}</button>
             <button className={"act ghost " + (turbo ? "on" : "")} onClick={() => { playClick(); setTurbo((t) => !t); }}>{turbo ? "TURBO" : "NORM"}</button>
             <div className="meter"><em>KAZANÇ</em><b>{last?.win || 0}</b></div>
-            {broke && <button className="act" onClick={() => { playClick(); setBalance((n) => n + TOPUP); }}>+{TOPUP}</button>}
+            {broke && demo && <button className="act" onClick={() => { playClick(); setBalance((n) => n + TOPUP); }}>+{TOPUP}</button>}
             <button className="act ghost" onClick={() => { playClick(); setMute((m) => !m); }}>{mute ? "AÇ" : "SUS"}</button>
             <button className="act ghost" onClick={back}>←</button>
           </div>

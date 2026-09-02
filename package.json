@@ -1,9 +1,9 @@
 {
   "name": "@cihatsarsilmaz/citv-slot",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": false,
   "type": "module",
-  "description": "CITV Slot — 18 oyun, karakter sahneleri. AstrogameWAR değil.",
+  "description": "CITV Slot — web salon, 18 karakter, CITV coin. Store yok. AstrogameWAR değil.",
   "author": "cihatsarsilmaz",
   "license": "MIT",
   "repository": {
@@ -20,15 +20,12 @@
     "sim": "node src/sim.js",
     "lint": "echo 'Lint configured'",
     "test": "echo 'Tests configured'",
+    "deploy:web": "npm run build",
     "deploy:vercel": "npm run build && npx vercel --prod",
     "deploy:netlify": "npm run build && npx netlify-cli deploy --prod --dir=dist",
-    "deploy:gh": "npm run build && npx gh-pages -d dist",
-    "android:add": "npx cap add android",
-    "android:sync": "npm run build && npx cap sync android",
-    "android:open": "npx cap open android",
-    "android:build": "npm run build && (test -d android || npx cap add android) && npx cap sync android && cd android && ./gradlew assembleDebug"
+    "deploy:gh": "npm run build && npx gh-pages -d dist"
   },
-  "keywords": ["citv-slot", "slot", "react", "vite"],
+  "keywords": ["citv-slot", "citv-coin", "slot", "react", "vite", "web"],
   "dependencies": {
     "@capacitor/android": "^6.1.2",
     "@capacitor/core": "^6.1.2",
