@@ -1,0 +1,31 @@
+/* LeoVegas/Pragmatic: makara + spin altta, başparmak zonunda */
+.app.wide:has(.stage.floor) {
+  max-width: 520px;
+  padding: 0;
+}
+.stage.floor {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto auto;
+  padding: 8px 8px calc(10px + env(safe-area-inset-bottom));
+  border-radius: 0;
+}
+.stage.floor .window.five {
+  margin-top: auto;
+}
+.stage.floor .dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+}
+.stage.floor .actor {
+  height: 56px;
+}
+.stage.floor .actor .body { font-size: 34px; }
+.stage.rare {
+  box-shadow: 0 0 48px #ffe08a88, inset 0 0 0 2px #ffe08a;
+}
+@media (min-width: 900px) {
+  .app.wide:has(.stage.floor) { max-width: 560px; margin: 0 auto; }
+  .stage.floor { border-radius: 20px; min-height: calc(100dvh - 16px); margin: 8px; }
+}

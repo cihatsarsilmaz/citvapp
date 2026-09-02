@@ -1,6 +1,7 @@
 import { WILD, STAR } from "./paytable";
 import { LOW } from "./engine";
 import { nextBond } from "./bond";
+import { dayPlan, clipDay } from "./ledger";
 
 export const START_BANK = 2500;
 
@@ -127,6 +128,13 @@ function rollC(themeHit, cChance, hot) {
 export function applyHouse(evaled, bet, session, ctx = {}) {
   const style = readStyle(session, ctx.balance ?? START_BANK, ctx.ante ?? 1, ctx.turbo);
   const p = plan(style, session);
+  const day = ctx.ledger ? dayPlan(ctx.ledger, ctx.ante ?? 1) : null;
+  if (day) {
+    p.edge = (p.edge + day.edge) / 2;
+    p.cap = Math.min(p.cap, day.cap);
+    if (day.drip) p.drip = true;
+    if (day.ratio > 0.48) p.forceMiss = true;
+  }
   const cMult = rollC(!!evaled.themeHit, p.cChance, style.hot);
   const raw = (evaled.total || 0) * cMult;
   let paid = raw > 0 ? Math.floor(Math.min(raw, bet * p.cap) * (1 - p.edge)) : 0;
@@ -136,12 +144,27 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
   const tick = nextBond(session.bond, evaled.themes);
   if (tick.collect && paid === 0 && !style.hot && Math.random() < 0.5) paid = bet;
 
+  let gift = false;
+  if (day && day.gift && paid === 0) {
+    paid = Math.random() < 0.35 ? bet * 2 : bet;
+    gift = true;
+  }
+
+  let rare = false;
+  if (day && day.rare && Math.random() < day.rare && day.ratio < 0.3) {
+    paid = Math.floor(bet * (8 + Math.random() * 4));
+    rare = true;
+  }
+
   let jack = 0;
   const vault = session.vault || 0;
-  if (style.cold && vault > bet * 12 && Math.random() < 0.12) {
+  if (style.cold && vault > bet * 12 && Math.random() < 0.12 && !rare) {
     jack = Math.min(bet * 2, Math.floor(vault * 0.04));
     paid += jack;
   }
+
+  const wager = session.inBonus ? 0 : bet;
+  if (ctx.ledger) paid = clipDay(ctx.ledger, wager, paid);
 
   const extra = session.inBonus && (evaled.stars || 0) >= 2 ? 1 : 0;
   const enterBonus = !session.inBonus && (session.bonusLock || 0) <= 0 && (evaled.stars || 0) >= 3;
@@ -156,18 +179,20 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
     win: paid,
     raw,
     hits: evaled.hits || [],
-    cMult: paid > 0 ? cMult : 1,
+    cMult: paid > 0 ? (rare ? Math.max(8, Math.round(paid / bet)) : cMult) : 1,
     bonus: enterBonus,
     extra,
     jack,
     collect: tick.collect,
+    gift,
+    rare,
     inBonus,
     session: {
       start: session.start || START_BANK,
       spins: (session.spins || 0) + 1,
-      wagered: (session.wagered || 0) + (session.inBonus ? 0 : bet),
+      wagered: (session.wagered || 0) + wager,
       paid: (session.paid || 0) + paid,
-      vault: vault + (session.inBonus ? 0 : bet) - paid,
+      vault: vault + wager - paid,
       cool: won ? (style.hot ? 2 : 1) : Math.max(0, (session.cool || 0) - 1),
       dry: won ? 0 : (session.dry || 0) + 1,
       bonusLeft,

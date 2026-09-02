@@ -8,6 +8,7 @@ import "./character.css";
 import "./gate.css";
 import "./lux.css";
 import "./play.css";
+import "./floor.css";
 
 startPwa();
 
