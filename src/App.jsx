@@ -8,6 +8,8 @@ import { loadState, saveState } from "./store";
 import { getMode, LIVE } from "./coin";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
+import { loadRecents, pushRecent } from "./recents";
+import { lockAt, starsLocked, markCell } from "./pace";
 import Character from "./Character";
 import Gate from "./Gate";
 import Jackpot from "./Jackpot";
@@ -40,6 +42,7 @@ export default function App() {
   const [mode, setModeTick] = useState(getMode());
   const [mood, setMood] = useState("idle");
   const [joy, setJoy] = useState(null);
+  const [recents, setRecents] = useState(loadRecents);
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
@@ -56,6 +59,13 @@ export default function App() {
   const kit = kitOf(game);
   const cols = kit.cols || 5;
   const rows = kit.rows || 3;
+  const lobby = useMemo(() => {
+    const rank = (id) => {
+      const i = recents.indexOf(id);
+      return i === -1 ? 99 : i;
+    };
+    return [...GAMES].sort((a, b) => rank(a.id) - rank(b.id));
+  }, [recents]);
 
   useEffect(() => { setMuted(mute); }, [mute]);
   useEffect(() => { saveState({ balance, session, muted: mute }); }, [balance, session, mute]);
@@ -153,6 +163,10 @@ export default function App() {
     const mid = Math.floor((next[c].length - 1) / 2);
     playClash(next[c][mid], k.voice);
     tapLock();
+    if (c < nCols - 1 && starsLocked(next, lockRef.current) >= 2) {
+      playExtra();
+      setMood("c");
+    }
     if (c === nCols - 1) {
       const p = pending.current;
       if (p && p.my === my) finishSpin(my, next, p.bet, p.snap);
@@ -161,9 +175,10 @@ export default function App() {
 
   function armSpin(my, next, base, step) {
     const nCols = next.length;
+    const turbo = turboRef.current;
     for (let c = 0; c < nCols; c++) {
       if (lockRef.current[c]) continue;
-      const id = setTimeout(() => lockCol(my, c, next), base + c * step);
+      const id = setTimeout(() => lockCol(my, c, next), lockAt(c, nCols, base, step, turbo));
       timers.current.push(id);
     }
   }
@@ -262,6 +277,7 @@ export default function App() {
     autoRef.current = false;
     setMood("idle");
     setJoy(null);
+    setRecents(pushRecent(g.id));
     playClick();
     tapTick();
     playTheme(g.freq, true);
@@ -306,18 +322,15 @@ export default function App() {
 
   const showWin = !spinning && last && last.win > 0;
   const stageCls = [
-    "stage",
-    "lux",
+    "stage", "lux",
     "g-" + (game?.id || ""),
     "kit-" + kit.extra,
-    "c" + cols,
-    "r" + rows,
+    "c" + cols, "r" + rows,
     last?.win ? "hot" : "",
     last && !last.win && !spinning ? "shake" : "",
     session.inBonus || last?.bonus ? "bonus" : "",
     last?.cMult > 1 ? "cmult" : "",
   ].filter(Boolean).join(" ");
-
   const lamps = Math.max(5, Math.min(12, session.inBonus ? session.bonusLeft || 6 : 7));
 
   return (
@@ -332,8 +345,8 @@ export default function App() {
             <div className="meter"><em>CITV</em><b>{balance}</b></div>
           </header>
           <section className="grid">
-            {GAMES.map((g) => (
-              <button key={g.id} className={"card lux g-" + g.id} onClick={() => openGame(g)} style={{ "--c": g.color }}>
+            {lobby.map((g) => (
+              <button key={g.id} className={"card lux g-" + g.id + (recents[0] === g.id ? " recent" : "")} onClick={() => openGame(g)} style={{ "--c": g.color }}>
                 <div className="ribbon" />
                 <div className={"em mot-" + g.motion}>{g.emoji}</div>
                 <div className="nm">{g.name}</div>
@@ -351,14 +364,11 @@ export default function App() {
           <div className="lamps">{Array.from({ length: lamps }, (_, i) => <i key={i} />)}</div>
           <Jackpot kit={kit} vault={session.vault} hit={!!last?.jack} />
           <Character game={game} mood={mood} />
-          <div
-            className={"window five " + (spinning ? "spin" : "") + (showWin ? " win" : "")}
-            onPointerDown={nudgeStage}
-          >
+          <div className={"window five " + (spinning ? "spin" : "") + (showWin ? " win" : "")} onPointerDown={nudgeStage}>
             {grid.map((col, c) => (
               <div key={c} className={"reelcol " + (lock[c] ? "lock" : "")}>
                 {col.map((s, r) => (
-                  <div key={r} className={"cell " + (hitSet.has(`${c}:${r}`) ? "hit" : "")}>{s}</div>
+                  <div key={r} className={"cell" + markCell(s) + (hitSet.has(`${c}:${r}`) ? " hit" : "")}>{s}</div>
                 ))}
               </div>
             ))}
@@ -375,10 +385,7 @@ export default function App() {
               {spinning ? "" : kit.spin}
             </button>
             <button className={"key latch tick " + (auto ? "on" : "")} onPointerDown={toggleAuto}>{auto ? "■" : "▶"}</button>
-            <button
-              className={"key latch tick " + (turbo ? "on" : "")}
-              onPointerDown={() => { playClick(); tapTick(); setTurbo((t) => !t); }}
-            >{turbo ? "▶▶" : "▶"}</button>
+            <button className={"key latch tick " + (turbo ? "on" : "")} onPointerDown={() => { playClick(); tapTick(); setTurbo((t) => !t); }}>{turbo ? "▶▶" : "▶"}</button>
             {broke && !isLive && !session.inBonus && (
               <button className="key fill tick" onPointerDown={() => { playClick(); tapTick(); setBalance((n) => n + TOPUP); }}>+</button>
             )}
