@@ -1,5 +1,6 @@
 import { WILD, STAR } from "./paytable";
 import { LOW } from "./engine";
+import { nextBond } from "./bond";
 
 export const START_BANK = 2500;
 
@@ -132,6 +133,9 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
   if (p.drip && paid === 0 && Math.random() < 0.78) paid = bet;
   if (p.forceMiss && !p.drip) paid = 0;
 
+  const tick = nextBond(session.bond, evaled.themes);
+  if (tick.collect && paid === 0 && !style.hot && Math.random() < 0.5) paid = bet;
+
   let jack = 0;
   const vault = session.vault || 0;
   if (style.cold && vault > bet * 12 && Math.random() < 0.12) {
@@ -156,6 +160,7 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
     bonus: enterBonus,
     extra,
     jack,
+    collect: tick.collect,
     inBonus,
     session: {
       start: session.start || START_BANK,
@@ -168,6 +173,7 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
       bonusLeft,
       inBonus,
       bonusLock: enterBonus ? 0 : inBonus ? 0 : Math.max(0, (session.bonusLock || 0) - 1) + (session.inBonus && !inBonus ? 8 : 0),
+      bond: tick.bond,
     },
   };
 }
@@ -183,4 +189,5 @@ export const emptySession = () => ({
   bonusLeft: 0,
   inBonus: false,
   bonusLock: 0,
+  bond: 0,
 });
