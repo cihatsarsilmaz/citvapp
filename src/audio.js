@@ -1,6 +1,18 @@
 let ctx;
 let current;
 let spinNoise;
+let muted = false;
+
+export function setMuted(v) {
+  muted = !!v;
+  if (muted) {
+    stopTheme();
+    stopSpinLoop();
+  }
+}
+export function isMuted() {
+  return muted;
+}
 
 function getCtx() {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -9,6 +21,7 @@ function getCtx() {
 }
 
 function tone({ freq = 440, type = "square", dur = 0.12, gain = 0.07, slide = 0, start = 0 }) {
+  if (muted) return;
   const ac = getCtx();
   const t = ac.currentTime + start;
   const o = ac.createOscillator();
@@ -33,6 +46,7 @@ export function stopTheme() {
 }
 
 export function playTheme(freqs, loop = false) {
+  if (muted || !freqs) return;
   stopTheme();
   const ac = getCtx();
   const now = ac.currentTime;
@@ -53,12 +67,13 @@ export function playTheme(freqs, loop = false) {
   current = osc;
   if (loop) {
     osc.onended = () => {
-      if (current === osc) playTheme(freqs, true);
+      if (current === osc && !muted) playTheme(freqs, true);
     };
   }
 }
 
 export function playSpinLoop() {
+  if (muted) return;
   stopSpinLoop();
   const ac = getCtx();
   const now = ac.currentTime;
@@ -85,34 +100,25 @@ export function stopSpinLoop() {
 }
 
 export const SYMBOL_SFX = {
-  "🎰": { name: "Joker", play: () => { tone({ freq: 220, type: "square", dur: 0.08, gain: 0.06 }); tone({ freq: 440, type: "square", dur: 0.1, gain: 0.05, start: 0.07 }); tone({ freq: 660, type: "triangle", dur: 0.16, gain: 0.05, start: 0.14 }); } },
-  "⭐": { name: "Yıldız", play: () => { tone({ freq: 880, type: "sine", dur: 0.14, gain: 0.05 }); tone({ freq: 1320, type: "sine", dur: 0.18, gain: 0.04, start: 0.08 }); } },
-  "🍬": { name: "Şeker", play: () => tone({ freq: 920, type: "triangle", dur: 0.09, gain: 0.05, slide: 180 }) },
-  "⚡": { name: "Şimşek", play: () => { tone({ freq: 720, type: "sawtooth", dur: 0.05, gain: 0.04, slide: -400 }); tone({ freq: 180, type: "square", dur: 0.08, gain: 0.03, start: 0.04 }); } },
-  "💎": { name: "Mücevher", play: () => { tone({ freq: 1046, type: "sine", dur: 0.12, gain: 0.045 }); tone({ freq: 1568, type: "sine", dur: 0.14, gain: 0.03, start: 0.06 }); } },
-  "🦈": { name: "Köpekbalığı", play: () => tone({ freq: 110, type: "sawtooth", dur: 0.16, gain: 0.04, slide: -40 }) },
-  "💰": { name: "Kese", play: () => { tone({ freq: 196, type: "square", dur: 0.07, gain: 0.05 }); tone({ freq: 147, type: "square", dur: 0.09, gain: 0.04, start: 0.06 }); } },
+  "🎰": { play: () => { tone({ freq: 220, type: "square", dur: 0.08, gain: 0.06 }); tone({ freq: 440, type: "square", dur: 0.1, gain: 0.05, start: 0.07 }); } },
+  "⭐": { play: () => { tone({ freq: 880, type: "sine", dur: 0.14, gain: 0.05 }); } },
+  "🍬": { play: () => tone({ freq: 920, type: "triangle", dur: 0.09, gain: 0.05, slide: 180 }) },
+  "⚡": { play: () => tone({ freq: 720, type: "sawtooth", dur: 0.05, gain: 0.04, slide: -400 }) },
+  "💎": { play: () => tone({ freq: 1046, type: "sine", dur: 0.12, gain: 0.045 }) },
+  "🦈": { play: () => tone({ freq: 110, type: "sawtooth", dur: 0.16, gain: 0.04, slide: -40 }) },
+  "💰": { play: () => tone({ freq: 196, type: "square", dur: 0.07, gain: 0.05 }) },
 };
 
 export function playSymbol(sym) {
+  if (muted) return;
   const fx = SYMBOL_SFX[sym];
   if (fx) fx.play();
   else tone({ freq: 330, type: "triangle", dur: 0.08, gain: 0.04 });
 }
-
-export function playStop() {
-  tone({ freq: 160, type: "square", dur: 0.05, gain: 0.035, slide: -60 });
-}
-
+export function playStop() { if (!muted) tone({ freq: 160, type: "square", dur: 0.05, gain: 0.035, slide: -60 }); }
 export function playWin(tier = 1) {
-  const base = 392;
-  [0, 1, 2].forEach((i) => tone({ freq: base * (i + 1), type: "triangle", dur: 0.16 + tier * 0.04, gain: 0.05, start: i * 0.09 }));
+  if (muted) return;
+  [0, 1, 2].forEach((i) => tone({ freq: 392 * (i + 1), type: "triangle", dur: 0.16 + tier * 0.04, gain: 0.05, start: i * 0.09 }));
 }
-
-export function playMiss() {
-  tone({ freq: 180, type: "sine", dur: 0.18, gain: 0.03, slide: -80 });
-}
-
-export function playClick() {
-  tone({ freq: 520, type: "square", dur: 0.04, gain: 0.03 });
-}
+export function playMiss() { if (!muted) tone({ freq: 180, type: "sine", dur: 0.18, gain: 0.03, slide: -80 }); }
+export function playClick() { if (!muted) tone({ freq: 520, type: "square", dur: 0.04, gain: 0.03 }); }
