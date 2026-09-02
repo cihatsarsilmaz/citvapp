@@ -5,6 +5,7 @@ import { UNIT, WILD, STAR } from "./paytable";
 import { spinGrid, applyHouse, emptySession } from "./house";
 import { evalLines, COLS, LOW } from "./engine";
 import { loadState, saveState } from "./store";
+import { getMode, LIVE } from "./coin";
 import Admin from "./Admin";
 
 const POOL = [...LOW, STAR, WILD];
@@ -28,6 +29,7 @@ export default function App() {
   const [auto, setAuto] = useState(false);
   const [turbo, setTurbo] = useState(false);
   const [mute, setMute] = useState(saved.muted);
+  const [mode, setModeTick] = useState(getMode());
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
@@ -38,6 +40,7 @@ export default function App() {
   live.current = { game, balance, ante, session };
   autoRef.current = auto;
   turboRef.current = turbo;
+  const isLive = mode === LIVE;
 
   useEffect(() => { setMuted(mute); }, [mute]);
   useEffect(() => { saveState({ balance, session, muted: mute }); }, [balance, session, mute]);
@@ -50,10 +53,18 @@ export default function App() {
   }
 
   useEffect(() => {
-    const onHash = () => setHash(location.hash);
+    const onHash = () => {
+      setHash(location.hash);
+      setModeTick(getMode());
+    };
+    const onPop = () => {
+      if (live.current.game) back(true);
+    };
     window.addEventListener("hashchange", onHash);
+    window.addEventListener("popstate", onPop);
     return () => {
       window.removeEventListener("hashchange", onHash);
+      window.removeEventListener("popstate", onPop);
       clearTimers();
     };
   }, []);
@@ -143,9 +154,10 @@ export default function App() {
     autoRef.current = false;
     playClick();
     playTheme(g.freq, true);
+    try { history.pushState({ citv: "stage" }, ""); } catch {}
   }
 
-  function back() {
+  function back(fromPop) {
     clearTimers();
     busy.current = false;
     autoRef.current = false;
@@ -154,6 +166,9 @@ export default function App() {
     setGame(null);
     setLast(null);
     setSpinning(false);
+    if (!fromPop) {
+      try { if (history.state && history.state.citv === "stage") history.back(); } catch {}
+    }
   }
 
   function toggleAuto() {
@@ -174,10 +189,10 @@ export default function App() {
         <>
           <header className="top">
             <div>
-              <p className="kicker">CITV Slot</p>
+              <p className="kicker">CITV Slot · {mode}</p>
               <h1>Masaya otur</h1>
             </div>
-            <div className="meter"><em>FİŞ</em><b>{balance}</b></div>
+            <div className="meter"><em>FIS</em><b>{balance}</b></div>
           </header>
           <section className="grid">
             {GAMES.map((g) => (
@@ -186,6 +201,11 @@ export default function App() {
                 <div className="em">{g.emoji}</div>
                 <div className="nm">{g.name}</div>
                 <div className="tag">{g.character}</div>
+                <span
+                  className="listen"
+                  role="button"
+                  onClick={(e) => { e.stopPropagation(); playTheme(g.freq, false); }}
+                >DINLE</span>
               </button>
             ))}
           </section>
@@ -194,7 +214,7 @@ export default function App() {
       {game && (
         <section className={stageCls} style={{ "--c": game.color }}>
           <div className="lamps"><i /><i /><i /><i /><i /><i /><i /></div>
-          <div className="jackpot">JACKPOT {jack} ₺</div>
+          <div className="jackpot">JACKPOT {jack}</div>
           <p className="face">{game.emoji} {game.character}</p>
           <div className={"window five " + (spinning ? "spin" : "") + (last?.win ? " win" : "")}>
             {grid.map((col, c) => (
@@ -212,17 +232,17 @@ export default function App() {
           </p>
           <p className={"bang " + (last && !last.win ? "miss" : "")}>{spinLine}</p>
           <div className="dock">
-            <div className="meter"><em>FİŞ</em><b>{balance}</b></div>
+            <div className="meter"><em>FIS</em><b>{balance}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.max(1, n - 1)); }}>−</button>
-            <div className="meter"><em>BAHİS</em><b>{bet}</b></div>
+            <div className="meter"><em>BAHIS</em><b>{bet}</b></div>
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.min(10, n + 1)); }}>+</button>
             <button className="spinbtn" onClick={runSpin} disabled={spinning || broke}>SPIN</button>
             <button className={"act ghost " + (auto ? "on" : "")} onClick={toggleAuto}>{auto ? "DUR" : "AUTO"}</button>
             <button className={"act ghost " + (turbo ? "on" : "")} onClick={() => { playClick(); setTurbo((t) => !t); }}>{turbo ? "TURBO" : "NORM"}</button>
-            <div className="meter"><em>KAZANÇ</em><b>{last?.win || 0}</b></div>
-            {broke && <button className="act" onClick={() => { playClick(); setBalance((n) => n + TOPUP); }}>+{TOPUP}</button>}
-            <button className="act ghost" onClick={() => { playClick(); setMute((m) => !m); }}>{mute ? "AÇ" : "SUS"}</button>
-            <button className="act ghost" onClick={back}>←</button>
+            <div className="meter"><em>KAZANC</em><b>{last?.win || 0}</b></div>
+            {broke && !isLive && <button className="act" onClick={() => { playClick(); setBalance((n) => n + TOPUP); }}>+{TOPUP}</button>}
+            <button className="act ghost" onClick={() => { playClick(); setMute((m) => !m); }}>{mute ? "AC" : "SUS"}</button>
+            <button className="act ghost" onClick={() => back(false)}>←</button>
           </div>
         </section>
       )}
