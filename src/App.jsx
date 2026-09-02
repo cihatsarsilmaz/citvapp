@@ -1,20 +1,24 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
-import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playSymbol, playStop, playWin, playMiss, playClick, setMuted } from "./audio";
+import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, playMiss, playClick, playBonusIn, playJack, playExtra, setMuted } from "./audio";
 import { UNIT } from "./paytable";
 import { spinGrid, applyHouse, emptySession, plan, readStyle } from "./house";
-import { evalLines, COLS, LOW } from "./engine";
+import { evalLines, LOW } from "./engine";
 import { loadState, saveState } from "./store";
 import { getMode, LIVE } from "./coin";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
 import Character from "./Character";
 import Gate from "./Gate";
+import Jackpot from "./Jackpot";
+import Joy from "./Joy";
 import Admin from "./Admin";
 
 const POOL = [...LOW];
 const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
-const blank = () => Array.from({ length: COLS }, () => [rnd(), rnd(), rnd()]);
+function blank(cols = 5, rows = 3) {
+  return Array.from({ length: cols }, () => Array.from({ length: rows }, rnd));
+}
 const START = 2500;
 const TOPUP = 500;
 const saved = loadState({ balance: START, session: emptySession(), muted: false });
@@ -23,7 +27,7 @@ export default function App() {
   const [hash, setHash] = useState(typeof location !== "undefined" ? location.hash : "");
   const [game, setGame] = useState(null);
   const [boot, setBoot] = useState(false);
-  const [grid, setGrid] = useState(blank());
+  const [grid, setGrid] = useState(() => blank());
   const [lock, setLock] = useState([0, 0, 0, 0, 0]);
   const [spinning, setSpinning] = useState(false);
   const [ante, setAnte] = useState(1);
@@ -35,6 +39,7 @@ export default function App() {
   const [mute, setMute] = useState(saved.muted);
   const [mode, setModeTick] = useState(getMode());
   const [mood, setMood] = useState("idle");
+  const [joy, setJoy] = useState(null);
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
@@ -49,6 +54,8 @@ export default function App() {
   turboRef.current = turbo;
   const isLive = mode === LIVE;
   const kit = kitOf(game);
+  const cols = kit.cols || 5;
+  const rows = kit.rows || 3;
 
   useEffect(() => { setMuted(mute); }, [mute]);
   useEffect(() => { saveState({ balance, session, muted: mute }); }, [balance, session, mute]);
@@ -61,6 +68,7 @@ export default function App() {
   }
 
   const closeGate = useCallback(() => setBoot(false), []);
+  const closeJoy = useCallback(() => setJoy(null), []);
 
   useEffect(() => {
     const onHash = () => {
@@ -87,7 +95,8 @@ export default function App() {
     if (gen.current !== my) return;
     stopSpinLoop();
     const s = live.current;
-    const ev = evalLines(next, s.game.emoji, b);
+    const k = kitOf(s.game);
+    const ev = evalLines(next, s.game.emoji, b, k);
     const result = applyHouse(ev, b, snap, {
       balance: s.balance,
       ante: s.ante,
@@ -100,16 +109,26 @@ export default function App() {
     setSpinning(false);
     pending.current = null;
     taps.current = 0;
-    if (result.bonus) setMood("bonus");
-    else if (result.cMult > 1) setMood("c");
+    if (result.bonus) {
+      setMood("bonus");
+      setJoy("bonus");
+      playBonusIn();
+    } else if (result.jack) {
+      setMood("win");
+      setJoy("jack");
+      playJack();
+    } else if (result.extra) {
+      setMood("bonus");
+      playExtra();
+    } else if (result.cMult > 1) setMood("c");
     else if (result.win) setMood(result.session.inBonus ? "bonuswin" : "win");
     else setMood("miss");
     if (result.win) {
       playWin(result.cMult > 1 ? 3 : 2);
       tapWin(result.cMult > 1 ? 2 : 1);
-    } else playMiss();
+    } else if (!result.bonus) playMiss();
     if (autoRef.current && gen.current === my) {
-      const gap = turboRef.current ? 140 : 280;
+      const gap = turboRef.current ? 140 : 260;
       timers.current.push(setTimeout(runSpin, gap));
     }
   }
@@ -117,6 +136,9 @@ export default function App() {
   function lockCol(my, c, next) {
     if (gen.current !== my) return;
     if (lockRef.current[c]) return;
+    const s = live.current;
+    const k = kitOf(s.game);
+    const nCols = k.cols || next.length;
     lockRef.current[c] = 1;
     setLock((L) => {
       const n = [...L];
@@ -128,17 +150,18 @@ export default function App() {
       copy[c] = next[c];
       return copy;
     });
-    playStop();
+    const mid = Math.floor((next[c].length - 1) / 2);
+    playClash(next[c][mid], k.voice);
     tapLock();
-    if (!turboRef.current) playSymbol(next[c][1]);
-    if (c === COLS - 1) {
+    if (c === nCols - 1) {
       const p = pending.current;
       if (p && p.my === my) finishSpin(my, next, p.bet, p.snap);
     }
   }
 
   function armSpin(my, next, base, step) {
-    for (let c = 0; c < COLS; c++) {
+    const nCols = next.length;
+    for (let c = 0; c < nCols; c++) {
       if (lockRef.current[c]) continue;
       const id = setTimeout(() => lockCol(my, c, next), base + c * step);
       timers.current.push(id);
@@ -148,6 +171,7 @@ export default function App() {
   function runSpin() {
     const s = live.current;
     if (!s.game || busy.current || boot) return;
+    const k = kitOf(s.game);
     const free = !!(s.session && s.session.inBonus);
     const b = UNIT * s.ante;
     if (!free && s.balance < b) {
@@ -159,23 +183,23 @@ export default function App() {
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
     const fast = turboRef.current;
-    const base = fast ? 55 : 150;
-    const step = fast ? 48 : 95;
+    const base = fast ? 50 : 140;
+    const step = fast ? 42 : 88;
     busy.current = true;
     setSpinning(true);
     setMood(s.session.inBonus ? "bonus" : "spin");
     if (!free) setBalance((n) => n - b);
     setLast(null);
-    lockRef.current = [0, 0, 0, 0, 0];
-    setLock([0, 0, 0, 0, 0]);
+    lockRef.current = Array(k.cols || 5).fill(0);
+    setLock(Array(k.cols || 5).fill(0));
     taps.current = 0;
     stopTheme();
-    playSpinLoop();
+    playSpinLoop(s.game.freq ? s.game.freq[0] : 90);
     tapSpin();
     const snap = s.session;
     const style = readStyle(snap, s.balance, s.ante, fast);
     const p = plan(style, snap);
-    const next = spinGrid(s.game.emoji, p.forceMiss && !snap.inBonus);
+    const next = spinGrid(s.game.emoji, p.forceMiss && !snap.inBonus, k);
     pending.current = { my, next, bet: b, snap };
     armSpin(my, next, base, step);
   }
@@ -191,14 +215,14 @@ export default function App() {
     const my = p.my;
     const next = p.next;
     if (taps.current >= 2) {
-      for (let c = 0; c < COLS; c++) lockCol(my, c, next);
+      for (let c = 0; c < next.length; c++) lockCol(my, c, next);
       return;
     }
     const first = lockRef.current.findIndex((v) => !v);
     if (first < 0) return;
     lockCol(my, first, next);
-    for (let c = first + 1; c < COLS; c++) {
-      const id = setTimeout(() => lockCol(my, c, next), (c - first) * 36);
+    for (let c = first + 1; c < next.length; c++) {
+      const id = setTimeout(() => lockCol(my, c, next), (c - first) * 32);
       timers.current.push(id);
     }
   }
@@ -225,16 +249,19 @@ export default function App() {
   }
 
   function openGame(g) {
+    const k = kitOf(g);
     clearTimers();
     busy.current = false;
     setSpinning(false);
     setGame(g);
     setBoot(true);
-    setGrid(blank());
+    setGrid(blank(k.cols, k.rows));
+    setLock(Array(k.cols).fill(0));
     setLast(null);
     setAuto(false);
     autoRef.current = false;
     setMood("idle");
+    setJoy(null);
     playClick();
     tapTick();
     playTheme(g.freq, true);
@@ -252,6 +279,7 @@ export default function App() {
     setLast(null);
     setSpinning(false);
     setMood("idle");
+    setJoy(null);
     if (!fromPop) {
       try { if (history.state && history.state.citv === "stage") history.back(); } catch {}
     }
@@ -282,11 +310,15 @@ export default function App() {
     "lux",
     "g-" + (game?.id || ""),
     "kit-" + kit.extra,
+    "c" + cols,
+    "r" + rows,
     last?.win ? "hot" : "",
     last && !last.win && !spinning ? "shake" : "",
     session.inBonus || last?.bonus ? "bonus" : "",
     last?.cMult > 1 ? "cmult" : "",
   ].filter(Boolean).join(" ");
+
+  const lamps = Math.max(5, Math.min(12, session.inBonus ? session.bonusLeft || 6 : 7));
 
   return (
     <div className="app wide">
@@ -312,10 +344,12 @@ export default function App() {
         </>
       )}
       {game && boot && <Gate game={game} onDone={closeGate} />}
+      {game && joy && <Joy kind={joy} onDone={closeJoy} />}
       {game && (
-        <section className={stageCls} style={{ "--c": game.color, "--sky": game.sky }}>
+        <section className={stageCls} style={{ "--c": game.color, "--sky": game.sky, "--cols": cols, "--rows": rows }}>
           <div className="bevel" />
-          <div className="lamps"><i /><i /><i /><i /><i /><i /><i /></div>
+          <div className="lamps">{Array.from({ length: lamps }, (_, i) => <i key={i} />)}</div>
+          <Jackpot kit={kit} vault={session.vault} hit={!!last?.jack} />
           <Character game={game} mood={mood} />
           <div
             className={"window five " + (spinning ? "spin" : "") + (showWin ? " win" : "")}
