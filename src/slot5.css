@@ -5,16 +5,36 @@ html, body, #root {
 }
 .app.wide { max-width: 1100px; padding: 12px 10px 36px; }
 .stage {
-  display: grid; gap: 6px; padding: 10px;
+  display: grid; gap: 4px; padding: 10px;
   border-radius: 20px;
   background:
-    linear-gradient(#f0d78a55, transparent 16%),
-    linear-gradient(180deg, #6e1620, #0c0204);
-  border: 3px solid #e8c056;
+    linear-gradient(#f0d78a40, transparent 16%),
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--c) 28%, #000), transparent 46%),
+    linear-gradient(180deg, color-mix(in srgb, var(--sky, #2a0810) 80%, #6e1620), #0c0204);
+  border: 3px solid color-mix(in srgb, var(--c) 55%, #e8c056);
   box-shadow: inset 0 0 0 2px #4a0c14, 0 26px 54px #000d;
 }
+.stage.g-sweet { --sky:#3a1028; }
+.stage.g-olympus { --sky:#0b1a33; }
+.stage.g-nova { --sky:#16082a; }
+.stage.g-reef { --sky:#032028; }
+.stage.g-rich { --sky:#2a1a06; }
+.stage.g-west { --sky:#2a1408; }
+.stage.g-mystic { --sky:#1a0c2a; }
+.stage.g-wolf { --sky:#0c1018; }
+.stage.g-flame { --sky:#2a0a04; }
+.stage.g-forest { --sky:#08180c; }
+.stage.g-pharaoh { --sky:#2a2208; }
+.stage.g-pirate { --sky:#061018; }
+.stage.g-neon { --sky:#1a0618; }
+.stage.g-samurai { --sky:#180808; }
+.stage.g-ice { --sky:#062028; }
+.stage.g-dragon { --sky:#20060a; }
+.stage.g-circus { --sky:#240816; }
+.stage.g-vault { --sky:#1c1604; }
 .stage.hot .lamps i { animation-duration: .35s; opacity: 1; }
 .stage.shake { animation: shake .28s ease; }
+.stage.bonus { box-shadow: inset 0 0 0 2px #4a0c14, 0 0 40px color-mix(in srgb, var(--c) 45%, transparent), 0 26px 54px #000d; }
 @keyframes shake {
   20% { transform: translateX(-3px); }
   40% { transform: translateX(3px); }
@@ -27,22 +47,18 @@ html, body, #root {
 }
 .lamps i:nth-child(odd) { animation-delay: .25s; }
 @keyframes blink { 50% { opacity: 1; } }
-.jackpot {
-  text-align: center; letter-spacing: .2em; font-weight: 800; font-size: 12px;
-  color: #1a0808; background: linear-gradient(180deg, #fff0b8, #c9a24a 68%, #8a6818);
-  border-radius: 8px; padding: 7px; box-shadow: 0 3px 0 #5a3a08;
-}
-.face { margin: 0; text-align: center; font-size: 12px; color: #f6e6c8; }
 .window.five {
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 8px;
   border-radius: 14px;
-  background: radial-gradient(circle at 50% 0%, #3a141c, #050102);
-  border: 3px solid #e8c056;
+  background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--c) 18%, #1a080c), #050102);
+  border: 3px solid color-mix(in srgb, var(--c) 50%, #e8c056);
   box-shadow: inset 0 0 44px #000d;
   contain: layout paint;
+  touch-action: manipulation;
+  cursor: pointer;
 }
 .window.five.win { animation: winpulse .5s ease 3; }
-@keyframes winpulse { 50% { box-shadow: 0 0 48px #ffd36acc, inset 0 0 24px #ffb02066; } }
+@keyframes winpulse { 50% { box-shadow: 0 0 48px color-mix(in srgb, var(--c) 70%, #ffd36a), inset 0 0 24px #ffb02066; } }
 .reelcol {
   display: grid; grid-template-rows: repeat(3, 1fr); gap: 3px;
   background: #120206; border-radius: 9px; padding: 3px;
@@ -62,7 +78,7 @@ html, body, #root {
   text-shadow: 0 3px 0 #000a;
 }
 .cell.hit {
-  background: linear-gradient(180deg, #a04810, #2a1008);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 55%, #a04810), #2a1008);
   box-shadow: inset 0 0 0 2px #ffe08a, 0 0 22px #e8c56baa;
   transform: scale(1.07);
   animation: pop .28s ease;
@@ -75,20 +91,11 @@ html, body, #root {
   from { transform: translateY(-7px); opacity: .6; }
   to { transform: translateY(7px); opacity: .9; }
 }
-.trail {
-  display: flex; justify-content: center; gap: 5px; margin: 0;
-}
-.trail b {
-  min-width: 34px; text-align: center; font-size: 11px;
-  padding: 2px 5px; border-radius: 5px;
-  background: #1a080c; color: #c9a070; font-weight: 700;
-}
-.trail b.on { color: #1a0808; background: #e0b84a; }
 .bang {
-  text-align: center; font-size: 26px; font-weight: 800; margin: 4px 0 2px;
-  color: #ffe08a; min-height: 1.2em; text-shadow: 0 0 22px #ffb020cc;
+  text-align: center; font-size: 26px; font-weight: 800; margin: 2px 0 0;
+  color: #ffe08a; min-height: 1.05em; text-shadow: 0 0 22px #ffb020cc;
 }
-.bang.miss { color: #b88888; font-size: 14px; text-shadow: none; font-weight: 600; }
+.bang.quiet { min-height: 8px; font-size: 0; text-shadow: none; }
 .dock {
   display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center;
   padding: 8px; border-radius: 14px;
@@ -98,21 +105,35 @@ html, body, #root {
 .meter { min-width: 60px; text-align: center; }
 .meter em { display: block; font-size: 9px; letter-spacing: .12em; color: #e0a8a8; font-style: normal; }
 .meter b { font-size: 15px; color: #ffe08a; }
+.meter.tickface em { color: #ffe08a; letter-spacing: 0; font-size: 11px; font-weight: 800; }
 .spinbtn {
   width: 84px; height: 84px; border-radius: 50%; border: 0; cursor: pointer;
   background: radial-gradient(circle at 30% 28%, #fff3b8, #e01828 44%, #6a080c);
   color: #fff; font-weight: 900; letter-spacing: .06em;
-  box-shadow: 0 0 0 4px #e8c056, 0 12px 24px #000a;
+  box-shadow: 0 0 0 4px #e8c056, 0 10px 0 #5a0808, 0 14px 24px #000a;
+  transition: transform 40ms linear, box-shadow 40ms linear;
 }
-.spinbtn:active { transform: scale(.94); }
+.tick {
+  transition: transform 36ms linear, box-shadow 36ms linear, filter 36ms linear;
+  touch-action: manipulation;
+  user-select: none;
+}
+.tick:active, .spinbtn:active {
+  transform: translateY(2px) scale(.97);
+  box-shadow: 0 0 0 3px #e8c056, 0 4px 0 #5a0808, 0 8px 16px #000a;
+  filter: brightness(1.06);
+}
 .spinbtn:disabled { opacity: .42; }
 button.act.on { border-color: #e8c056; color: #ffe08a; box-shadow: 0 0 10px #e0b84a55; }
+button.act.tick:active { transform: translateY(1px) scale(.98); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; }
 .card .tag { font-size: 10px; color: #c9a24a; margin-top: 4px; letter-spacing: .06em; }
 @media (max-width: 520px) {
   .cell { min-height: 48px; font-size: 22px; }
   .spinbtn { width: 68px; height: 68px; }
   .bang { font-size: 18px; }
+  .actor { height: 60px; }
+  .actor .body { font-size: 34px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .window.spin .reelcol:not(.lock) .cell,
