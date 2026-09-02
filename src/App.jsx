@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
 import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playSymbol, playStop, playWin, playMiss, playClick } from "./audio";
 import { UNIT, WILD, STAR } from "./paytable";
-import { spinGrid, applyHouse, emptySession } from "./house";
+import { spinGrid, applyHouse, emptySession, WIN_CAP, HOUSE_EDGE, COOLDOWN } from "./house";
 import { evalLines, COLS, LOW } from "./engine";
 import Admin from "./Admin";
 import "./styles.css";
@@ -169,7 +169,7 @@ export default function App() {
       {game && (
         <section className="stage" style={{ "--c": game.color }}>
           <div className="jackpot">JACKPOT {jack} ₺</div>
-          <p className="payhint">5 hat · soldan 3/4/5 · tema {game.emoji} 5’li x12 · kasa %32</p>
+          <p className="payhint">5 hat · soldan 3/4/5 · tavan {WIN_CAP}x · soğuma {COOLDOWN} · kasa %{Math.round(HOUSE_EDGE * 100)}</p>
           <div className={"window five " + (spinning ? "spin" : "") + (last?.win ? " win" : "")}>
             {grid.map((col, c) => (
               <div key={c} className={"reelcol " + (lock[c] ? "lock" : "")}>
