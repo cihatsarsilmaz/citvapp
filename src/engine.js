@@ -1,18 +1,8 @@
-import { WILD, STAR, PAY2, PAY3, PAY4, PAY5 } from "./paytable";
+import { WILD, STAR, PAY3, PAY4, PAY5 } from "./paytable";
 
 export const COLS = 5;
 export const ROWS = 3;
-export const LINES = 5;
-
 export const LOW = ["🍬", "⚡", "💎", "🦈", "💰"];
-
-export const LINE_MAP = [
-  [1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 0],
-  [2, 2, 2, 2, 2],
-  [0, 1, 2, 1, 0],
-  [2, 1, 0, 1, 2],
-];
 
 function kind(sym, theme) {
   if (sym === WILD) return "wild";
@@ -28,6 +18,24 @@ function match(a, b, theme) {
   return false;
 }
 
+export function lineMaps(cols, rows) {
+  const mid = Math.min(rows - 1, Math.floor(rows / 2));
+  const lines = [Array(cols).fill(mid)];
+  if (rows >= 2) lines.push(Array(cols).fill(0));
+  if (rows >= 3) lines.push(Array(cols).fill(rows - 1));
+  if (rows >= 3 && cols >= 3) {
+    lines.push(Array.from({ length: cols }, (_, i) => {
+      const t = i / Math.max(1, cols - 1);
+      return Math.round(t * (rows - 1));
+    }));
+    lines.push(Array.from({ length: cols }, (_, i) => {
+      const t = i / Math.max(1, cols - 1);
+      return Math.round((1 - t) * (rows - 1));
+    }));
+  }
+  return lines;
+}
+
 export function countSym(grid, sym) {
   let n = 0;
   for (let c = 0; c < grid.length; c++) {
@@ -36,20 +44,24 @@ export function countSym(grid, sym) {
   return n;
 }
 
-export function evalLines(grid, theme, bet) {
+export function evalLines(grid, theme, bet, layout = { cols: 5, rows: 3 }) {
+  const cols = grid.length;
+  const rows = grid[0] ? grid[0].length : layout.rows || 3;
+  const maps = lineMaps(cols, rows);
+  const need = cols <= 3 ? cols : 3;
   const hits = [];
   let total = 0;
   let themeHit = false;
-  LINE_MAP.forEach((rows, li) => {
-    const seq = rows.map((r, c) => grid[c][r]);
+  maps.forEach((rowPick, li) => {
+    const seq = rowPick.map((r, c) => grid[c][Math.min(r, rows - 1)]);
     let n = 1;
-    for (let i = 1; i < 5; i++) {
+    for (let i = 1; i < cols; i++) {
       if (match(seq[0], seq[i], theme) && match(seq[i - 1], seq[i], theme)) n++;
       else break;
     }
-    if (n < 3) return;
+    if (n < need) return;
     const core = seq.find((s) => s !== WILD) || WILD;
-    const table = n === 5 ? PAY5 : n === 4 ? PAY4 : PAY3;
+    const table = n >= 5 ? PAY5 : n === 4 ? PAY4 : PAY3;
     const k = kind(core, theme);
     const mult = table[k] || 0;
     if (!mult) return;
@@ -62,7 +74,7 @@ export function evalLines(grid, theme, bet) {
       kind: k,
       mult,
       win,
-      cells: rows.map((r, c) => (c < n ? `${c}:${r}` : null)).filter(Boolean),
+      cells: rowPick.map((r, c) => (c < n ? `${c}:${r}` : null)).filter(Boolean),
     });
   });
   return {
