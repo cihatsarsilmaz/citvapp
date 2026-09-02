@@ -1,15 +1,40 @@
 {
+  "id": "./",
   "name": "CITV Slot",
-  "short_name": "CITV Slot",
-  "description": "18 slot, web salon, CITV",
-  "start_url": "./",
+  "short_name": "CITV",
+  "description": "18 slot, web salon",
+  "lang": "tr",
+  "dir": "ltr",
+  "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait",
   "background_color": "#07050a",
   "theme_color": "#07050a",
+  "prefer_related_applications": false,
+  "categories": ["games", "entertainment"],
+  "launch_handler": { "client_mode": "focus-existing" },
   "icons": [
-    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    {
+      "src": "./icons/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-maskable.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "CITV Slot",
+      "short_name": "Salon",
+      "url": "./",
+      "icons": [{ "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
   ]
 }

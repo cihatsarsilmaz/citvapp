@@ -1,12 +1,18 @@
-/* CITV Slot — servis çalıştırıcı
- * Kapsam: uygulamanın bulunduğu klasör (./) — GitHub Pages /citvapp/ uyumlu.
- */
-const CACHE = "citv-pwa-v4";
+/* CITV Slot — servis çalıştırıcı */
+const CACHE = "citv-pwa-v5";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(["./", "./index.html", "./manifest.json"]).catch(() => {}))
+    caches.open(CACHE).then((cache) =>
+      cache.addAll([
+        "./",
+        "./index.html",
+        "./manifest.json",
+        "./icons/icon.svg",
+        "./icons/icon-maskable.svg"
+      ]).catch(() => {})
+    )
   );
 });
 
@@ -25,13 +31,11 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   const dest = req.destination;
-  const isPage = dest === "document" || dest === "" && url.pathname.endsWith("/") || url.pathname.endsWith(".html");
+  const isPage =
+    dest === "document" ||
+    (dest === "" && (url.pathname.endsWith("/") || url.pathname.endsWith(".html")));
 
-  if (isPage) {
-    event.respondWith(networkFirst(req));
-    return;
-  }
-  event.respondWith(cacheFirst(req));
+  event.respondWith(isPage ? networkFirst(req) : cacheFirst(req));
 });
 
 async function networkFirst(req) {
