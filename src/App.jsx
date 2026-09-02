@@ -26,16 +26,19 @@ export default function App() {
   const [balance, setBalance] = useState(saved.balance);
   const [session, setSession] = useState(saved.session);
   const [auto, setAuto] = useState(false);
+  const [turbo, setTurbo] = useState(false);
   const [mute, setMute] = useState(saved.muted);
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
+  const turboRef = useRef(false);
   const timers = useRef([]);
   const tickRef = useRef(null);
   const gen = useRef(0);
   const live = useRef({});
   live.current = { game, balance, ante, session };
   autoRef.current = auto;
+  turboRef.current = turbo;
 
   useEffect(() => { setMuted(mute); }, [mute]);
   useEffect(() => { saveState({ balance, session, muted: mute }); }, [balance, session, mute]);
@@ -75,6 +78,10 @@ export default function App() {
       return;
     }
     const my = ++gen.current;
+    const fast = turboRef.current;
+    const base = fast ? 90 : 220;
+    const step = fast ? 70 : 140;
+    const gap = fast ? 180 : 420;
     busy.current = true;
     setSpinning(true);
     setBalance((n) => n - b);
@@ -88,7 +95,7 @@ export default function App() {
     tickRef.current = setInterval(() => {
       if (gen.current !== my) return;
       setGrid((prev) => prev.map((col, c) => (lockRef.current[c] ? col : [rnd(), rnd(), rnd()])));
-    }, 48);
+    }, fast ? 32 : 48);
     for (let c = 0; c < COLS; c++) {
       const id = setTimeout(() => {
         if (gen.current !== my) return;
@@ -110,10 +117,10 @@ export default function App() {
           setSpinning(false);
           result.win ? playWin(2) : playMiss();
           if (autoRef.current && gen.current === my) {
-            timers.current.push(setTimeout(runSpin, 420));
+            timers.current.push(setTimeout(runSpin, gap));
           }
         }
-      }, 220 + c * 140);
+      }, base + c * step);
       timers.current.push(id);
     }
   }
@@ -168,9 +175,8 @@ export default function App() {
     if (!n) clearTimers();
   }
 
-  const line = last
-    ? (last.win ? game.quote : "Az kaldı. Bir spin daha.")
-    : game?.greeting;
+  const line = last ? (last.win ? game.quote : "Az kaldı. Bir spin daha.") : game?.greeting;
+  const stageCls = "stage" + (last?.win ? " hot" : "") + (last && !last.win ? " shake" : "");
 
   return (
     <div className="app wide">
@@ -196,7 +202,7 @@ export default function App() {
         </>
       )}
       {game && (
-        <section className="stage" style={{ "--c": game.color }}>
+        <section className={stageCls} style={{ "--c": game.color }}>
           <div className="lamps"><i /><i /><i /><i /><i /><i /><i /></div>
           <div className="jackpot">JACKPOT {jack} ₺</div>
           <p className="face">{game.emoji} {game.character} — {line}</p>
@@ -225,6 +231,7 @@ export default function App() {
             <button className="act ghost" onClick={() => { playClick(); setAnte((n) => Math.min(10, n + 1)); }}>+</button>
             <button className="spinbtn" onClick={runSpin} disabled={spinning || broke}>SPIN</button>
             <button className={"act ghost " + (auto ? "on" : "")} onClick={toggleAuto}>{auto ? "DUR" : "AUTO"}</button>
+            <button className={"act ghost " + (turbo ? "on" : "")} onClick={() => { playClick(); setTurbo((t) => !t); }}>{turbo ? "TURBO" : "NORM"}</button>
             <div className="meter"><em>KAZANÇ</em><b>{last?.win || 0}</b></div>
             {broke && <button className="act" onClick={() => { playClick(); setBalance((n) => n + TOPUP); }}>+{TOPUP}</button>}
             <button className="act ghost" onClick={() => { playClick(); setMute((m) => !m); }}>{mute ? "AÇ" : "SUS"}</button>
