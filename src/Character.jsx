@@ -9,7 +9,12 @@ export default function Character({ game, mood, bond = 0 }) {
     <div className={`actor mot-${game.motion || "sway"} mood-${m}`} aria-hidden="true">
       <i className="ring" style={{ "--bond": fill }} />
       <i className={`aura fx-${game.fx || "dust"}`} />
-      <b className="body">{game.emoji}</b>
+      <div className="figure">
+        <span className="shadow" />
+        <span className="plate" />
+        <span className="face">{game.emoji}</span>
+        <span className="glow" />
+      </div>
       {m === "c" && <em className="cflash">C</em>}
     </div>
   );
