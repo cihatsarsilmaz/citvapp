@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
 import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, playMiss, playClick, playBonusIn, playJack, playExtra, setMuted } from "./audio";
-import { UNIT, PAY3, PAY4, PAY5, WILD, STAR } from "./paytable";
+import { UNIT } from "./paytable";
 import { spinGrid, applyHouse, emptySession, plan, readStyle } from "./house";
 import { evalLines, LOW } from "./engine";
 import { loadState, saveState } from "./store";
@@ -25,6 +25,7 @@ function blank(cols = 5, rows = 3) {
 }
 const START = 2500;
 const TOPUP = 500;
+const BITE = 6;
 const saved = loadState({ balance: START, session: emptySession(), muted: false });
 
 export default function App() {
@@ -46,6 +47,7 @@ export default function App() {
   const [joy, setJoy] = useState(null);
   const [recents, setRecents] = useState(loadRecents);
   const [held, setHeld] = useState([]);
+  const [shown, setShown] = useState(BITE);
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
@@ -70,6 +72,7 @@ export default function App() {
     };
     return [...GAMES].sort((a, b) => rank(a.id) - rank(b.id));
   }, [recents]);
+  const table = lobby.slice(0, shown);
 
   useEffect(() => { setMuted(mute); }, [mute]);
   useEffect(() => { saveState({ balance, session, muted: mute }); }, [balance, session, mute]);
@@ -123,7 +126,7 @@ export default function App() {
       setLast(result);
       setSession(result.session);
       setBalance((n) => n + result.win);
-      setHeld(holdKeys(next, result.extra));
+      setHeld(holdKeys(next, result.extra || result.session.inBonus));
       if (result.rare) {
         setMood("c");
         setJoy("jack");
@@ -147,13 +150,13 @@ export default function App() {
         playExtra();
       } else if (result.cMult > 1) setMood("c");
       else if (result.win) setMood(result.session.inBonus ? "bonuswin" : "win");
-      else setMood("miss");
+      else setMood(result.session.inBonus ? "bonus" : "miss");
       if (result.win) {
         playWin(result.cMult > 1 ? 3 : 2);
         tapWin(result.cMult > 1 ? 2 : 1);
       } else if (!result.bonus && !result.collect) playMiss();
       if (autoRef.current && gen.current === my) {
-        const gap = turboRef.current ? 220 : 380;
+        const gap = result.session.inBonus ? 420 : turboRef.current ? 220 : 380;
         timers.current.push(setTimeout(runSpin, gap));
       }
     } catch {
@@ -231,14 +234,13 @@ export default function App() {
     const my = ++gen.current;
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
-    const fast = turboRef.current;
+    const fast = turboRef.current && !free;
     const { base, step } = spinTempo(fast);
     busy.current = true;
     setSpinning(true);
-    setMood(s.session.inBonus ? "bonus" : "spin");
+    setMood(free ? "bonus" : "spin");
     if (!free) setBalance((n) => n - b);
     setLast(null);
-    setHeld([]);
     const nCols = k.cols || 5;
     lockRef.current = Array(nCols).fill(0);
     setLock(Array(nCols).fill(0));
@@ -372,9 +374,10 @@ export default function App() {
     last?.cMult > 1 ? "cmult" : "",
     last?.collect ? "collect" : "",
     last?.rare ? "rare" : "",
+    last?.extra ? "extra" : "",
     "floor",
   ].filter(Boolean).join(" ");
-  const lamps = Math.max(5, Math.min(12, session.inBonus ? session.bonusLeft || 6 : 7));
+  const lamps = session.inBonus ? Math.max(1, session.bonusLeft || 1) : 7;
 
   return (
     <div className="app wide">
@@ -387,15 +390,20 @@ export default function App() {
             </div>
             <div className="meter"><em>CITV</em><b>{balance}</b></div>
           </header>
-          <section className="grid">
-            {lobby.map((g) => (
-              <button key={g.id} className={"card lux g-" + g.id + (recents[0] === g.id ? " recent" : "")} onClick={() => openGame(g)} style={{ "--c": g.color }}>
+          <section className="grid bite">
+            {table.map((g, i) => (
+              <button key={g.id} className={"card lux g-" + g.id + (recents[0] === g.id ? " recent" : "")} onClick={() => openGame(g)} style={{ "--c": g.color, "--i": i }}>
                 <div className="ribbon" />
-                <div className={"em mot-" + g.motion}>{g.emoji}</div>
+                <Character game={g} mood="idle" bond={0} />
                 <div className="nm">{g.name}</div>
                 <div className="tag">{g.character}</div>
               </button>
             ))}
+            {shown < lobby.length && (
+              <button className="card lux more" onClick={() => { playClick(); tapTick(); setShown((n) => Math.min(lobby.length, n + BITE)); }}>
+                <div className="nm">+</div>
+              </button>
+            )}
           </section>
         </>
       )}
@@ -419,13 +427,6 @@ export default function App() {
           <p className={"bang " + (showWin ? "" : "quiet")}>
             {showWin ? (last.cMult > 1 ? `${last.win} ×${last.cMult}` : last.win) : ""}
           </p>
-          <div className="paystrip" aria-label="odeme tablosu">
-            <span className="payhead">3 / 4 / 5</span>
-            <span className="payrow">{WILD} {PAY3.wild} {PAY4.wild} {PAY5.wild}</span>
-            <span className="payrow">{game.emoji} {PAY3.theme} {PAY4.theme} {PAY5.theme}</span>
-            <span className="payrow">{STAR} {PAY3.star} {PAY4.star} {PAY5.star}</span>
-            <span className="payrow dim">{LOW[0]} {PAY3.low} {PAY4.low} {PAY5.low}</span>
-          </div>
           <div className={"dock lux kit-" + kit.extra}>
             <div className="well"><em>CITV</em><b>{balance}</b></div>
             <button className="key tick" onPointerDown={() => bumpAnte(-1)}>−</button>

@@ -58,6 +58,8 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
     );
   }
 
+  const rtp = session.wagered > 0 ? Math.round((session.paid / session.wagered) * 100) : 0;
+
   return (
     <section className="admin">
       <p className="kicker">kasa kontrol</p>
@@ -65,8 +67,12 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
       <div className="ledger">
         <div><span>Mod</span><b>{mode}</b></div>
         <div><span>Oyuncu</span><b>{balance}</b></div>
-        <div><span>Kasa</span><b className="hot">{session.vault}</b></div>
-        <div><span>Spin</span><b>{session.spins}</b></div>
+        <div><span>Kasa</span><b className="hot">{session.vault || 0}</b></div>
+        <div><span>Spin</span><b>{session.spins || 0}</b></div>
+        <div><span>RTP</span><b>{rtp}</b></div>
+        <div><span>Dry</span><b>{session.dry || 0}</b></div>
+        <div><span>Bonus</span><b>{session.inBonus ? session.bonusLeft : 0}</b></div>
+        <div><span>Bag</span><b>{session.bond || 0}</b></div>
       </div>
       <p className="notes">LIVE ray: dagitim bitince VITE_CITV_BALANCE_URL. Sunucu spin yok.</p>
       <div className="row">

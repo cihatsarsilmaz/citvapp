@@ -1,0 +1,54 @@
+.card .actor {
+  height: 72px;
+  margin: 0 0 4px;
+  transform: scale(.72);
+  transform-origin: 50% 80%;
+}
+.card .actor .ring { display: none; }
+.grid.bite .card {
+  animation: bitein .45s ease both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+@keyframes bitein {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: none; }
+}
+.card.more {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  border-style: dashed;
+}
+.card.more .nm { font-size: 36px; opacity: .7; }
+.stage.extra .window { box-shadow: 0 0 28px #ffe08a66; }
+.stage.bonus .actor { height: 118px; }
+
+.id-sweet .head { background: radial-gradient(circle at 35% 30%, #ffe4f2, #e089b8 70%); }
+.id-sweet .cape { border-radius: 50% 50% 30% 30% / 20% 20% 80% 80%; }
+.id-olympus .head { background: radial-gradient(circle at 35% 30%, #fff6d8, #d4a056 70%); }
+.id-olympus .cape { clip-path: polygon(10% 10%, 90% 10%, 80% 100%, 20% 100%); }
+.id-nova .head { background: radial-gradient(circle at 35% 30%, #e8e0ff, #8b7ad4 70%); }
+.id-nova .cape { border-radius: 50%; top: 22px; }
+.id-reef .head { background: radial-gradient(circle at 35% 30%, #c8f4ff, #2aa8b8 70%); }
+.id-reef .cape { border-radius: 60% 60% 20% 20%; }
+.id-rich .head { background: radial-gradient(circle at 35% 30%, #ffe9c4, #b8862a 70%); }
+.id-west .head { background: radial-gradient(circle at 35% 30%, #f3d2a8, #8a5a32 70%); }
+.id-west .cape { border-radius: 8px; height: 48px; }
+.id-mystic .head { background: radial-gradient(circle at 35% 30%, #f0e4ff, #7a4cb0 70%); }
+.id-wolf .head { background: radial-gradient(circle at 35% 30%, #e8eef4, #6b7280 70%); }
+.id-wolf .cape { border-radius: 20% 20% 40% 40%; }
+.id-flame .head { background: radial-gradient(circle at 35% 30%, #ffd8b8, #c45a20 70%); }
+.id-flame .cape { filter: blur(.3px); }
+.id-forest .head { background: radial-gradient(circle at 35% 30%, #e4f5d4, #4a8a3a 70%); }
+.id-pharaoh .head { background: radial-gradient(circle at 35% 30%, #ffe7a8, #c9a227 70%); }
+.id-pharaoh .cape { clip-path: polygon(50% 0, 100% 100%, 0 100%); top: 30px; }
+.id-pirate .head { background: radial-gradient(circle at 35% 30%, #e8d2b8, #6a4a32 70%); }
+.id-neon .head { background: radial-gradient(circle at 35% 30%, #ffd6f0, #c04090 70%); }
+.id-neon .torso { box-shadow: 0 0 12px var(--c); }
+.id-samurai .head { background: radial-gradient(circle at 35% 30%, #f5e0d0, #8a4030 70%); }
+.id-samurai .cape { transform: skewX(-8deg); }
+.id-ice .head { background: radial-gradient(circle at 35% 30%, #f0fbff, #7ad4e8 70%); }
+.id-dragon .head { background: radial-gradient(circle at 35% 30%, #ffd0d4, #a03040 70%); }
+.id-dragon .cape { height: 66px; border-radius: 40% 40% 10% 10%; }
+.id-circus .head { background: radial-gradient(circle at 35% 30%, #ffe0f0, #d05090 70%); }
+.id-vault .head { background: radial-gradient(circle at 35% 30%, #fff3c0, #c9a227 70%); }
