@@ -6,10 +6,15 @@ export default function Character({ game, mood, bond = 0 }) {
   const m = mood || "idle";
   const fill = Math.max(0, Math.min(1, bond / BOND_MAX));
   return (
-    <div className={`actor mot-${game.motion || "sway"} mood-${m}`} aria-hidden="true">
+    <div className={`actor fig mot-${game.motion || "sway"} mood-${m} id-${game.id}`} aria-hidden="true">
       <i className="ring" style={{ "--bond": fill }} />
       <i className={`aura fx-${game.fx || "dust"}`} />
-      <b className="body">{game.emoji}</b>
+      <span className="figure">
+        <i className="cape" />
+        <i className="torso" />
+        <i className="head" />
+        <b className="face">{game.emoji}</b>
+      </span>
       {m === "c" && <em className="cflash">C</em>}
     </div>
   );
