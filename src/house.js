@@ -138,8 +138,8 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
     if (day.drip) p.drip = true;
     if (day.ratio > 0.48) p.forceMiss = true;
   }
-  const cMult = rollC(!!evaled.themeHit, p.cChance, style.hot);
-  const raw = (evaled.total || 0) * cMult;
+  const rolled = rollC(!!evaled.themeHit, p.cChance, style.hot);
+  const raw = (evaled.total || 0) * rolled;
   let paid = raw > 0 ? Math.floor(Math.min(raw, bet * p.cap) * (1 - p.edge)) : 0;
   if (p.drip && paid === 0 && Math.random() < 0.78) paid = bet;
   if (p.forceMiss && !p.drip) paid = 0;
@@ -177,12 +177,13 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
   if (bonusLeft > 12) bonusLeft = 12;
   const inBonus = bonusLeft > 0;
   const won = paid > 0;
+  const shown = paid > 0 && bet > 0 ? Math.max(1, Math.round(paid / bet)) : 1;
 
   return {
     win: paid,
     raw,
     hits: evaled.hits || [],
-    cMult: paid > 0 ? (rare ? Math.max(8, Math.round(paid / bet)) : cMult) : 1,
+    cMult: shown,
     bonus: enterBonus,
     extra,
     jack,

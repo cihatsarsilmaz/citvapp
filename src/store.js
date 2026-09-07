@@ -1,8 +1,11 @@
+import { getMode, LIVE } from "./coin";
+
 const KEY = "citv-slot-v1";
 export const GRANT = 10000;
 export const FLOOR = 250;
 
 export function loadState(fallback) {
+  const live = getMode() === LIVE;
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) {
@@ -11,13 +14,14 @@ export function loadState(fallback) {
     const d = JSON.parse(raw);
     let balance = Number.isFinite(d.balance) ? d.balance : fallback.balance;
     let granted = !!d.granted;
-    if (!granted) {
+    if (!live && !granted) {
       balance += GRANT;
       granted = true;
     }
-    if (balance < FLOOR) balance += 2500;
+    if (!live && balance < FLOOR) balance += 2500;
+    if (live) granted = true;
     const session = d.session && typeof d.session === "object" ? { ...fallback.session, ...d.session } : fallback.session;
-    if (!d.granted) session.start = balance;
+    if (!d.granted && !live) session.start = balance;
     const next = { balance, session, muted: !!d.muted, granted };
     saveState(next);
     return next;
@@ -38,5 +42,6 @@ export function saveState(state) {
 }
 
 export function topUp(balance, amount = 2500) {
+  if (getMode() === LIVE) return Math.max(0, Number(balance) || 0);
   return Math.max(0, Number(balance) || 0) + amount;
 }
