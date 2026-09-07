@@ -57,6 +57,7 @@ export default function App() {
   const pending = useRef(null);
   const taps = useRef(0);
   const ledger = useRef(loadLedger());
+  const balRef = useRef(saved.balance);
   const live = useRef({});
   live.current = { game, balance, ante, session, ledger: ledger.current };
   autoRef.current = auto;
@@ -75,10 +76,17 @@ export default function App() {
   const table = lobby.slice(0, shown);
 
   useEffect(() => { setMuted(mute); }, [mute]);
-  useEffect(() => { saveState({ balance, session, muted: mute, granted: true }); }, [balance, session, mute]);
+  useEffect(() => {
+    balRef.current = balance;
+    saveState({ balance, session, muted: mute, granted: true });
+  }, [balance, session, mute]);
   useEffect(() => {
     if (isLive) return;
-    if (balance < 20) setBalance((n) => topUp(n, TOPUP));
+    if (balance < 20) {
+      const n = topUp(balRef.current, TOPUP);
+      balRef.current = n;
+      setBalance(n);
+    }
   }, [balance, isLive]);
 
   function clearTimers() {
@@ -113,23 +121,35 @@ export default function App() {
   const holdSet = useMemo(() => new Set(held), [held]);
   const broke = balance < bet && !(session.inBonus);
 
+  function writeBal(n) {
+    const v = Math.max(0, Math.floor(Number(n) || 0));
+    balRef.current = v;
+    live.current.balance = v;
+    setBalance(v);
+    return v;
+  }
+
   function finishSpin(my, next, b, snap) {
     if (gen.current !== my) return;
+    const bag = pending.current;
+    if (!bag || bag.my !== my || bag.done) return;
+    bag.done = true;
     try {
       stopSpinLoop();
       const s = live.current;
       const k = kitOf(s.game);
       const ev = evalLines(next, s.game.emoji, b, k);
       const result = applyHouse(ev, b, snap, {
-        balance: s.balance,
+        balance: balRef.current,
         ante: s.ante,
         turbo: turboRef.current,
         ledger: ledger.current,
       });
       ledger.current = book(ledger.current, snap.inBonus ? 0 : b, result.win, result.gift);
-      setLast(result);
+      const paid = Math.max(0, result.win || 0);
+      writeBal(balRef.current + paid);
+      setLast({ ...result, win: paid });
       setSession(result.session);
-      setBalance((n) => n + result.win);
       setHeld(holdKeys(next, result.extra || result.session.inBonus));
       if (result.rare) {
         setMood("c");
@@ -152,10 +172,10 @@ export default function App() {
       } else if (result.extra) {
         setMood("bonus");
         playExtra();
-      } else if (result.cMult > 1) setMood("c");
-      else if (result.win) setMood(result.session.inBonus ? "bonuswin" : "win");
+      } else if (paid > 0 && result.cMult > 1) setMood("c");
+      else if (paid > 0) setMood(result.session.inBonus ? "bonuswin" : "win");
       else setMood(result.session.inBonus ? "bonus" : "miss");
-      if (result.win) {
+      if (paid > 0) {
         playWin(result.cMult > 1 ? 3 : 2);
         tapWin(result.cMult > 1 ? 2 : 1);
       } else if (!result.bonus && !result.collect) playMiss();
@@ -230,7 +250,7 @@ export default function App() {
     const k = kitOf(s.game);
     const free = !!(s.session && s.session.inBonus);
     const b = UNIT * s.ante;
-    if (!free && s.balance < b) {
+    if (!free && balRef.current < b) {
       autoRef.current = false;
       setAuto(false);
       return;
@@ -243,7 +263,7 @@ export default function App() {
     busy.current = true;
     setSpinning(true);
     setMood(free ? "bonus" : "spin");
-    if (!free) setBalance((n) => n - b);
+    if (!free) writeBal(balRef.current - b);
     setLast(null);
     const nCols = k.cols || 5;
     lockRef.current = Array(nCols).fill(0);
@@ -253,10 +273,10 @@ export default function App() {
     playSpinLoop();
     tapSpin();
     const snap = s.session;
-    const style = readStyle(snap, s.balance, s.ante, fast);
+    const style = readStyle(snap, balRef.current, s.ante, fast);
     const p = plan(style, snap);
     const next = spinGrid(s.game.emoji, p.forceMiss && !snap.inBonus, k);
-    pending.current = { my, next, bet: b, snap };
+    pending.current = { my, next, bet: b, snap, done: false };
     armSpin(my, next, base, step);
   }
 
@@ -302,7 +322,7 @@ export default function App() {
   if (hash.includes("admin")) {
     return (
       <div className="app">
-        <Admin session={session} setSession={setSession} balance={balance} setBalance={setBalance} emptySession={emptySession} />
+        <Admin session={session} setSession={setSession} balance={balance} setBalance={(n) => writeBal(typeof n === "function" ? n(balRef.current) : n)} emptySession={emptySession} />
       </div>
     );
   }
@@ -442,7 +462,7 @@ export default function App() {
             <button className={"key latch tick " + (auto ? "on" : "")} onPointerDown={toggleAuto}>{auto ? "■" : "▶"}</button>
             <button className={"key latch tick " + (turbo ? "on" : "")} onPointerDown={() => { playClick(); tapTick(); setTurbo((t) => !t); }}>{turbo ? "▶▶" : "▶"}</button>
             {broke && !isLive && !session.inBonus && (
-              <button className="key fill tick" onPointerDown={() => { playClick(); tapTick(); setBalance((n) => topUp(n, TOPUP)); }}>+</button>
+              <button className="key fill tick" onPointerDown={() => { playClick(); tapTick(); writeBal(topUp(balRef.current, TOPUP)); }}>+</button>
             )}
             <button className="key tick" onPointerDown={() => { playClick(); tapTick(); setMute((m) => !m); }}>{mute ? "·" : "♪"}</button>
             <button className="key tick" onPointerDown={() => back(false)}>←</button>
