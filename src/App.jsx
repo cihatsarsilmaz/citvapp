@@ -4,7 +4,7 @@ import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, p
 import { UNIT } from "./paytable";
 import { spinGrid, applyHouse, emptySession, plan, readStyle } from "./house";
 import { evalLines, LOW } from "./engine";
-import { loadState, saveState } from "./store";
+import { loadState, saveState, topUp } from "./store";
 import { getMode, LIVE } from "./coin";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
@@ -23,8 +23,8 @@ const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
 function blank(cols = 5, rows = 3) {
   return Array.from({ length: cols }, () => Array.from({ length: rows }, rnd));
 }
-const START = 2500;
-const TOPUP = 500;
+const START = 12500;
+const TOPUP = 2500;
 const BITE = 6;
 const saved = loadState({ balance: START, session: emptySession(), muted: false });
 
@@ -75,7 +75,11 @@ export default function App() {
   const table = lobby.slice(0, shown);
 
   useEffect(() => { setMuted(mute); }, [mute]);
-  useEffect(() => { saveState({ balance, session, muted: mute }); }, [balance, session, mute]);
+  useEffect(() => { saveState({ balance, session, muted: mute, granted: true }); }, [balance, session, mute]);
+  useEffect(() => {
+    if (isLive) return;
+    if (balance < 20) setBalance((n) => topUp(n, TOPUP));
+  }, [balance, isLive]);
 
   function clearTimers() {
     gen.current += 1;
@@ -438,7 +442,7 @@ export default function App() {
             <button className={"key latch tick " + (auto ? "on" : "")} onPointerDown={toggleAuto}>{auto ? "■" : "▶"}</button>
             <button className={"key latch tick " + (turbo ? "on" : "")} onPointerDown={() => { playClick(); tapTick(); setTurbo((t) => !t); }}>{turbo ? "▶▶" : "▶"}</button>
             {broke && !isLive && !session.inBonus && (
-              <button className="key fill tick" onPointerDown={() => { playClick(); tapTick(); setBalance((n) => n + TOPUP); }}>+</button>
+              <button className="key fill tick" onPointerDown={() => { playClick(); tapTick(); setBalance((n) => topUp(n, TOPUP)); }}>+</button>
             )}
             <button className="key tick" onPointerDown={() => { playClick(); tapTick(); setMute((m) => !m); }}>{mute ? "·" : "♪"}</button>
             <button className="key tick" onPointerDown={() => back(false)}>←</button>
