@@ -58,40 +58,40 @@ export function readStyle(session, balance, ante, turbo) {
 }
 
 export function plan(style, session) {
-  let edge = 0.44;
-  let cap = 3.2;
+  let edge = 0.42;
+  let cap = 3.6;
   let forceMiss = (session.cool || 0) > 0;
   let drip = false;
-  let cChance = 0.1;
+  let cChance = 0.16;
 
   if (style.hot) {
-    edge = 0.56;
-    cap = 2.6;
+    edge = 0.58;
+    cap = 2.4;
     forceMiss = forceMiss || Math.random() < 0.62;
-    cChance = 0.03;
+    cChance = 0.06;
   } else if (style.cold) {
-    edge = 0.16;
-    cap = 2.2;
-    forceMiss = false;
-    drip = true;
-    cChance = 0.18;
-  } else if (style.dry >= 5) {
-    edge = 0.26;
+    edge = 0.14;
     cap = 2.8;
     forceMiss = false;
+    drip = true;
+    cChance = 0.28;
+  } else if (style.dry >= 5) {
+    edge = 0.22;
+    cap = 3.2;
+    forceMiss = false;
     drip = style.dry >= 7;
-    cChance = 0.14;
+    cChance = 0.22;
   }
 
   if (style.grind && !style.cold) {
     edge += 0.06;
     cap = Math.min(cap, 2.8);
-    cChance *= 0.5;
+    cChance *= 0.55;
   }
   if (session.inBonus) {
-    edge = Math.min(0.58, edge + 0.08);
-    cap = Math.min(cap, 2.5);
-    cChance = Math.min(cChance, 0.1);
+    edge = Math.min(0.56, edge + 0.06);
+    cap = Math.min(cap, 2.8);
+    cChance = Math.max(cChance, 0.18);
   }
   if (style.rtp > 0.74 && session.spins > 8) forceMiss = true;
 
@@ -118,9 +118,12 @@ export function spinGrid(theme, forceMiss, layout = { cols: 5, rows: 3 }) {
 }
 
 function rollC(themeHit, cChance, hot) {
-  if (!themeHit || (hot && Math.random() < 0.7)) return 1;
+  if (!themeHit) return 1;
+  if (hot && Math.random() < 0.55) return 1;
   const r = Math.random();
-  if (r < cChance * 0.18) return 3;
+  if (r < cChance * 0.06) return 5;
+  if (r < cChance * 0.16) return 4;
+  if (r < cChance * 0.36) return 3;
   if (r < cChance) return 2;
   return 1;
 }
