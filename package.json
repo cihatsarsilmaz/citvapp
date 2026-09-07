@@ -1,6 +1,6 @@
 {
   "name": "@cihatsarsilmaz/citv-slot",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": false,
   "type": "module",
   "description": "CITV Slot — 18 oyun, karakter sahneleri. AstrogameWAR değil.",
@@ -15,11 +15,12 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "audit:citv": "node scripts/audit.mjs",
+    "build": "node scripts/audit.mjs && vite build",
     "preview": "vite preview",
     "sim": "node src/sim.js",
     "lint": "echo 'Lint configured'",
-    "test": "echo 'Tests configured'",
+    "test": "node scripts/audit.mjs",
     "deploy:vercel": "npm run build && npx vercel --prod",
     "deploy:netlify": "npm run build && npx netlify-cli deploy --prod --dir=dist",
     "deploy:gh": "npm run build && npx gh-pages -d dist",
