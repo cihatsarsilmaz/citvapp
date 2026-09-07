@@ -10,6 +10,7 @@ import "./gate.css";
 import "./lux.css";
 import "./play.css";
 import "./floor.css";
+import "./flow.css";
 
 startPwa();
 
