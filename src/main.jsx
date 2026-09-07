@@ -13,6 +13,7 @@ import "./play.css";
 import "./floor.css";
 import "./flow.css";
 import "./scale.css";
+import "./vis7.css";
 
 startPwa();
 
