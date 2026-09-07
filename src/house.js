@@ -3,7 +3,7 @@ import { LOW } from "./engine";
 import { nextBond } from "./bond";
 import { dayPlan, clipDay } from "./ledger";
 
-export const START_BANK = 2500;
+export const START_BANK = 12500;
 
 function pick(list) {
   return list[Math.floor(Math.random() * list.length)];
