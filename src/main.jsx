@@ -12,6 +12,7 @@ import "./lux.css";
 import "./play.css";
 import "./floor.css";
 import "./flow.css";
+import "./scale.css";
 
 startPwa();
 

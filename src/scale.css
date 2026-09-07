@@ -1,0 +1,16 @@
+.cell {
+  min-height: 68px;
+  font-size: 40px;
+  line-height: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.cell.hit { transform: scale(1.1); }
+.window.five { gap: 4px; }
+.reelcol { gap: 4px; }
+@media (max-width: 520px) {
+  .cell { min-height: 62px; font-size: 36px; }
+  .spinbtn { width: 76px; height: 76px; }
+  .actor { height: auto; }
+}
