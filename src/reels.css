@@ -1,0 +1,10 @@
+.window.canvas {
+  padding: 0;
+  overflow: hidden;
+}
+.reels-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: manipulation;
+}
