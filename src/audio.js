@@ -29,43 +29,34 @@ function noise(seconds = 0.5) {
   const d = buf.getChannelData(0);
   let last = 0;
   for (let i = 0; i < n; i++) {
-    last = last * 0.96 + (Math.random() * 2 - 1) * 0.08;
+    last = last * 0.97 + (Math.random() * 2 - 1) * 0.06;
     d[i] = last;
   }
   noiseBuf = buf;
   return buf;
 }
 
-function tone({ freq = 440, type = "sine", dur = 0.12, gain = 0.045, slide = 0, start = 0 }) {
+function tone({ freq = 220, type = "sine", dur = 0.12, gain = 0.03, slide = 0, start = 0 }) {
   if (muted) return;
   try {
     const ac = getCtx();
     const t = ac.currentTime + start;
     const o = ac.createOscillator();
-    const o2 = ac.createOscillator();
     const g = ac.createGain();
     const f = ac.createBiquadFilter();
     o.type = type;
-    o2.type = "sine";
     o.frequency.setValueAtTime(freq, t);
-    o2.frequency.setValueAtTime(freq * 2.01, t);
-    if (slide) {
-      o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
-      o2.frequency.exponentialRampToValueAtTime(Math.max(80, (freq + slide) * 2), t + dur);
-    }
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
     f.type = "lowpass";
-    f.frequency.setValueAtTime(1400, t);
+    f.frequency.setValueAtTime(900, t);
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(gain, t + 0.014);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(f);
-    o2.connect(f);
     f.connect(g);
     g.connect(ac.destination);
     o.start(t);
-    o2.start(t);
     o.stop(t + dur + 0.02);
-    o2.stop(t + dur + 0.02);
   } catch {}
 }
 
@@ -80,35 +71,35 @@ function thud(freq, start = 0) {
     f.type = "lowpass";
     f.frequency.setValueAtTime(freq, t);
     const g = ac.createGain();
-    g.gain.setValueAtTime(0.08, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    g.gain.setValueAtTime(0.07, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
     src.connect(f);
     f.connect(g);
     g.connect(ac.destination);
     src.start(t);
-    src.stop(t + 0.1);
+    src.stop(t + 0.11);
   } catch {}
 }
 
 const VOICE = {
-  chime: { thud: 180, snap: 740, type: "sine" },
-  thunder: { thud: 70, snap: 240, type: "sine" },
-  glass: { thud: 210, snap: 980, type: "sine" },
-  low: { thud: 80, snap: 180, type: "sine" },
-  coin: { thud: 150, snap: 720, type: "sine" },
-  snap: { thud: 130, snap: 520, type: "sine" },
-  pad: { thud: 170, snap: 420, type: "sine" },
-  howl: { thud: 78, snap: 240, type: "sine" },
-  crackle: { thud: 140, snap: 480, type: "sine" },
-  wood: { thud: 110, snap: 240, type: "sine" },
-  bell: { thud: 190, snap: 860, type: "sine" },
-  creak: { thud: 90, snap: 160, type: "sine" },
-  blip: { thud: 220, snap: 760, type: "sine" },
-  steel: { thud: 200, snap: 980, type: "sine" },
-  ice: { thud: 260, snap: 1100, type: "sine" },
-  roar: { thud: 55, snap: 140, type: "sine" },
-  toot: { thud: 220, snap: 400, type: "sine" },
-  clack: { thud: 150, snap: 320, type: "sine" },
+  chime: { thud: 140, snap: 280 },
+  thunder: { thud: 60, snap: 120 },
+  glass: { thud: 160, snap: 320 },
+  low: { thud: 70, snap: 110 },
+  coin: { thud: 120, snap: 240 },
+  snap: { thud: 110, snap: 200 },
+  pad: { thud: 130, snap: 210 },
+  howl: { thud: 70, snap: 140 },
+  crackle: { thud: 120, snap: 200 },
+  wood: { thud: 100, snap: 160 },
+  bell: { thud: 150, snap: 260 },
+  creak: { thud: 80, snap: 120 },
+  blip: { thud: 140, snap: 220 },
+  steel: { thud: 160, snap: 280 },
+  ice: { thud: 170, snap: 300 },
+  roar: { thud: 50, snap: 90 },
+  toot: { thud: 140, snap: 180 },
+  clack: { thud: 120, snap: 180 },
 };
 
 export function stopTheme() {
@@ -126,18 +117,17 @@ export function playTheme(freqs) {
     const now = ac.currentTime;
     const master = ac.createGain();
     master.gain.setValueAtTime(0.0001, now);
-    master.gain.exponentialRampToValueAtTime(0.035, now + 0.08);
+    master.gain.exponentialRampToValueAtTime(0.02, now + 0.08);
     master.connect(ac.destination);
-    freqs.slice(0, 4).forEach((f, i) => {
-      const o = ac.createOscillator();
-      o.type = "sine";
-      o.frequency.setValueAtTime(f, now);
-      o.connect(master);
-      o.start(now + i * 0.06);
-      o.stop(now + 0.7);
-      if (i === 0) current = o;
-    });
-    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.72);
+    const f0 = Math.min(...freqs.slice(0, 2));
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(Math.max(80, f0 / 2), now);
+    o.connect(master);
+    o.start(now);
+    o.stop(now + 0.45);
+    current = o;
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.46);
   } catch {}
 }
 
@@ -151,12 +141,10 @@ export function playSpinLoop() {
     src.buffer = noise();
     src.loop = true;
     const f = ac.createBiquadFilter();
-    f.type = "bandpass";
-    f.frequency.setValueAtTime(380, now);
-    f.frequency.linearRampToValueAtTime(520, now + 0.4);
-    f.Q.value = 0.85;
+    f.type = "lowpass";
+    f.frequency.setValueAtTime(280, now);
     const g = ac.createGain();
-    g.gain.setValueAtTime(0.028, now);
+    g.gain.setValueAtTime(0.02, now);
     src.connect(f);
     f.connect(g);
     g.connect(ac.destination);
@@ -179,23 +167,25 @@ export function playClash(sym, voice = "clack") {
   if (muted) return;
   const v = VOICE[voice] || VOICE.clack;
   thud(v.thud);
-  tone({ freq: v.snap, type: v.type, dur: 0.07, gain: 0.028, start: 0.02 });
+  tone({ freq: v.snap, type: "sine", dur: 0.06, gain: 0.02, start: 0.02 });
 }
 
 export function playWin(tier = 1) {
   if (muted) return;
-  [392, 494, 587, 784].slice(0, 2 + tier).forEach((f, i) =>
-    tone({ freq: f, type: "sine", dur: 0.2, gain: 0.035, start: i * 0.07 })
-  );
+  thud(70);
+  const seq = tier >= 3 ? [110, 165, 220] : tier >= 2 ? [98, 147] : [98];
+  seq.forEach((f, i) => tone({ freq: f, type: "sine", dur: 0.16, gain: 0.028, start: i * 0.06 }));
 }
-export function playMiss() { tone({ freq: 150, type: "sine", dur: 0.22, gain: 0.022, slide: -40 }); }
-export function playClick() { thud(420); tone({ freq: 360, type: "sine", dur: 0.05, gain: 0.02 }); }
+export function playMiss() { tone({ freq: 90, type: "sine", dur: 0.18, gain: 0.018, slide: -20 }); }
+export function playClick() { thud(200); }
 export function playBonusIn() {
-  [523, 659, 784, 1046].forEach((f, i) => tone({ freq: f, type: "sine", dur: 0.22, gain: 0.04, start: i * 0.08 }));
+  thud(60);
+  tone({ freq: 130, type: "sine", dur: 0.28, gain: 0.03 });
+  tone({ freq: 196, type: "sine", dur: 0.22, gain: 0.022, start: 0.12 });
 }
 export function playJack() {
-  thud(90);
-  tone({ freq: 196, type: "sine", dur: 0.18, gain: 0.045 });
-  tone({ freq: 392, type: "sine", dur: 0.24, gain: 0.035, start: 0.1 });
+  thud(55);
+  tone({ freq: 82, type: "sine", dur: 0.3, gain: 0.04 });
+  tone({ freq: 164, type: "sine", dur: 0.24, gain: 0.028, start: 0.1 });
 }
-export function playExtra() { tone({ freq: 660, type: "sine", dur: 0.14, gain: 0.032, slide: 160 }); }
+export function playExtra() { tone({ freq: 147, type: "sine", dur: 0.12, gain: 0.024 }); }
