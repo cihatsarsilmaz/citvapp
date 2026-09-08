@@ -9,7 +9,7 @@ import { getMode, LIVE } from "./coin";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
 import { loadRecents, pushRecent } from "./recents";
-import { lockAt, starsLocked, markCell, spinTempo } from "./pace";
+import { lockAt, starsLocked, spinTempo } from "./pace";
 import { holdKeys } from "./bond";
 import { loadLedger, book } from "./ledger";
 import Character from "./Character";
@@ -17,6 +17,7 @@ import Gate from "./Gate";
 import Jackpot from "./Jackpot";
 import Joy from "./Joy";
 import Admin from "./Admin";
+import Reels from "./Reels";
 
 const POOL = [...LOW];
 const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
@@ -439,14 +440,8 @@ export default function App() {
           <div className="lamps">{Array.from({ length: lamps }, (_, i) => <i key={i} />)}</div>
           <Jackpot kit={kit} vault={session.vault} hit={!!last?.jack} />
           <Character game={game} mood={mood} bond={session.bond || 0} />
-          <div className={"window five " + (spinning ? "spin" : "") + (showWin ? " win" : "")} onPointerDown={nudgeStage}>
-            {grid.map((col, c) => (
-              <div key={c} className={"reelcol " + (lock[c] ? "lock" : "")}>
-                {col.map((s, r) => (
-                  <div key={r} className={"cell" + markCell(s) + (hitSet.has(`${c}:${r}`) ? " hit drop" : "") + (holdSet.has(`${c}:${r}`) ? " hold" : "")}>{s}</div>
-                ))}
-              </div>
-            ))}
+          <div className={"window five canvas " + (spinning ? "spin" : "") + (showWin ? " win" : "")}>
+            <Reels grid={grid} lock={lock} hits={hitSet} hold={holdSet} spinning={spinning} win={showWin} onPointerDown={nudgeStage} />
           </div>
           <p className={"bang " + (showWin ? "" : "quiet")}>
             {showWin ? (last.cMult > 1 ? `${last.win} ×${last.cMult}` : last.win) : ""}
