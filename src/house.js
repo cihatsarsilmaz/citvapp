@@ -62,40 +62,40 @@ export function plan(style, session) {
   let cap = 3.6;
   let forceMiss = (session.cool || 0) > 0;
   let drip = false;
-  let cChance = 0.16;
+  let roar = 0.18;
 
   if (style.hot) {
     edge = 0.58;
     cap = 2.4;
     forceMiss = forceMiss || Math.random() < 0.62;
-    cChance = 0.06;
+    roar = 0.05;
   } else if (style.cold) {
     edge = 0.14;
     cap = 2.8;
     forceMiss = false;
     drip = true;
-    cChance = 0.28;
+    roar = 0.28;
   } else if (style.dry >= 5) {
     edge = 0.22;
     cap = 3.2;
     forceMiss = false;
     drip = style.dry >= 7;
-    cChance = 0.22;
+    roar = 0.24;
   }
 
   if (style.grind && !style.cold) {
     edge += 0.06;
     cap = Math.min(cap, 2.8);
-    cChance *= 0.55;
+    roar *= 0.5;
   }
   if (session.inBonus) {
     edge = Math.min(0.56, edge + 0.06);
     cap = Math.min(cap, 2.8);
-    cChance = Math.max(cChance, 0.18);
+    roar = Math.max(roar, 0.2);
   }
   if (style.rtp > 0.74 && session.spins > 8) forceMiss = true;
 
-  return { edge, cap, forceMiss, drip, cChance };
+  return { edge, cap, forceMiss, drip, roar };
 }
 
 export function spinGrid(theme, forceMiss, layout = { cols: 5, rows: 3 }) {
@@ -117,14 +117,12 @@ export function spinGrid(theme, forceMiss, layout = { cols: 5, rows: 3 }) {
   return grid;
 }
 
-function rollC(themeHit, cChance, hot) {
-  if (!themeHit) return 1;
-  if (hot && Math.random() < 0.55) return 1;
+function rollRoar(themeHit, chance, hot) {
+  if (!themeHit || hot && Math.random() < 0.6) return 1;
   const r = Math.random();
-  if (r < cChance * 0.06) return 5;
-  if (r < cChance * 0.16) return 4;
-  if (r < cChance * 0.36) return 3;
-  if (r < cChance) return 2;
+  if (r < chance * 0.08) return 5;
+  if (r < chance * 0.28) return 3;
+  if (r < chance) return 2;
   return 1;
 }
 
@@ -138,8 +136,7 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
     if (day.drip) p.drip = true;
     if (day.ratio > 0.48) p.forceMiss = true;
   }
-  const rolled = rollC(!!evaled.themeHit, p.cChance, style.hot);
-  const raw = (evaled.total || 0) * rolled;
+  const raw = evaled.total || 0;
   let paid = raw > 0 ? Math.floor(Math.min(raw, bet * p.cap) * (1 - p.edge)) : 0;
   if (p.drip && paid === 0 && Math.random() < 0.78) paid = bet;
   if (p.forceMiss && !p.drip) paid = 0;
@@ -169,6 +166,16 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
   const wager = session.inBonus ? 0 : bet;
   if (ctx.ledger) paid = clipDay(ctx.ledger, wager, paid);
 
+  let roar = 1;
+  if (paid > 0 && !rare) {
+    roar = rollRoar(!!evaled.themeHit, p.roar, style.hot);
+    if (roar > 1) {
+      paid = paid * roar;
+      if (ctx.ledger) paid = clipDay(ctx.ledger, wager, paid);
+    }
+  }
+  if (rare) roar = Math.max(8, Math.round(paid / Math.max(1, bet)));
+
   const extra = session.inBonus && (evaled.stars || 0) >= 2 ? 1 : 0;
   const enterBonus = !session.inBonus && (session.bonusLock || 0) <= 0 && (evaled.stars || 0) >= 3;
   let bonusLeft = session.inBonus
@@ -177,13 +184,14 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
   if (bonusLeft > 12) bonusLeft = 12;
   const inBonus = bonusLeft > 0;
   const won = paid > 0;
-  const shown = paid > 0 && bet > 0 ? Math.max(1, Math.round(paid / bet)) : 1;
+  const cMult = roar >= 2 ? roar : 1;
 
   return {
     win: paid,
     raw,
     hits: evaled.hits || [],
-    cMult: shown,
+    cMult,
+    roar: cMult,
     bonus: enterBonus,
     extra,
     jack,
