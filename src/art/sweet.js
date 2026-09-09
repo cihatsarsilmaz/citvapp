@@ -1,1 +1,1 @@
-export { default } from "../portraits-data/sweet.js";
+export default null;
