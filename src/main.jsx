@@ -17,6 +17,7 @@ import "./scale.css";
 import "./vis7.css";
 import "./lock.css";
 import "./reels.css";
+import "./polish.css";
 
 startPwa();
 

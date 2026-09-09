@@ -1,0 +1,60 @@
+@media (prefers-reduced-motion: reduce) {
+  .actor, .card, .gate, .bang, .figure, .reels-canvas {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+.card.lux {
+  transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease;
+}
+.card.lux:active {
+  transform: scale(.97);
+}
+.key.tick:active,
+.plunger.tick:active {
+  transform: translateY(2px);
+}
+.grid.bite .card {
+  animation: lift .4s cubic-bezier(.2,.8,.2,1) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+@keyframes lift {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.card.ghost {
+  min-height: 148px;
+  pointer-events: none;
+  background: linear-gradient(180deg, #1c0c12, #12080c);
+  animation: pulse 1.1s ease-in-out infinite;
+}
+@keyframes pulse {
+  50% { opacity: .55; }
+}
+.gate.cine {
+  animation: gateIn .28s ease-out both;
+}
+@keyframes gateIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.window.canvas {
+  transition: box-shadow .25s ease;
+}
+.window.canvas.win {
+  box-shadow: 0 0 24px #ffe08a33;
+}
+.bang {
+  transition: opacity .2s ease, transform .2s ease;
+}
+.bang.quiet {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.stage.floor {
+  animation: stageIn .32s ease-out both;
+}
+@keyframes stageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}

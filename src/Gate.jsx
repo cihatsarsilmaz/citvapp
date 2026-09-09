@@ -3,7 +3,7 @@ import { kitOf } from "./kits";
 
 export default function Gate({ game, onDone }) {
   const kit = kitOf(game);
-  const ms = Math.max(kit.ms || 900, 1480);
+  const ms = Math.max(kit.ms || 900, 1100);
   useEffect(() => {
     const t = setTimeout(onDone, ms);
     return () => clearTimeout(t);
