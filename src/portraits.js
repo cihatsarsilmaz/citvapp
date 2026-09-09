@@ -1,5 +1,10 @@
-import sweet from "./art/sweet.js";
-import olympus from "./art/olympus.js";
-import dragon from "./art/dragon.js";
-export const PORTRAITS = { sweet, olympus, dragon };
-export function portraitOf(id) { return PORTRAITS[id] || null; }
+/* Pilot portraits — data URLs inlined at build via art modules when present */
+const modules = import.meta.glob("./art/*.js", { eager: true, import: "default" });
+export const PORTRAITS = {};
+for (const [path, value] of Object.entries(modules)) {
+  const id = path.split("/").pop().replace(/\.js$/, "");
+  if (value) PORTRAITS[id] = value;
+}
+export function portraitOf(id) {
+  return PORTRAITS[id] || null;
+}
