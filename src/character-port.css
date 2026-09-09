@@ -1,4 +1,5 @@
 .actor.has-port .figure.port {
+  position: relative;
   overflow: hidden;
   border-radius: 22px 22px 26px 26px;
   background: #12080c;
