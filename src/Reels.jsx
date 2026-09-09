@@ -4,7 +4,7 @@ import { blit, buildAtlas } from "./atlas";
 export default function Reels({ grid, lock, hits, hold, spinning, win, onPointerDown }) {
   const ref = useRef(null);
   const raf = useRef(0);
-  const tick = useRef(0);
+  const start = useRef(0);
 
   useEffect(() => { buildAtlas(); }, []);
 
@@ -12,18 +12,19 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
     const canvas = ref.current;
     if (!canvas) return;
     const parent = canvas.parentElement;
+    start.current = performance.now();
 
     function fit() {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       const w = parent.clientWidth || 320;
-      const h = Math.max(160, Math.round(w * 0.62));
+      const h = Math.max(168, Math.round(w * 0.62));
       canvas.style.width = w + "px";
       canvas.style.height = h + "px";
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
     }
 
-    function draw() {
+    function draw(now) {
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
       const dpr = canvas.width / Math.max(1, canvas.clientWidth);
@@ -37,11 +38,15 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
       const gap = 4;
       const cw = (W - gap * (cols + 1)) / cols;
       const rh = (H - gap * (rows + 1)) / rows;
-      const bounce = spinning ? Math.sin(tick.current / 7) * 3 : 0;
+      const t = (now - start.current) / 1000;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = spinning ? "medium" : "high";
       for (let c = 0; c < cols; c++) {
+        const locked = lock && lock[c];
+        const bounce = spinning && !locked ? Math.sin(t * 18 + c * 0.7) * 5 : 0;
         const x = gap + c * (cw + gap);
         for (let r = 0; r < rows; r++) {
-          const y = gap + r * (rh + gap) + (lock && lock[c] ? 0 : bounce);
+          const y = gap + r * (rh + gap) + bounce;
           const key = `${c}:${r}`;
           const hit = hits && hits.has(key);
           const held = hold && hold.has(key);
@@ -58,16 +63,15 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
       }
     }
 
-    function loop() {
-      tick.current += 1;
-      draw();
+    function loop(now) {
+      draw(now);
       if (spinning) raf.current = requestAnimationFrame(loop);
     }
 
     fit();
-    draw();
+    draw(performance.now());
     if (spinning) raf.current = requestAnimationFrame(loop);
-    const ro = new ResizeObserver(() => { fit(); draw(); });
+    const ro = new ResizeObserver(() => { fit(); draw(performance.now()); });
     ro.observe(parent);
     return () => {
       cancelAnimationFrame(raf.current);
