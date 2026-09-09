@@ -3,6 +3,7 @@ let current;
 let spinNoise;
 let muted = false;
 let noiseBuf;
+const VOL = 2.6;
 
 export function setMuted(v) {
   muted = !!v;
@@ -13,6 +14,10 @@ export function setMuted(v) {
 }
 export function isMuted() {
   return muted;
+}
+
+export function wakeAudio() {
+  try { getCtx(); } catch {}
 }
 
 function getCtx() {
@@ -36,7 +41,7 @@ function noise(seconds = 0.5) {
   return buf;
 }
 
-function tone({ freq = 220, type = "sine", dur = 0.12, gain = 0.03, slide = 0, start = 0 }) {
+function tone({ freq = 220, type = "sine", dur = 0.12, gain = 0.08, slide = 0, start = 0 }) {
   if (muted) return;
   try {
     const ac = getCtx();
@@ -48,9 +53,10 @@ function tone({ freq = 220, type = "sine", dur = 0.12, gain = 0.03, slide = 0, s
     o.frequency.setValueAtTime(freq, t);
     if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
     f.type = "lowpass";
-    f.frequency.setValueAtTime(900, t);
+    f.frequency.setValueAtTime(1400, t);
+    const peak = gain * VOL;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(gain, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.018);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(f);
     f.connect(g);
@@ -71,13 +77,13 @@ function thud(freq, start = 0) {
     f.type = "lowpass";
     f.frequency.setValueAtTime(freq, t);
     const g = ac.createGain();
-    g.gain.setValueAtTime(0.07, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+    g.gain.setValueAtTime(0.16 * VOL * 0.45, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
     src.connect(f);
     f.connect(g);
     g.connect(ac.destination);
     src.start(t);
-    src.stop(t + 0.11);
+    src.stop(t + 0.13);
   } catch {}
 }
 
@@ -117,7 +123,7 @@ export function playTheme(freqs) {
     const now = ac.currentTime;
     const master = ac.createGain();
     master.gain.setValueAtTime(0.0001, now);
-    master.gain.exponentialRampToValueAtTime(0.02, now + 0.08);
+    master.gain.exponentialRampToValueAtTime(0.055 * VOL, now + 0.08);
     master.connect(ac.destination);
     const f0 = Math.min(...freqs.slice(0, 2));
     const o = ac.createOscillator();
@@ -142,9 +148,9 @@ export function playSpinLoop() {
     src.loop = true;
     const f = ac.createBiquadFilter();
     f.type = "lowpass";
-    f.frequency.setValueAtTime(280, now);
+    f.frequency.setValueAtTime(360, now);
     const g = ac.createGain();
-    g.gain.setValueAtTime(0.02, now);
+    g.gain.setValueAtTime(0.055 * VOL, now);
     src.connect(f);
     f.connect(g);
     g.connect(ac.destination);
@@ -167,25 +173,25 @@ export function playClash(sym, voice = "clack") {
   if (muted) return;
   const v = VOICE[voice] || VOICE.clack;
   thud(v.thud);
-  tone({ freq: v.snap, type: "sine", dur: 0.06, gain: 0.02, start: 0.02 });
+  tone({ freq: v.snap, type: "sine", dur: 0.07, gain: 0.055, start: 0.02 });
 }
 
 export function playWin(tier = 1) {
   if (muted) return;
   thud(70);
   const seq = tier >= 3 ? [110, 165, 220] : tier >= 2 ? [98, 147] : [98];
-  seq.forEach((f, i) => tone({ freq: f, type: "sine", dur: 0.16, gain: 0.028, start: i * 0.06 }));
+  seq.forEach((f, i) => tone({ freq: f, type: "sine", dur: 0.18, gain: 0.07, start: i * 0.06 }));
 }
-export function playMiss() { tone({ freq: 90, type: "sine", dur: 0.18, gain: 0.018, slide: -20 }); }
+export function playMiss() { tone({ freq: 90, type: "sine", dur: 0.18, gain: 0.045, slide: -20 }); }
 export function playClick() { thud(200); }
 export function playBonusIn() {
   thud(60);
-  tone({ freq: 130, type: "sine", dur: 0.28, gain: 0.03 });
-  tone({ freq: 196, type: "sine", dur: 0.22, gain: 0.022, start: 0.12 });
+  tone({ freq: 130, type: "sine", dur: 0.28, gain: 0.075 });
+  tone({ freq: 196, type: "sine", dur: 0.22, gain: 0.055, start: 0.12 });
 }
 export function playJack() {
   thud(55);
-  tone({ freq: 82, type: "sine", dur: 0.3, gain: 0.04 });
-  tone({ freq: 164, type: "sine", dur: 0.24, gain: 0.028, start: 0.1 });
+  tone({ freq: 82, type: "sine", dur: 0.3, gain: 0.09 });
+  tone({ freq: 164, type: "sine", dur: 0.24, gain: 0.07, start: 0.1 });
 }
-export function playExtra() { tone({ freq: 147, type: "sine", dur: 0.12, gain: 0.024 }); }
+export function playExtra() { tone({ freq: 147, type: "sine", dur: 0.12, gain: 0.06 }); }
