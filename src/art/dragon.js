@@ -1,10 +1,1 @@
-import p1 from "./parts/dragon_1.js";
-import p2 from "./parts/dragon_2.js";
-import p3 from "./parts/dragon_3.js";
-import p4 from "./parts/dragon_4.js";
-import p5 from "./parts/dragon_5.js";
-import p6 from "./parts/dragon_6.js";
-import p7 from "./parts/dragon_7.js";
-import p8 from "./parts/dragon_8.js";
-import p9 from "./parts/dragon_9.js";
-export default p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+export default "PLACEHOLDER_DRAGON";
