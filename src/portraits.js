@@ -3,7 +3,7 @@ const modules = import.meta.glob("./art/*.js", { eager: true, import: "default" 
 export const PORTRAITS = {};
 for (const [path, value] of Object.entries(modules)) {
   const id = path.split("/").pop().replace(/\.js$/, "");
-  if (value) PORTRAITS[id] = value;
+  if (typeof value === "string" && value.startsWith("data:image")) PORTRAITS[id] = value;
 }
 export function portraitOf(id) {
   return PORTRAITS[id] || null;
