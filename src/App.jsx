@@ -33,6 +33,7 @@ export default function App() {
   const [hash, setHash] = useState(typeof location !== "undefined" ? location.hash : "");
   const [game, setGame] = useState(null);
   const [boot, setBoot] = useState(false);
+  const [ready, setReady] = useState(false);
   const [grid, setGrid] = useState(() => blank());
   const [lock, setLock] = useState([0, 0, 0, 0, 0]);
   const [spinning, setSpinning] = useState(false);
@@ -76,6 +77,10 @@ export default function App() {
   }, [recents]);
   const table = lobby.slice(0, shown);
 
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 160);
+    return () => clearTimeout(t);
+  }, []);
   useEffect(() => { setMuted(mute); }, [mute]);
   useEffect(() => {
     balRef.current = balance;
@@ -416,7 +421,8 @@ export default function App() {
             <div className="meter"><em>CITV</em><b>{balance}</b></div>
           </header>
           <section className="grid bite">
-            {table.map((g, i) => (
+            {!ready && [0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="card lux ghost" style={{ "--i": i }} />)}
+            {ready && table.map((g, i) => (
               <button key={g.id} className={"card lux g-" + g.id + (recents[0] === g.id ? " recent" : "")} onClick={() => openGame(g)} style={{ "--c": g.color, "--i": i }}>
                 <div className="ribbon" />
                 <Character game={g} mood="idle" bond={0} />
@@ -424,7 +430,7 @@ export default function App() {
                 <div className="tag">{g.character}</div>
               </button>
             ))}
-            {shown < lobby.length && (
+            {ready && shown < lobby.length && (
               <button className="card lux more" onClick={() => { playClick(); tapTick(); setShown((n) => Math.min(lobby.length, n + BITE)); }}>
                 <div className="nm">+</div>
               </button>
