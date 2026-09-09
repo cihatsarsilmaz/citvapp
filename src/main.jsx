@@ -5,6 +5,7 @@ import { startPwa } from "./pwa";
 import "./styles.css";
 import "./slot5.css";
 import "./character.css";
+import "./character-port.css";
 import "./skins.css";
 import "./look.css";
 import "./react.css";
