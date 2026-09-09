@@ -6,6 +6,7 @@ import "./styles.css";
 import "./slot5.css";
 import "./character.css";
 import "./skins.css";
+import "./look.css";
 import "./react.css";
 import "./gate.css";
 import "./lux.css";
