@@ -4,6 +4,7 @@
 }
 .stage.floor {
   min-height: 100dvh;
+  overflow-x: hidden;
   display: grid;
   grid-template-rows: auto auto minmax(168px, auto) 1fr auto auto;
   padding: 6px 6px calc(8px + env(safe-area-inset-bottom));
@@ -16,6 +17,8 @@
   z-index: 2;
   padding: 6px;
   gap: 3px;
+  min-height: 0;
+  max-width: 100%;
 }
 .stage.floor .dock {
   position: sticky;

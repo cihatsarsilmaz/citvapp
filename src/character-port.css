@@ -31,3 +31,18 @@
 .mood-bonuswin.has-port .port-img {
   filter: saturate(1.18) brightness(1.08);
 }
+
+.stage.floor .actor.has-port {
+  overflow: visible;
+  max-width: 100%;
+}
+.stage.floor .actor.has-port .figure.port {
+  max-width: 72px;
+  max-height: 90px;
+}
+@media (max-width: 390px) {
+  .stage.floor .actor.has-port .figure.port {
+    width: 56px !important;
+    height: 70px !important;
+  }
+}

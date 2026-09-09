@@ -1,10 +1,21 @@
+.window.five.canvas,
 .window.canvas {
-  padding: 0;
+  display: block !important;
+  grid-template-columns: none !important;
+  padding: 0 !important;
   overflow: hidden;
+  min-height: 156px;
+  max-height: 46dvh;
 }
 .reels-canvas {
   display: block;
   width: 100%;
   height: auto;
+  max-width: 100%;
   touch-action: manipulation;
+  border-radius: 12px;
+}
+.stage.floor .window.five.canvas {
+  flex: 1 1 auto;
+  margin-top: 4px;
 }
