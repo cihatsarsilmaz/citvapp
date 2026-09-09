@@ -18,6 +18,7 @@ import "./vis7.css";
 import "./lock.css";
 import "./reels.css";
 import "./polish.css";
+import "./feel.css";
 
 startPwa();
 

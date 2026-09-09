@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { blit, buildAtlas } from "./atlas";
+import { LOW } from "./engine";
 
 export default function Reels({ grid, lock, hits, hold, spinning, win, onPointerDown }) {
   const ref = useRef(null);
@@ -43,12 +44,18 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
       ctx.imageSmoothingQuality = spinning ? "medium" : "high";
       for (let c = 0; c < cols; c++) {
         const locked = lock && lock[c];
-        const bounce = spinning && !locked ? Math.sin(t * 18 + c * 0.7) * 5 : 0;
         const x = gap + c * (cw + gap);
-        for (let r = 0; r < rows; r++) {
-          const y = gap + r * (rh + gap) + bounce;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, gap, cw, H - gap * 2);
+        ctx.clip();
+        const speed = 420 + c * 55;
+        const shift = spinning && !locked ? (t * speed) % (rh + gap) : 0;
+        const extra = spinning && !locked ? 1 : 0;
+        for (let r = -extra; r < rows + extra; r++) {
+          const y = gap + r * (rh + gap) + (spinning && !locked ? -shift : 0);
           const key = `${c}:${r}`;
-          const hit = hits && hits.has(key);
+          const hit = !spinning && hits && hits.has(key);
           const held = hold && hold.has(key);
           ctx.fillStyle = hit ? "#5a2810" : held ? "#2a2210" : "#1a080c";
           ctx.fillRect(x, y, cw, rh);
@@ -57,9 +64,12 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
             ctx.lineWidth = 2;
             ctx.strokeRect(x + 1, y + 1, cw - 2, rh - 2);
           }
-          const sym = grid[c] && grid[c][r];
+          let sym;
+          if (r >= 0 && r < rows && grid[c]) sym = grid[c][r];
+          else sym = LOW[(c + ((r + 8) | 0) + (Math.floor(t * 9) % 7)) % LOW.length];
           if (sym) blit(ctx, sym, x + 4, y + 4, cw - 8, rh - 8);
         }
+        ctx.restore();
       }
     }
 
