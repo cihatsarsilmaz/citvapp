@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
 import { kitOf } from "./kits";
+import Character from "./Character";
 
 export default function Gate({ game, onDone }) {
   const kit = kitOf(game);
-  const ms = Math.max(kit.ms || 900, 1100);
+  const ms = Math.max(kit.ms || 900, 720);
   useEffect(() => {
     const t = setTimeout(onDone, ms);
     return () => clearTimeout(t);
@@ -25,7 +26,9 @@ export default function Gate({ game, onDone }) {
       <i className="depth d7" />
       <i className="halo" />
       <i className="filigree" />
-      <b className="mark hero">{game.emoji}</b>
+      <span className="gate-hero">
+        <Character game={game} mood="idle" bond={0} />
+      </span>
       <i className="bar" />
     </div>
   );

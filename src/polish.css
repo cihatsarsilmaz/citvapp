@@ -20,7 +20,8 @@
 }
 @keyframes lift {
   from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: none; }
+  to { opacity: 1; transform: none;
+  }
 }
 .card.ghost {
   min-height: 148px;
@@ -31,12 +32,24 @@
 @keyframes pulse {
   50% { opacity: .55; }
 }
+.card.empty {
+  min-height: 148px;
+  pointer-events: none;
+  opacity: .55;
+}
 .gate.cine {
   animation: gateIn .28s ease-out both;
 }
 @keyframes gateIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+.gate-hero {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  transform: scale(1.35);
 }
 .window.canvas {
   transition: box-shadow .25s ease;
@@ -56,5 +69,12 @@
 }
 @keyframes stageIn {
   from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
+  to { opacity: 1; transform: none;
+  }
+}
+.actor.has-port .port-img {
+  transition: filter .28s ease, transform .45s cubic-bezier(.2,.8,.2,1);
+}
+.mood-spin.has-port .port-img {
+  filter: saturate(1.06);
 }

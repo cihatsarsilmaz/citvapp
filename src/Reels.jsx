@@ -5,7 +5,9 @@ import { LOW } from "./engine";
 export default function Reels({ grid, lock, hits, hold, spinning, win, onPointerDown }) {
   const ref = useRef(null);
   const raf = useRef(0);
-  const start = useRef(0);
+  const lastT = useRef(0);
+  const shiftRef = useRef([]);
+  const velRef = useRef([]);
 
   useEffect(() => { buildAtlas(); }, []);
 
@@ -13,7 +15,7 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
     const canvas = ref.current;
     if (!canvas) return;
     const parent = canvas.parentElement;
-    start.current = performance.now();
+    lastT.current = performance.now();
 
     function fit() {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -33,34 +35,59 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
 
     function draw(now) {
       const ctx = canvas.getContext("2d", { alpha: false });
-      if (!ctx) return;
+      if (!ctx) return false;
       const dpr = canvas.width / Math.max(1, canvas.clientWidth);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const W = canvas.clientWidth;
       const H = canvas.clientHeight;
       const cols = Math.max(1, (grid && grid.length) || 5);
       const rows = Math.max(1, (grid && grid[0] && grid[0].length) || 3);
+      if (shiftRef.current.length !== cols) {
+        shiftRef.current = Array(cols).fill(0);
+        velRef.current = Array(cols).fill(0);
+      }
+      const dt = Math.min(0.05, Math.max(0.008, (now - lastT.current) / 1000));
+      lastT.current = now;
       ctx.fillStyle = "#120206";
       ctx.fillRect(0, 0, W, H);
       const gap = 4;
       const cw = (W - gap * (cols + 1)) / cols;
       const rh = (H - gap * (rows + 1)) / rows;
-      const t = (now - start.current) / 1000;
+      const span = rh + gap;
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = spinning ? "medium" : "high";
+      let moving = false;
       for (let c = 0; c < cols; c++) {
         const locked = lock && lock[c];
         const x = gap + c * (cw + gap);
+        const speed = 340 + c * 42;
+        if (spinning && !locked) {
+          velRef.current[c] = speed;
+          shiftRef.current[c] = (shiftRef.current[c] + speed * dt) % span;
+          moving = true;
+        } else if (shiftRef.current[c] > 0.4) {
+          velRef.current[c] = Math.max(36, velRef.current[c] * Math.exp(-dt * 7));
+          let next = shiftRef.current[c] + velRef.current[c] * dt;
+          if (next >= span) next -= span;
+          if (span - next < 12 || velRef.current[c] < 55) {
+            next += (span - next) * Math.min(1, dt * 14);
+            if (span - next < 0.6) next = 0;
+          }
+          shiftRef.current[c] = next % span;
+          if (shiftRef.current[c] > 0.4) moving = true;
+        } else {
+          shiftRef.current[c] = 0;
+          velRef.current[c] = 0;
+        }
+        const shift = shiftRef.current[c];
         ctx.save();
         ctx.beginPath();
         const rr = Math.min(8, cw * 0.12);
         roundRect(ctx, x, gap, cw, H - gap * 2, rr);
         ctx.clip();
-        const speed = 360 + c * 48;
-        const shift = spinning && !locked ? (t * speed) % (rh + gap) : 0;
-        const extra = spinning && !locked ? 1 : 0;
+        const extra = shift > 0.2 ? 1 : 0;
         for (let r = -extra; r < rows + extra; r++) {
-          const y = gap + r * (rh + gap) + (spinning && !locked ? -shift : 0);
+          const y = gap + r * span - shift;
           const key = `${c}:${r}`;
           const hit = !spinning && hits && hits.has(key);
           const held = hold && hold.has(key);
@@ -73,7 +100,7 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
           }
           let sym;
           if (r >= 0 && r < rows && grid[c]) sym = grid[c][r];
-          else sym = LOW[(c + ((r + 8) | 0) + (Math.floor(t * 9) % 7)) % LOW.length];
+          else sym = LOW[(c + ((r + 8) | 0) + ((now / 110) | 0)) % LOW.length];
           if (sym) {
             const pad = Math.max(3, Math.min(cw, rh) * 0.08);
             blit(ctx, sym, x + pad, y + pad, cw - pad * 2, rh - pad * 2);
@@ -86,16 +113,17 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
           ctx.strokeRect(x + 0.5, gap + 0.5, cw - 1, H - gap * 2 - 1);
         }
       }
+      return moving;
     }
 
     function loop(now) {
-      draw(now);
-      if (spinning) raf.current = requestAnimationFrame(loop);
+      const moving = draw(now);
+      if (spinning || moving) raf.current = requestAnimationFrame(loop);
     }
 
     fit();
     draw(performance.now());
-    if (spinning) raf.current = requestAnimationFrame(loop);
+    raf.current = requestAnimationFrame(loop);
     const ro = new ResizeObserver(() => { fit(); draw(performance.now()); });
     ro.observe(parent);
     return () => {
