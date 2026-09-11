@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
-import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, playMiss, playClick, playBonusIn, playJack, playExtra, setMuted } from "./audio";
+import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, playMiss, playClick, playBonusIn, playJack, playExtra, setMuted, wakeAudio } from "./audio";
 import { UNIT } from "./paytable";
 import { spinGrid, applyHouse, emptySession, plan, readStyle } from "./house";
 import { evalLines, LOW } from "./engine";
@@ -82,6 +82,15 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
   useEffect(() => { setMuted(mute); }, [mute]);
+  useEffect(() => {
+    const wake = () => wakeAudio();
+    window.addEventListener("pointerdown", wake, { passive: true });
+    window.addEventListener("keydown", wake);
+    return () => {
+      window.removeEventListener("pointerdown", wake);
+      window.removeEventListener("keydown", wake);
+    };
+  }, []);
   useEffect(() => {
     balRef.current = balance;
     saveState({ balance, session, muted: mute, granted: true });
@@ -253,6 +262,7 @@ export default function App() {
   function runSpin() {
     const s = live.current;
     if (!s.game || busy.current || boot) return;
+    wakeAudio();
     const k = kitOf(s.game);
     const free = !!(s.session && s.session.inBonus);
     const b = UNIT * s.ante;
@@ -335,6 +345,7 @@ export default function App() {
 
   function openGame(g) {
     const k = kitOf(g);
+    wakeAudio();
     clearTimers();
     busy.current = false;
     setSpinning(false);
@@ -422,6 +433,7 @@ export default function App() {
           </header>
           <section className="grid bite">
             {!ready && [0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="card lux ghost" style={{ "--i": i }} />)}
+            {ready && table.length === 0 && <div className="card lux empty" />}
             {ready && table.map((g, i) => (
               <button key={g.id} className={"card lux g-" + g.id + (recents[0] === g.id ? " recent" : "")} onClick={() => openGame(g)} style={{ "--c": g.color, "--i": i }}>
                 <div className="ribbon" />
