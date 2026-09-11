@@ -1,5 +1,5 @@
 @media (prefers-reduced-motion: reduce) {
-  .actor, .card, .gate, .bang, .figure, .reels-canvas {
+  .actor, .card, .gate, .bang, .figure, .reels-canvas, .joy, .joy-burst, .joy-ring {
     animation: none !important;
     transition: none !important;
   }
@@ -20,8 +20,7 @@
 }
 @keyframes lift {
   from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: none;
-  }
+  to { opacity: 1; transform: none; }
 }
 .card.ghost {
   min-height: 148px;
@@ -55,7 +54,7 @@
   transition: box-shadow .25s ease;
 }
 .window.canvas.win {
-  box-shadow: 0 0 24px #ffe08a33;
+  box-shadow: 0 0 28px #ffe08a55;
 }
 .bang {
   transition: opacity .2s ease, transform .2s ease;
@@ -69,12 +68,56 @@
 }
 @keyframes stageIn {
   from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none;
-  }
+  to { opacity: 1; transform: none; }
 }
 .actor.has-port .port-img {
   transition: filter .28s ease, transform .45s cubic-bezier(.2,.8,.2,1);
 }
 .mood-spin.has-port .port-img {
   filter: saturate(1.06);
+}
+.stage.bonus {
+  animation: bonusGlow 1.1s ease-in-out infinite;
+}
+@keyframes bonusGlow {
+  50% { filter: saturate(1.18) brightness(1.06); }
+}
+.stage.bonus .lamps i {
+  animation-duration: .28s;
+  opacity: 1;
+}
+.joy-burst,
+.joy-ring {
+  position: absolute;
+  inset: 18% 12% auto;
+  height: 46%;
+  margin: auto;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.joy-burst {
+  background: radial-gradient(circle, #ffe08acc, transparent 62%);
+  animation: burst 1.1s ease-out both;
+}
+.joy-ring {
+  border: 3px solid #ffe08a99;
+  background: none;
+  animation: ring 1.2s ease-out both;
+}
+.joy-jack .joy-burst {
+  background: radial-gradient(circle, #fff3b8dd, transparent 60%);
+}
+@keyframes burst {
+  0% { opacity: 0; transform: scale(.4); }
+  35% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.45); }
+}
+@keyframes ring {
+  0% { opacity: .9; transform: scale(.55); }
+  100% { opacity: 0; transform: scale(1.8); }
+}
+.mood-bonus.has-port .port-img,
+.mood-bonuswin.has-port .port-img {
+  filter: saturate(1.22) brightness(1.1);
+  transform: scale(1.06);
 }

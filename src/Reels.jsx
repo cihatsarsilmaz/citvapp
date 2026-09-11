@@ -19,16 +19,19 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
 
     function fit() {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const w = Math.max(160, parent.clientWidth || 320);
+      const boxW = Math.max(160, parent.clientWidth || 320);
       const cols = Math.max(1, (grid && grid.length) || 5);
       const rows = Math.max(1, (grid && grid[0] && grid[0].length) || 3);
       const gap = 4;
-      const cell = Math.min(96, Math.floor((w - gap * (cols + 1)) / cols));
-      let h = gap * (rows + 1) + cell * rows;
-      const cap = Math.min(Math.round(window.innerHeight * 0.42), 420);
-      h = Math.max(156, Math.min(h, cap));
+      const capH = Math.min(Math.round(window.innerHeight * 0.4), 380);
+      const cellW = Math.floor((boxW - gap * (cols + 1)) / cols);
+      const cellH = Math.floor((capH - gap * (rows + 1)) / rows);
+      const cell = Math.max(28, Math.min(88, cellW, cellH));
+      const w = gap * (cols + 1) + cell * cols;
+      const h = gap * (rows + 1) + cell * rows;
       canvas.style.width = w + "px";
       canvas.style.height = h + "px";
+      canvas.style.margin = "0 auto";
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
     }
@@ -60,21 +63,22 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
       for (let c = 0; c < cols; c++) {
         const locked = lock && lock[c];
         const x = gap + c * (cw + gap);
-        const speed = 340 + c * 42;
+        const speed = 300 + c * 36;
         if (spinning && !locked) {
           velRef.current[c] = speed;
           shiftRef.current[c] = (shiftRef.current[c] + speed * dt) % span;
           moving = true;
-        } else if (shiftRef.current[c] > 0.4) {
-          velRef.current[c] = Math.max(36, velRef.current[c] * Math.exp(-dt * 7));
+        } else if (shiftRef.current[c] > 0.35) {
+          velRef.current[c] = Math.max(28, velRef.current[c] * Math.exp(-dt * 8.5));
           let next = shiftRef.current[c] + velRef.current[c] * dt;
           if (next >= span) next -= span;
-          if (span - next < 12 || velRef.current[c] < 55) {
-            next += (span - next) * Math.min(1, dt * 14);
-            if (span - next < 0.6) next = 0;
+          const remain = span - next;
+          if (remain < 16 || velRef.current[c] < 48) {
+            next += remain * Math.min(1, dt * 16);
+            if (span - next < 0.5) next = 0;
           }
           shiftRef.current[c] = next % span;
-          if (shiftRef.current[c] > 0.4) moving = true;
+          if (shiftRef.current[c] > 0.35) moving = true;
         } else {
           shiftRef.current[c] = 0;
           velRef.current[c] = 0;
@@ -102,8 +106,11 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
           if (r >= 0 && r < rows && grid[c]) sym = grid[c][r];
           else sym = LOW[(c + ((r + 8) | 0) + ((now / 110) | 0)) % LOW.length];
           if (sym) {
-            const pad = Math.max(3, Math.min(cw, rh) * 0.08);
-            blit(ctx, sym, x + pad, y + pad, cw - pad * 2, rh - pad * 2);
+            const side = Math.min(cw, rh);
+            const pad = Math.max(3, side * 0.1);
+            const sx = x + (cw - side) / 2 + pad;
+            const sy = y + (rh - side) / 2 + pad;
+            blit(ctx, sym, sx, sy, side - pad * 2, side - pad * 2);
           }
         }
         ctx.restore();
