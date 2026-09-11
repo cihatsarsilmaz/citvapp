@@ -38,3 +38,9 @@ bin/
 .env.local
 *.jks
 *.keystore
+
+# Node / Vite (were previously tracked and bloated the repo)
+node_modules/
+dist/
+coverage/
+.vite/
