@@ -13,9 +13,13 @@ export function tapTick() {
 }
 
 export function tapLock() {
-  tap(14);
+  tap(16);
 }
 
 export function tapWin(tier = 1) {
-  tap(tier > 1 ? [12, 20, 28] : [8, 16]);
+  tap(tier > 1 ? [14, 24, 36, 20] : [10, 18]);
+}
+
+export function tapBonus() {
+  tap([18, 30, 22, 40, 28, 50]);
 }
