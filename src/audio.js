@@ -1,9 +1,10 @@
 let ctx;
+let master;
 let current;
 let spinNoise;
 let muted = false;
 let noiseBuf;
-const VOL = 2.6;
+const VOL = 3.4;
 
 export function setMuted(v) {
   muted = !!v;
@@ -21,12 +22,29 @@ export function wakeAudio() {
 }
 
 function getCtx() {
-  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createDynamicsCompressor();
+    master.threshold.setValueAtTime(-18, ctx.currentTime);
+    master.knee.setValueAtTime(12, ctx.currentTime);
+    master.ratio.setValueAtTime(3.2, ctx.currentTime);
+    master.attack.setValueAtTime(0.003, ctx.currentTime);
+    master.release.setValueAtTime(0.12, ctx.currentTime);
+    const out = ctx.createGain();
+    out.gain.value = 1.15;
+    master.connect(out);
+    out.connect(ctx.destination);
+  }
   if (ctx.state === "suspended") ctx.resume();
   return ctx;
 }
 
-function noise(seconds = 0.5) {
+function dest() {
+  getCtx();
+  return master;
+}
+
+function noise(seconds = 0.7) {
   const ac = getCtx();
   if (noiseBuf) return noiseBuf;
   const n = Math.floor(ac.sampleRate * seconds);
@@ -34,39 +52,49 @@ function noise(seconds = 0.5) {
   const d = buf.getChannelData(0);
   let last = 0;
   for (let i = 0; i < n; i++) {
-    last = last * 0.97 + (Math.random() * 2 - 1) * 0.06;
+    last = last * 0.94 + (Math.random() * 2 - 1) * 0.12;
     d[i] = last;
   }
   noiseBuf = buf;
   return buf;
 }
 
-function tone({ freq = 220, type = "sine", dur = 0.12, gain = 0.08, slide = 0, start = 0 }) {
+function tone({ freq = 220, type = "triangle", dur = 0.14, gain = 0.1, slide = 0, start = 0 }) {
   if (muted) return;
   try {
     const ac = getCtx();
     const t = ac.currentTime + start;
     const o = ac.createOscillator();
+    const o2 = ac.createOscillator();
     const g = ac.createGain();
     const f = ac.createBiquadFilter();
     o.type = type;
+    o2.type = "sine";
     o.frequency.setValueAtTime(freq, t);
-    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
+    o2.frequency.setValueAtTime(freq * 2, t);
+    if (slide) {
+      o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
+      o2.frequency.exponentialRampToValueAtTime(Math.max(80, (freq + slide) * 2), t + dur);
+    }
     f.type = "lowpass";
-    f.frequency.setValueAtTime(1400, t);
+    f.frequency.setValueAtTime(2200, t);
     const peak = gain * VOL;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(peak, t + 0.018);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(peak * 0.55, t + dur * 0.35);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(f);
+    o2.connect(f);
     f.connect(g);
-    g.connect(ac.destination);
+    g.connect(dest());
     o.start(t);
-    o.stop(t + dur + 0.02);
+    o2.start(t);
+    o.stop(t + dur + 0.03);
+    o2.stop(t + dur + 0.03);
   } catch {}
 }
 
-function thud(freq, start = 0) {
+function thud(freq, start = 0, gain = 0.22) {
   if (muted) return;
   try {
     const ac = getCtx();
@@ -77,35 +105,35 @@ function thud(freq, start = 0) {
     f.type = "lowpass";
     f.frequency.setValueAtTime(freq, t);
     const g = ac.createGain();
-    g.gain.setValueAtTime(0.16 * VOL * 0.45, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    g.gain.setValueAtTime(gain * VOL * 0.42, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
     src.connect(f);
     f.connect(g);
-    g.connect(ac.destination);
+    g.connect(dest());
     src.start(t);
-    src.stop(t + 0.13);
+    src.stop(t + 0.17);
   } catch {}
 }
 
 const VOICE = {
-  chime: { thud: 140, snap: 280 },
-  thunder: { thud: 60, snap: 120 },
-  glass: { thud: 160, snap: 320 },
+  chime: { thud: 160, snap: 392 },
+  thunder: { thud: 55, snap: 98 },
+  glass: { thud: 180, snap: 523 },
   low: { thud: 70, snap: 110 },
-  coin: { thud: 120, snap: 240 },
-  snap: { thud: 110, snap: 200 },
-  pad: { thud: 130, snap: 210 },
-  howl: { thud: 70, snap: 140 },
-  crackle: { thud: 120, snap: 200 },
-  wood: { thud: 100, snap: 160 },
-  bell: { thud: 150, snap: 260 },
-  creak: { thud: 80, snap: 120 },
-  blip: { thud: 140, snap: 220 },
-  steel: { thud: 160, snap: 280 },
-  ice: { thud: 170, snap: 300 },
-  roar: { thud: 50, snap: 90 },
-  toot: { thud: 140, snap: 180 },
-  clack: { thud: 120, snap: 180 },
+  coin: { thud: 140, snap: 330 },
+  snap: { thud: 120, snap: 247 },
+  pad: { thud: 130, snap: 311 },
+  howl: { thud: 65, snap: 147 },
+  crackle: { thud: 130, snap: 220 },
+  wood: { thud: 100, snap: 175 },
+  bell: { thud: 160, snap: 349 },
+  creak: { thud: 80, snap: 123 },
+  blip: { thud: 150, snap: 466 },
+  steel: { thud: 170, snap: 392 },
+  ice: { thud: 190, snap: 587 },
+  roar: { thud: 48, snap: 82 },
+  toot: { thud: 150, snap: 262 },
+  clack: { thud: 130, snap: 196 },
 };
 
 export function stopTheme() {
@@ -121,19 +149,25 @@ export function playTheme(freqs) {
   try {
     const ac = getCtx();
     const now = ac.currentTime;
-    const master = ac.createGain();
-    master.gain.setValueAtTime(0.0001, now);
-    master.gain.exponentialRampToValueAtTime(0.055 * VOL, now + 0.08);
-    master.connect(ac.destination);
-    const f0 = Math.min(...freqs.slice(0, 2));
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.09 * VOL, now + 0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.62);
+    g.connect(dest());
+    const f0 = Math.max(90, Math.min(...freqs.slice(0, 2)));
     const o = ac.createOscillator();
-    o.type = "sine";
-    o.frequency.setValueAtTime(Math.max(80, f0 / 2), now);
-    o.connect(master);
+    const o2 = ac.createOscillator();
+    o.type = "triangle";
+    o2.type = "sine";
+    o.frequency.setValueAtTime(f0, now);
+    o2.frequency.setValueAtTime(f0 * 1.5, now);
+    o.connect(g);
+    o2.connect(g);
     o.start(now);
-    o.stop(now + 0.45);
+    o2.start(now);
+    o.stop(now + 0.64);
+    o2.stop(now + 0.64);
     current = o;
-    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.46);
   } catch {}
 }
 
@@ -147,15 +181,26 @@ export function playSpinLoop() {
     src.buffer = noise();
     src.loop = true;
     const f = ac.createBiquadFilter();
-    f.type = "lowpass";
-    f.frequency.setValueAtTime(360, now);
+    f.type = "bandpass";
+    f.frequency.setValueAtTime(420, now);
+    f.Q.setValueAtTime(0.7, now);
+    f.frequency.linearRampToValueAtTime(780, now + 0.35);
     const g = ac.createGain();
-    g.gain.setValueAtTime(0.055 * VOL, now);
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.09 * VOL, now + 0.05);
+    const o = ac.createOscillator();
+    o.type = "sawtooth";
+    o.frequency.setValueAtTime(48, now);
+    const og = ac.createGain();
+    og.gain.setValueAtTime(0.025 * VOL, now);
     src.connect(f);
     f.connect(g);
-    g.connect(ac.destination);
+    o.connect(og);
+    g.connect(dest());
+    og.connect(dest());
     src.start(now);
-    spinNoise = { o: src, g, f };
+    o.start(now);
+    spinNoise = { o: src, osc: o, g, og, f };
   } catch {}
 }
 
@@ -163,8 +208,11 @@ export function stopSpinLoop() {
   if (!spinNoise) return;
   try {
     const ac = getCtx();
-    spinNoise.g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.08);
-    spinNoise.o.stop(ac.currentTime + 0.1);
+    const t = ac.currentTime;
+    spinNoise.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    if (spinNoise.og) spinNoise.og.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    spinNoise.o.stop(t + 0.12);
+    if (spinNoise.osc) spinNoise.osc.stop(t + 0.12);
   } catch {}
   spinNoise = null;
 }
@@ -172,26 +220,42 @@ export function stopSpinLoop() {
 export function playClash(sym, voice = "clack") {
   if (muted) return;
   const v = VOICE[voice] || VOICE.clack;
-  thud(v.thud);
-  tone({ freq: v.snap, type: "sine", dur: 0.07, gain: 0.055, start: 0.02 });
+  thud(v.thud, 0, 0.26);
+  tone({ freq: v.snap, type: "triangle", dur: 0.09, gain: 0.09, start: 0.01 });
 }
 
 export function playWin(tier = 1) {
   if (muted) return;
-  thud(70);
-  const seq = tier >= 3 ? [110, 165, 220] : tier >= 2 ? [98, 147] : [98];
-  seq.forEach((f, i) => tone({ freq: f, type: "sine", dur: 0.18, gain: 0.07, start: i * 0.06 }));
+  thud(62, 0, 0.28);
+  const seq = tier >= 3 ? [131, 165, 196, 262] : tier >= 2 ? [131, 196, 247] : [147, 196];
+  seq.forEach((f, i) => tone({ freq: f, type: "triangle", dur: 0.22, gain: 0.1, start: i * 0.07 }));
 }
-export function playMiss() { tone({ freq: 90, type: "sine", dur: 0.18, gain: 0.045, slide: -20 }); }
-export function playClick() { thud(200); }
+
+export function playMiss() {
+  tone({ freq: 98, type: "sine", dur: 0.2, gain: 0.06, slide: -28 });
+}
+
+export function playClick() {
+  thud(220, 0, 0.18);
+  tone({ freq: 420, type: "triangle", dur: 0.06, gain: 0.05 });
+}
+
 export function playBonusIn() {
-  thud(60);
-  tone({ freq: 130, type: "sine", dur: 0.28, gain: 0.075 });
-  tone({ freq: 196, type: "sine", dur: 0.22, gain: 0.055, start: 0.12 });
+  thud(52, 0, 0.34);
+  const seq = [131, 165, 196, 262, 330, 392];
+  seq.forEach((f, i) => tone({ freq: f, type: "triangle", dur: 0.28, gain: 0.11, start: i * 0.08 }));
+  tone({ freq: 523, type: "sine", dur: 0.45, gain: 0.08, start: 0.42 });
 }
+
 export function playJack() {
-  thud(55);
-  tone({ freq: 82, type: "sine", dur: 0.3, gain: 0.09 });
-  tone({ freq: 164, type: "sine", dur: 0.24, gain: 0.07, start: 0.1 });
+  thud(46, 0, 0.36);
+  [82, 123, 164, 246, 329].forEach((f, i) =>
+    tone({ freq: f, type: "triangle", dur: 0.32, gain: 0.12, start: i * 0.09 })
+  );
 }
-export function playExtra() { tone({ freq: 147, type: "sine", dur: 0.12, gain: 0.06 }); }
+
+export function playExtra() {
+  thud(90, 0, 0.2);
+  tone({ freq: 196, type: "triangle", dur: 0.16, gain: 0.09 });
+  tone({ freq: 294, type: "sine", dur: 0.18, gain: 0.07, start: 0.06 });
+}
