@@ -26,7 +26,7 @@ function blank(cols = 5, rows = 3) {
 }
 const START = 12500;
 const TOPUP = 2500;
-const BITE = 6;
+const BITE = 18;
 const saved = loadState({ balance: START, session: emptySession(), muted: false });
 
 export default function App() {
@@ -49,7 +49,7 @@ export default function App() {
   const [joy, setJoy] = useState(null);
   const [recents, setRecents] = useState(loadRecents);
   const [held, setHeld] = useState([]);
-  const [shown, setShown] = useState(BITE);
+  const [shown, setShown] = useState(GAMES.length);
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
