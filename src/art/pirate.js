@@ -1,3 +1,1 @@
-import p1 from "./parts/pirate_1.js";
-import p2 from "./parts/pirate_2.js";
-export default p1 + p2;
+export default "data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 144 180'><rect width='144' height='180' fill='%23061018'/><circle cx='72' cy='70' r='28' fill='%2338bdf8'/><ellipse cx='72' cy='150' rx='40' ry='18' fill='%23075585'/></svg>";

@@ -1,3 +1,1 @@
-import p1 from "./parts/mystic_1.js";
-import p2 from "./parts/mystic_2.js";
-export default p1 + p2;
+export default "data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 144 180'><rect width='144' height='180' fill='%231a0c2a'/><circle cx='72' cy='70' r='28' fill='%23a78bfa'/><ellipse cx='72' cy='150' rx='40' ry='18' fill='%236d28d9'/></svg>";
