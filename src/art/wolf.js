@@ -1,3 +1,1 @@
-import p1 from "./parts/wolf_1.js";
-import p2 from "./parts/wolf_2.js";
-export default p1 + p2;
+export default 'PLACEHOLDER';
