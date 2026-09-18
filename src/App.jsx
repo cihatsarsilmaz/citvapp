@@ -103,6 +103,10 @@ export default function App() {
       setBalance(n);
     }
   }, [balance, isLive]);
+  useEffect(() => {
+    const cap = kit.anteMax || 10;
+    setAnte((n) => Math.min(cap, Math.max(1, n)));
+  }, [game, kit.anteMax]);
 
   function clearTimers() {
     gen.current += 1;
@@ -159,6 +163,7 @@ export default function App() {
         ante: s.ante,
         turbo: turboRef.current,
         ledger: ledger.current,
+        kit: k,
       });
       ledger.current = book(ledger.current, snap.inBonus ? 0 : b, result.win, result.gift);
       const paid = Math.max(0, result.win || 0);
@@ -275,7 +280,7 @@ export default function App() {
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
     const fast = turboRef.current && !free;
-    const { base, step } = spinTempo(fast);
+    const { base, step } = spinTempo(fast, k);
     busy.current = true;
     setSpinning(true);
     setMood(free ? "bonus" : "spin");
@@ -290,7 +295,7 @@ export default function App() {
     tapSpin();
     const snap = s.session;
     const style = readStyle(snap, balRef.current, s.ante, fast);
-    const p = plan(style, snap);
+    const p = plan(style, snap, k);
     const next = spinGrid(s.game.emoji, p.forceMiss && !snap.inBonus, k);
     pending.current = { my, next, bet: b, snap, done: false };
     armSpin(my, next, base, step);
@@ -357,6 +362,7 @@ export default function App() {
     setHeld([]);
     setAuto(false);
     autoRef.current = false;
+    setAnte(1);
     setMood("idle");
     setJoy(null);
     setRecents(pushRecent(g.id));
@@ -400,7 +406,8 @@ export default function App() {
   function bumpAnte(d) {
     playClick();
     tapTick();
-    setAnte((n) => Math.min(10, Math.max(1, n + d)));
+    const cap = kit.anteMax || 10;
+    setAnte((n) => Math.min(cap, Math.max(1, n + d)));
   }
 
   const showWin = !spinning && last && last.win > 0;
@@ -408,6 +415,7 @@ export default function App() {
     "stage", "lux",
     "g-" + (game?.id || ""),
     "kit-" + kit.extra,
+    "vol-" + (kit.vol || "mid"),
     "c" + cols, "r" + rows,
     last?.win ? "hot" : "",
     last && !last.win && !spinning ? "shake" : "",
