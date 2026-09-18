@@ -57,7 +57,7 @@ export function readStyle(session, balance, ante, turbo) {
   return { ratio, rtp, dry, hot, cold, grind, start };
 }
 
-export function plan(style, session) {
+export function plan(style, session, kit) {
   let edge = 0.42;
   let cap = 3.6;
   let forceMiss = (session.cool || 0) > 0;
@@ -95,6 +95,17 @@ export function plan(style, session) {
   }
   if (style.rtp > 0.74 && session.spins > 8) forceMiss = true;
 
+  const vol = kit?.vol || "mid";
+  if (vol === "high") {
+    cap = Math.min(4.4, cap + 0.55);
+    roar = Math.min(0.36, roar + 0.07);
+    edge = Math.min(0.64, edge + 0.03);
+  } else if (vol === "low") {
+    cap = Math.max(2.0, cap - 0.45);
+    roar *= 0.72;
+    edge = Math.max(0.12, edge - 0.04);
+  }
+
   return { edge, cap, forceMiss, drip, roar };
 }
 
@@ -128,7 +139,7 @@ function rollRoar(themeHit, chance, hot) {
 
 export function applyHouse(evaled, bet, session, ctx = {}) {
   const style = readStyle(session, ctx.balance ?? START_BANK, ctx.ante ?? 1, ctx.turbo);
-  const p = plan(style, session);
+  const p = plan(style, session, ctx.kit);
   const day = ctx.ledger ? dayPlan(ctx.ledger, ctx.ante ?? 1) : null;
   if (day) {
     p.edge = (p.edge + day.edge) / 2;
