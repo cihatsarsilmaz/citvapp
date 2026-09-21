@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
 import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, playMiss, playClick, playBonusIn, playJack, playExtra, setMuted, wakeAudio } from "./audio";
-import { UNIT } from "./paytable";
+import { UNIT, PAY3, PAY4, PAY5 } from "./paytable";
 import { spinGrid, applyHouse, emptySession, plan, readStyle } from "./house";
 import { evalLines, LOW } from "./engine";
 import { loadState, saveState, topUp } from "./store";
@@ -57,6 +57,7 @@ export default function App() {
   const timers = useRef([]);
   const gen = useRef(0);
   const pending = useRef(null);
+  const autoCtl = useRef(null);
   const taps = useRef(0);
   const ledger = useRef(loadLedger());
   const balRef = useRef(saved.balance);
@@ -108,8 +109,28 @@ export default function App() {
     setAnte((n) => Math.min(cap, Math.max(1, n)));
   }, [game, kit.anteMax]);
 
+  function abortAutoChain() {
+    if (autoCtl.current) {
+      autoCtl.current.abort();
+      autoCtl.current = null;
+    }
+  }
+
+  function armAuto(gap) {
+    abortAutoChain();
+    const ctl = new AbortController();
+    autoCtl.current = ctl;
+    const id = setTimeout(() => {
+      if (ctl.signal.aborted) return;
+      if (autoCtl.current === ctl) autoCtl.current = null;
+      runSpin();
+    }, gap);
+    ctl.signal.addEventListener("abort", () => clearTimeout(id), { once: true });
+  }
+
   function clearTimers() {
     gen.current += 1;
+    abortAutoChain();
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
     stopSpinLoop();
@@ -201,7 +222,7 @@ export default function App() {
       } else if (!result.bonus && !result.collect) playMiss();
       if (autoRef.current && gen.current === my) {
         const gap = result.session.inBonus ? 420 : turboRef.current ? 220 : 380;
-        timers.current.push(setTimeout(runSpin, gap));
+        armAuto(gap);
       }
     } catch {
       setMood("miss");
@@ -274,6 +295,7 @@ export default function App() {
     if (!free && balRef.current < b) {
       autoRef.current = false;
       setAuto(false);
+      abortAutoChain();
       return;
     }
     const my = ++gen.current;
@@ -393,14 +415,15 @@ export default function App() {
   function toggleAuto() {
     playClick();
     tapTick();
-    const n = !autoRef.current;
-    autoRef.current = n;
-    setAuto(n);
-    if (n && !busy.current && !boot) {
-      timers.current.push(setTimeout(runSpin, 90));
-    } else if (!n) {
-      clearTimers();
+    if (autoRef.current) {
+      autoRef.current = false;
+      setAuto(false);
+      abortAutoChain();
+      return;
     }
+    autoRef.current = true;
+    setAuto(true);
+    if (!busy.current && !boot) armAuto(90);
   }
 
   function bumpAnte(d) {
@@ -471,6 +494,12 @@ export default function App() {
           </div>
           <p className={"bang " + (showWin ? "" : "quiet")}>
             {showWin ? (last.cMult > 1 ? `${last.win} ×${last.cMult}` : last.win) : ""}
+          </p>
+          <p className="paystrip" aria-label="odeme tablosu">
+            <span className="payhead">Ödeme</span>
+            <span className="payrow">🎰 3×{PAY3.wild}  4×{PAY4.wild}  5×{PAY5.wild}</span>
+            <span className="payrow">{game.emoji} 3×{PAY3.theme}  4×{PAY4.theme}  5×{PAY5.theme}</span>
+            <span className="payrow dim">⭐ 3×{PAY3.star} · düşük 3×{PAY3.low}</span>
           </p>
           <div className={"dock lux kit-" + kit.extra}>
             <div className="well"><em>CITV</em><b>{balance}</b></div>
