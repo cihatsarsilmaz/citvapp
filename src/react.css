@@ -1,0 +1,23 @@
+.actor.seat { pointer-events: none; }
+.actor .burst {
+  position: absolute;
+  inset: -8px 18%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #ffe08aaa, transparent 55%),
+    conic-gradient(from 0deg, transparent, color-mix(in srgb, var(--c) 80%, #fff), transparent 40%);
+  animation: burst .7s ease-out;
+  z-index: 1;
+  pointer-events: none;
+}
+@keyframes burst {
+  0% { transform: scale(.4); opacity: .9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.mood-c .figure { filter: drop-shadow(0 0 16px #ffe08a); }
+.mood-win .figure, .mood-bonuswin .figure { filter: drop-shadow(0 0 14px var(--c)); }
+.mood-bonus .aura { opacity: 1; transform: scale(1.2); }
+.stage.cmult .actor .cflash { animation: cpop .45s ease, cglow .6s ease; }
+@keyframes cglow {
+  50% { box-shadow: 0 0 18px #ffe08a; transform: scale(1.12); }
+}
