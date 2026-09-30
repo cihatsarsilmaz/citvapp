@@ -1,0 +1,32 @@
+.card, .key, .plunger, .meter, .well {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.card:active, .key:active, .plunger:active {
+  transform: translateY(1px) scale(.98);
+}
+.window.spin .reelcol:not(.lock) .cell {
+  animation: reel 0.11s linear infinite;
+  filter: blur(1.2px);
+  will-change: transform;
+}
+.window.spin .reelcol.lock .cell {
+  animation: none;
+  filter: none;
+}
+@keyframes reel {
+  from { transform: translate3d(0, -18%, 0); }
+  to { transform: translate3d(0, 18%, 0); }
+}
+.reelcol.lock {
+  transition: filter .16s ease;
+}
+.bang {
+  transition: opacity .2s ease, transform .2s ease;
+}
+.bang.quiet { opacity: 0; transform: translateY(6px); }
+.app, .stage, .window, .cell {
+  -webkit-tap-highlight-color: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+  .window.spin .reelcol:not(.lock) .cell { animation: none; filter: none; }
+}

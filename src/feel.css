@@ -1,0 +1,21 @@
+button:focus-visible,
+.key:focus-visible,
+.plunger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--c, #e8c56a) 70%, #fff);
+  outline-offset: 2px;
+}
+.plunger:disabled,
+.key:disabled {
+  opacity: .35;
+  pointer-events: none;
+}
+.grid.bite:empty::after {
+  content: "";
+  display: block;
+  height: 140px;
+  border-radius: 16px;
+  background: #16080c;
+}
+.window.canvas.spin {
+  filter: saturate(1.05);
+}
