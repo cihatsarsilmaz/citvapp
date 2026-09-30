@@ -7,7 +7,7 @@ export function loadState(fallback) {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) {
-      return { ...fallback, balance: fallback.balance, granted: true };
+      return { ...fallback, balance: live ? 0 : fallback.balance, granted: true };
     }
     const d = JSON.parse(raw);
     let balance = live ? 0 : Number.isFinite(d.balance) ? d.balance : fallback.balance;
@@ -17,7 +17,7 @@ export function loadState(fallback) {
     saveState(next);
     return next;
   } catch {
-    return { ...fallback, granted: true };
+    return { ...fallback, balance: live ? 0 : fallback.balance, granted: true };
   }
 }
 

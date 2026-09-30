@@ -81,6 +81,10 @@ test("keeps DEMO balances from refilling and ignores cached balances in LIVE", (
 
   assert.equal(loadState(fallback).balance, 5);
   values.set("citv-mode", "LIVE");
+  values.delete("citv-slot-v1");
+  assert.equal(loadState(fallback).balance, 0);
   values.set("citv-slot-v1", JSON.stringify({ balance: 99999 }));
+  assert.equal(loadState(fallback).balance, 0);
+  values.set("citv-slot-v1", "{");
   assert.equal(loadState(fallback).balance, 0);
 });
