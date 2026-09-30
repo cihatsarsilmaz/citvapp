@@ -1,6 +1,6 @@
 // CITV Slot — bakiye kapisi
 // DEMO: yerel fiş. LIVE: dağıtım sonrası GET ?wallet= (Issue #24)
-// Sunucu yokken LIVE açılsa bile spin istemcide kalır; musluk kapanır.
+// LIVE balance comes from the configured read-only API; spins stay disabled until server support exists.
 
 export const DEMO = "DEMO";
 export const LIVE = "LIVE";
@@ -53,7 +53,8 @@ export async function fetchLiveBalance(wallet) {
   if (!base) return { ok: false, reason: "endpoint-yok" };
   if (!w) return { ok: false, reason: "cüzdan-yok" };
   try {
-    const r = await fetch(`${base}?wallet=${encodeURIComponent(w)}`);
+    const separator = base.includes("?") ? "&" : "?";
+    const r = await fetch(`${base}${separator}wallet=${encodeURIComponent(w)}`);
     if (!r.ok) return { ok: false, reason: "http" };
     const j = await r.json();
     const balance = Number(j.balance);

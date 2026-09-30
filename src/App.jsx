@@ -4,8 +4,8 @@ import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, p
 import { UNIT, PAY3, PAY4, PAY5 } from "./paytable";
 import { spinGrid, applyHouse, emptySession, plan, readStyle } from "./house";
 import { evalLines, LOW } from "./engine";
-import { loadState, saveState, topUp } from "./store";
-import { getMode, LIVE } from "./coin";
+import { loadState, saveState } from "./store";
+import { getMode, LIVE, fetchLiveBalance } from "./coin";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
 import { loadRecents, pushRecent } from "./recents";
@@ -25,7 +25,6 @@ function blank(cols = 5, rows = 3) {
   return Array.from({ length: cols }, () => Array.from({ length: rows }, rnd));
 }
 const START = 12500;
-const TOPUP = 2500;
 const BITE = 18;
 const saved = loadState({ balance: START, session: emptySession(), muted: false });
 
@@ -97,13 +96,13 @@ export default function App() {
     saveState({ balance, session, muted: mute, granted: true });
   }, [balance, session, mute]);
   useEffect(() => {
-    if (isLive) return;
-    if (balance < 20) {
-      const n = topUp(balRef.current, TOPUP);
-      balRef.current = n;
-      setBalance(n);
-    }
-  }, [balance, isLive]);
+    if (!isLive) return undefined;
+    let active = true;
+    fetchLiveBalance().then((result) => {
+      if (active && result.ok) writeBal(result.balance);
+    });
+    return () => { active = false; };
+  }, [isLive]);
   useEffect(() => {
     const cap = kit.anteMax || 10;
     setAnte((n) => Math.min(cap, Math.max(1, n)));
@@ -287,7 +286,7 @@ export default function App() {
 
   function runSpin() {
     const s = live.current;
-    if (!s.game || busy.current || boot) return;
+    if (isLive || !s.game || busy.current || boot) return;
     wakeAudio();
     const k = kitOf(s.game);
     const free = !!(s.session && s.session.inBonus);
@@ -413,6 +412,7 @@ export default function App() {
   }
 
   function toggleAuto() {
+    if (isLive) return;
     playClick();
     tapTick();
     if (autoRef.current) {
@@ -506,14 +506,11 @@ export default function App() {
             <button className="key tick" onPointerDown={() => bumpAnte(-1)}>−</button>
             <div className="well step"><em>{ante}</em><b>{bet}</b></div>
             <button className="key tick" onPointerDown={() => bumpAnte(1)}>+</button>
-            <button className="plunger tick" onPointerDown={() => { if (spinning) nudgeStage(); else runSpin(); }} disabled={broke && !spinning}>
-              {spinning ? "" : kit.spin}
+            <button className="plunger tick" onPointerDown={() => { if (spinning) nudgeStage(); else runSpin(); }} disabled={isLive || broke && !spinning} aria-label={isLive ? "LIVE spin kapalı" : kit.spin}>
+              {isLive ? "LIVE" : spinning ? "" : kit.spin}
             </button>
-            <button className={"key latch tick " + (auto ? "on" : "")} onPointerDown={toggleAuto}>{auto ? "■" : "▶"}</button>
+            <button className={"key latch tick " + (auto ? "on" : "")} onPointerDown={toggleAuto} disabled={isLive}>{auto ? "■" : "▶"}</button>
             <button className={"key latch tick " + (turbo ? "on" : "")} onPointerDown={() => { playClick(); tapTick(); setTurbo((t) => !t); }}>{turbo ? "▶▶" : "▶"}</button>
-            {broke && !isLive && !session.inBonus && (
-              <button className="key fill tick" onPointerDown={() => { playClick(); tapTick(); writeBal(topUp(balRef.current, TOPUP)); }}>+</button>
-            )}
             <button className="key tick" onPointerDown={() => { playClick(); tapTick(); setMute((m) => !m); }}>{mute ? "·" : "♪"}</button>
             <button className="key tick" onPointerDown={() => back(false)}>←</button>
           </div>

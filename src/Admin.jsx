@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { DEMO, LIVE, getMode, setMode, getWallet, setWallet, liveUrl, fetchLiveBalance } from "./coin";
+import { LIVE, getMode, setMode, getWallet, setWallet, liveUrl, fetchLiveBalance } from "./coin";
 
 const PIN = "CITV2026";
 
@@ -24,6 +24,7 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
     const next = mode === LIVE ? DEMO : LIVE;
     setMode(next);
     setModeUi(next);
+    if (next === LIVE) setBalance(0);
     setLiveMsg(next === LIVE ? "LIVE acik. Musluk kapali." : "DEMO. Yerel fis.");
   }
 
@@ -82,8 +83,7 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
       </div>
       {liveMsg && <p className="result">{liveMsg}</p>}
       <div className="row">
-        {mode === DEMO && <button className="act" onClick={() => setBalance((n) => n + 1000)}>+1000</button>}
-        <button className="act ghost" onClick={() => setBalance(0)}>Sifirla</button>
+        {mode !== LIVE && <button className="act ghost" onClick={() => setBalance(0)}>Sifirla</button>}
         <button className="act ghost" onClick={() => setSession(emptySession())}>Oturum</button>
         <button className="act ghost" onClick={logout}>Cik</button>
         <a className="act ghost" href="./" onClick={() => { location.hash = ""; }}>Lobi</a>
