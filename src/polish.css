@@ -4,6 +4,26 @@
     transition: none !important;
   }
 }
+.bands {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 16px 12px;
+  scrollbar-width: none;
+}
+.band {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: #1c1016;
+  color: #f6e7ef;
+  font: 600 12px/1 inherit;
+  letter-spacing: .04em;
+}
+.band.on {
+  background: #ff6bcb;
+  color: #1a0610;
+}
 .card.lux {
   transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease;
 }
