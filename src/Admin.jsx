@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { DEMO, LIVE, getMode, setMode, getWallet, setWallet, liveUrl, fetchLiveBalance } from "./coin";
+import React, { useRef, useState } from "react";
+import { DEMO, LIVE, getMode, setMode, getWallet, setWallet, fetchLiveBalance } from "./coin";
 
 const PIN = "CITV2026";
 
@@ -10,6 +10,8 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
   const [mode, setModeUi] = useState(getMode());
   const [wallet, setWalletUi] = useState(getWallet());
   const [liveMsg, setLiveMsg] = useState("");
+  const [pulling, setPulling] = useState(false);
+  const pullingRef = useRef(false);
 
   function login(e) {
     e.preventDefault();
@@ -28,13 +30,24 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
   }
 
   async function pullLive() {
-    setWallet(wallet);
-    const r = await fetchLiveBalance(wallet);
-    if (r.ok) {
-      setBalance(r.balance);
-      setLiveMsg("API bakiyesi: " + r.balance);
-    } else {
-      setLiveMsg("API yok veya hata: " + r.reason + (liveUrl() ? "" : ""));
+    if (pullingRef.current) return;
+    pullingRef.current = true;
+    setPulling(true);
+    setWalletUi(setWallet(wallet));
+    setLiveMsg("API bakiyesi alınıyor...");
+    try {
+      const r = await fetchLiveBalance(wallet);
+      if (r.ok) {
+        setBalance(r.balance);
+        setLiveMsg("API bakiyesi: " + r.balance);
+      } else {
+        setLiveMsg("API yok veya hata: " + r.reason);
+      }
+    } catch {
+      setLiveMsg("API yok veya hata: ag");
+    } finally {
+      pullingRef.current = false;
+      setPulling(false);
     }
   }
 
@@ -77,8 +90,8 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
       <p className="notes">LIVE ray: dagitim bitince VITE_CITV_BALANCE_URL. Sunucu spin yok.</p>
       <div className="row">
         <button className={"act " + (mode === LIVE ? "" : "ghost")} onClick={toggleLive}>{mode === LIVE ? "LIVE ACIK" : "LIVE AC"}</button>
-        <input value={wallet} onChange={(e) => setWalletUi(e.target.value)} onBlur={() => setWallet(wallet)} placeholder="cuzdan" />
-        <button className="act ghost" onClick={pullLive}>API CEK</button>
+        <input value={wallet} onChange={(e) => setWalletUi(e.target.value)} onBlur={(e) => setWalletUi(setWallet(e.currentTarget.value))} placeholder="cuzdan" />
+        <button className="act ghost" onClick={pullLive} disabled={pulling}>{pulling ? "BEKLE..." : "API CEK"}</button>
       </div>
       {liveMsg && <p className="result">{liveMsg}</p>}
       <div className="row">

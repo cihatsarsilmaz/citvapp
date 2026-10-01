@@ -52,14 +52,18 @@ export async function fetchLiveBalance(wallet) {
   const w = wallet || getWallet();
   if (!base) return { ok: false, reason: "endpoint-yok" };
   if (!w) return { ok: false, reason: "cüzdan-yok" };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
   try {
-    const r = await fetch(`${base}?wallet=${encodeURIComponent(w)}`);
+    const r = await fetch(`${base}?wallet=${encodeURIComponent(w)}`, { signal: controller.signal });
     if (!r.ok) return { ok: false, reason: "http" };
     const j = await r.json();
     const balance = Number(j.balance);
     if (!Number.isFinite(balance)) return { ok: false, reason: "sayi-degil" };
     return { ok: true, balance };
   } catch {
-    return { ok: false, reason: "ag" };
+    return { ok: false, reason: controller.signal.aborted ? "zaman-asimi" : "ag" };
+  } finally {
+    clearTimeout(timeout);
   }
 }
