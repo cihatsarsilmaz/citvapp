@@ -53,7 +53,7 @@ export function inspect() {
 
   const next = missingPay.length
     ? "paytable okunurluk — .paystrip sahneye"
-    : "görsel sıkılaştırma — dock/keçe boşluk ve hücre ritmi";
+    : "gerçek makara matematiği, asset pack, ses dosyaları, kasa/cüzdan ayrımı";
 
   return { ok: fail.length === 0, fail, notes, next, view: VIEW };
 }

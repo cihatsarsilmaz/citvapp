@@ -13,7 +13,8 @@ Sürüm: 1.1.3 · PWA citv-pwa-v11
 - iOS ses uyanışı (ilk dokunuş + spin)
 - AUTO zinciri AbortController — stop mevcut spin'i asmaz
 - Ödeme şeridi sahneye (3 / 4 / 5, okunur)
+- Keçe ve dock aralıkları sıkılaştırıldı; makara hücre ritmi ekrana uyumlu
 
 ## Tetikçi
 `npm run tetikci` — kendini, kasa/kit, AUTO abort, art parçalarını tarar; TETIKCI.json yeniler.
-Sonraki: görsel sıkılaştırma (dock / keçe boşluk).
+Sonraki: gerçek makara matematiği, asset pack, ses dosyaları, kasa/cüzdan ayrımı.
