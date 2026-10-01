@@ -1,21 +1,9 @@
-# Security Policy
+# Security
 
-## Supported Versions
+Do not disclose vulnerability details in a public issue. Report them privately
+through the repository's GitHub Security tab. If private vulnerability
+reporting is unavailable, contact the repository maintainer privately through
+GitHub.
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
-
-## Reporting a Vulnerability
-
-Use this section to tell people how to report a vulnerability.
-
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Include the affected component, steps to reproduce, and potential impact. Do
+not include real credentials or other secrets in the report.
