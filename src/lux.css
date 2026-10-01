@@ -17,8 +17,8 @@
   box-shadow: inset 0 0 0 1px #0006;
 }
 .dock.lux {
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 6px;
+  padding: 8px 10px;
   background:
     linear-gradient(180deg, #3a1814, #120406);
   border: 1px solid color-mix(in srgb, var(--c) 40%, #8a2830);
@@ -85,3 +85,10 @@
 .stage.kit-scale .actor .body { filter: drop-shadow(0 0 10px #fb7185); }
 .stage.kit-ring .lamps i { border-radius: 2px; }
 .stage.kit-lock .well { border-color: #fde04788; }
+
+@media (max-width: 390px) {
+  .dock.lux { gap: 5px; padding: 7px 6px; }
+  .dock .well { min-width: 54px; padding: 5px 6px; }
+  .dock .key { width: 36px; height: 36px; }
+  .dock .plunger { width: 72px; height: 72px; }
+}

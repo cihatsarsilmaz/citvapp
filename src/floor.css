@@ -7,7 +7,7 @@
   overflow-x: hidden;
   display: grid;
   grid-template-rows: auto auto minmax(168px, auto) 1fr auto auto;
-  padding: 6px 6px calc(8px + env(safe-area-inset-bottom));
+  padding: 8px 8px calc(10px + env(safe-area-inset-bottom));
   border-radius: 0;
   position: relative;
 }
@@ -15,7 +15,7 @@
   margin-top: 0;
   position: relative;
   z-index: 2;
-  padding: 6px;
+  padding: 8px;
   gap: 3px;
   min-height: 0;
   max-width: 100%;

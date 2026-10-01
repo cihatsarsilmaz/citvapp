@@ -22,7 +22,7 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
       const boxW = Math.max(160, parent.clientWidth || 320);
       const cols = Math.max(1, (grid && grid.length) || 5);
       const rows = Math.max(1, (grid && grid[0] && grid[0].length) || 3);
-      const gap = 4;
+      const gap = reelGap(boxW);
       const capH = Math.min(Math.round(window.innerHeight * 0.4), 380);
       const cellW = Math.floor((boxW - gap * (cols + 1)) / cols);
       const cellH = Math.floor((capH - gap * (rows + 1)) / rows);
@@ -53,7 +53,7 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
       lastT.current = now;
       ctx.fillStyle = "#120206";
       ctx.fillRect(0, 0, W, H);
-      const gap = 4;
+      const gap = reelGap(W);
       const cw = (W - gap * (cols + 1)) / cols;
       const rh = (H - gap * (rows + 1)) / rows;
       const span = rh + gap;
@@ -140,6 +140,10 @@ export default function Reels({ grid, lock, hits, hold, spinning, win, onPointer
   }, [grid, lock, hits, hold, spinning, win]);
 
   return <canvas ref={ref} className="reels-canvas" onPointerDown={onPointerDown} />;
+}
+
+function reelGap(width) {
+  return Math.max(3, Math.min(5, Math.round(width / 96)));
 }
 
 function roundRect(ctx, x, y, w, h, r) {
