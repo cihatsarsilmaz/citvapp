@@ -8,6 +8,7 @@ import { loadState, saveState, topUp } from "./store";
 import { getMode, LIVE } from "./coin";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
+import { BANDS, inBand } from "./class";
 import { loadRecents, pushRecent } from "./recents";
 import { lockAt, starsLocked, spinTempo } from "./pace";
 import { holdKeys } from "./bond";
@@ -50,6 +51,7 @@ export default function App() {
   const [recents, setRecents] = useState(loadRecents);
   const [held, setHeld] = useState([]);
   const [shown, setShown] = useState(GAMES.length);
+  const [band, setBand] = useState("tumu");
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
@@ -74,8 +76,8 @@ export default function App() {
       const i = recents.indexOf(id);
       return i === -1 ? 99 : i;
     };
-    return [...GAMES].sort((a, b) => rank(a.id) - rank(b.id));
-  }, [recents]);
+    return GAMES.filter((g) => inBand(g, band)).sort((a, b) => rank(a.id) - rank(b.id));
+  }, [recents, band]);
   const table = lobby.slice(0, shown);
 
   useEffect(() => {
@@ -433,6 +435,13 @@ export default function App() {
     setAnte((n) => Math.min(cap, Math.max(1, n + d)));
   }
 
+  function pickBand(id) {
+    playClick();
+    tapTick();
+    setBand(id);
+    setShown(GAMES.length);
+  }
+
   const showWin = !spinning && last && last.win > 0;
   const stageCls = [
     "stage", "lux",
@@ -462,6 +471,11 @@ export default function App() {
             </div>
             <div className="meter"><em>CITV</em><b>{balance}</b></div>
           </header>
+          <nav className="bands" aria-label="klasman">
+            {BANDS.map((b) => (
+              <button key={b.id} className={"band" + (band === b.id ? " on" : "")} onClick={() => pickBand(b.id)}>{b.label}</button>
+            ))}
+          </nav>
           <section className="grid bite">
             {!ready && [0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="card lux ghost" style={{ "--i": i }} />)}
             {ready && table.length === 0 && <div className="card lux empty" />}
