@@ -14,7 +14,14 @@ export default function Gate({ game, onDone }) {
       className={`gate cine load-${kit.load} g-${game.id}`}
       style={{ "--c": game.color, "--sky": game.sky }}
       onPointerDown={onDone}
-      aria-hidden="true"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onDone();
+        }
+      }}
     >
       <i className="depth d1" />
       <i className="depth d2" />
