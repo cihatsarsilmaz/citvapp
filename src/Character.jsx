@@ -12,7 +12,7 @@ export default function Character({ game, mood, bond = 0 }) {
       <div className="figure">
         <span className="shadow" />
         <span className="plate" />
-        <span className="face">{game.emoji}</span>
+        <span className="face body">{game.emoji}</span>
         <span className="glow" />
       </div>
       {m === "c" && <em className="cflash">C</em>}
