@@ -192,13 +192,15 @@
   position: relative;
   overflow: hidden;
 }
-.card .em {
+.card .actor.look .mark {
   display: grid;
   place-items: center;
   width: 56px;
   height: 56px;
   margin: 0 auto 6px;
   font-size: 34px;
+  right: 8px;
+  top: 8px;
   border-radius: 50%;
   background:
     radial-gradient(circle at 35% 30%, #ffffff25, transparent 50%),
@@ -206,12 +208,12 @@
   border: 1px solid color-mix(in srgb, var(--c) 55%, #fff3);
   box-shadow: 0 6px 14px #0008, inset 0 1px 0 #fff2;
 }
-.card .em.mot-float { animation: float 3s ease-in-out infinite; }
-.card .em.mot-bounce { animation: bounce 1.8s ease-in-out infinite; }
-.card .em.mot-pulse { animation: pulse 2s ease-in-out infinite; }
-.card .em.mot-flicker { animation: flicker 1.4s ease-in-out infinite; }
-.card .em.mot-wing { animation: wing 2s ease-in-out infinite; }
-.card .em.mot-sway { animation: sway 2.6s ease-in-out infinite; }
+.card .actor.mot-float .mark { animation: float 3s ease-in-out infinite; }
+.card .actor.mot-bounce .mark { animation: bounce 1.8s ease-in-out infinite; }
+.card .actor.mot-pulse .mark { animation: pulse 2s ease-in-out infinite; }
+.card .actor.mot-flicker .mark { animation: flicker 1.4s ease-in-out infinite; }
+.card .actor.mot-wing .mark { animation: wing 2s ease-in-out infinite; }
+.card .actor.mot-sway .mark { animation: sway 2.6s ease-in-out infinite; }
 
 .gate .hero-wrap {
   position: relative;
@@ -221,7 +223,7 @@
   height: 120px;
   z-index: 5;
 }
-.gate .mark.hero {
+.gate .actor .mark.body {
   font-size: 72px;
   line-height: 1;
   filter: drop-shadow(0 12px 24px #000c);
@@ -262,5 +264,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .actor .figure, .actor .aura, .card .em, .gate .mark.hero, .gate .hero-ring { animation: none !important; }
+  .actor .figure, .actor .aura, .card .actor .mark, .gate .actor .mark.body, .gate .hero-ring { animation: none !important; }
 }

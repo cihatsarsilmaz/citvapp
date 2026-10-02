@@ -33,8 +33,9 @@ export default function Gate({ game, onDone }) {
       <i className="depth d7" />
       <i className="halo" />
       <i className="filigree" />
-      <span className="gate-hero">
+      <span className="gate-hero hero-wrap">
         <Character game={game} mood="idle" bond={0} />
+        <i className="hero-ring" aria-hidden="true" />
         <p className="hero-name">{game.character}</p>
         <p className="hero-title">{game.title}</p>
       </span>
