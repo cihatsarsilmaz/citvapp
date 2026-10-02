@@ -96,6 +96,37 @@ html, body, #root {
   color: #ffe08a; min-height: 1.05em; text-shadow: 0 0 22px #ffb020cc;
 }
 .bang.quiet { min-height: 8px; font-size: 0; text-shadow: none; }
+.paystrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: #080204d0;
+  border: 1px solid #f0d78a99;
+  color: #fff3c8;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  line-height: 1.3;
+  text-shadow: 0 1px 0 #000c;
+}
+.payhead {
+  color: #ffe08a;
+  font-size: 11px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  width: 100%;
+  text-align: center;
+}
+.payrow { white-space: nowrap; }
+.payrow.dim { color: #d8c49a; font-weight: 650; }
+@media (max-width: 520px) {
+  .paystrip { font-size: 12px; gap: 3px 6px; padding: 5px 6px; }
+  .payhead { font-size: 9px; }
+}
 .dock {
   display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center;
   padding: 8px; border-radius: 14px;

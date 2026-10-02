@@ -5,10 +5,21 @@ import { startPwa } from "./pwa";
 import "./styles.css";
 import "./slot5.css";
 import "./character.css";
+import "./character-port.css";
+import "./skins.css";
+import "./look.css";
+import "./react.css";
 import "./gate.css";
 import "./lux.css";
 import "./play.css";
 import "./floor.css";
+import "./flow.css";
+import "./scale.css";
+import "./vis7.css";
+import "./lock.css";
+import "./reels.css";
+import "./polish.css";
+import "./feel.css";
 
 startPwa();
 

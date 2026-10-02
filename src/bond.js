@@ -1,6 +1,3 @@
-/** Karakter bağı — sektördeki collection meter'in CITV hali.
- * Sayı yok. 8 tema simgesi dolunca karakter toplar.
- */
 export const BOND_MAX = 8;
 
 export function nextBond(prev, themes) {
@@ -9,8 +6,8 @@ export function nextBond(prev, themes) {
   return { bond: n % BOND_MAX, collect: true };
 }
 
-export function holdKeys(grid, extra) {
-  if (!extra || !grid) return [];
+export function holdKeys(grid, on) {
+  if (!on || !grid) return [];
   const keys = [];
   for (let c = 0; c < grid.length; c++) {
     const col = grid[c] || [];

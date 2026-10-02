@@ -1,15 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
-import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, playMiss, playClick, playBonusIn, playJack, playExtra, setMuted } from "./audio";
-import { UNIT } from "./paytable";
+import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, playMiss, playClick, playBonusIn, playJack, playExtra, setMuted, wakeAudio } from "./audio";
+import { UNIT, PAY3, PAY4, PAY5 } from "./paytable";
 import { spinGrid, applyHouse, emptySession, plan, readStyle } from "./house";
 import { evalLines, LOW } from "./engine";
-import { loadState, saveState } from "./store";
+import { loadState, saveState, topUp } from "./store";
 import { getMode, LIVE } from "./coin";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
+import { BANDS, inBand } from "./class";
 import { loadRecents, pushRecent } from "./recents";
-import { lockAt, starsLocked, markCell, spinTempo } from "./pace";
+import { lockAt, starsLocked, spinTempo } from "./pace";
 import { holdKeys } from "./bond";
 import { loadLedger, book } from "./ledger";
 import Character from "./Character";
@@ -17,20 +18,23 @@ import Gate from "./Gate";
 import Jackpot from "./Jackpot";
 import Joy from "./Joy";
 import Admin from "./Admin";
+import Reels from "./Reels";
 
 const POOL = [...LOW];
 const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
 function blank(cols = 5, rows = 3) {
   return Array.from({ length: cols }, () => Array.from({ length: rows }, rnd));
 }
-const START = 2500;
-const TOPUP = 500;
+const START = 12500;
+const TOPUP = 2500;
+const BITE = 18;
 const saved = loadState({ balance: START, session: emptySession(), muted: false });
 
 export default function App() {
   const [hash, setHash] = useState(typeof location !== "undefined" ? location.hash : "");
   const [game, setGame] = useState(null);
   const [boot, setBoot] = useState(false);
+  const [ready, setReady] = useState(false);
   const [grid, setGrid] = useState(() => blank());
   const [lock, setLock] = useState([0, 0, 0, 0, 0]);
   const [spinning, setSpinning] = useState(false);
@@ -46,6 +50,8 @@ export default function App() {
   const [joy, setJoy] = useState(null);
   const [recents, setRecents] = useState(loadRecents);
   const [held, setHeld] = useState([]);
+  const [shown, setShown] = useState(GAMES.length);
+  const [band, setBand] = useState("tumu");
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
@@ -53,8 +59,10 @@ export default function App() {
   const timers = useRef([]);
   const gen = useRef(0);
   const pending = useRef(null);
+  const autoCtl = useRef(null);
   const taps = useRef(0);
   const ledger = useRef(loadLedger());
+  const balRef = useRef(saved.balance);
   const live = useRef({});
   live.current = { game, balance, ante, session, ledger: ledger.current };
   autoRef.current = auto;
@@ -68,14 +76,63 @@ export default function App() {
       const i = recents.indexOf(id);
       return i === -1 ? 99 : i;
     };
-    return [...GAMES].sort((a, b) => rank(a.id) - rank(b.id));
-  }, [recents]);
+    return GAMES.filter((g) => inBand(g, band)).sort((a, b) => rank(a.id) - rank(b.id));
+  }, [recents, band]);
+  const table = lobby.slice(0, shown);
 
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 160);
+    return () => clearTimeout(t);
+  }, []);
   useEffect(() => { setMuted(mute); }, [mute]);
-  useEffect(() => { saveState({ balance, session, muted: mute }); }, [balance, session, mute]);
+  useEffect(() => {
+    const wake = () => wakeAudio();
+    window.addEventListener("pointerdown", wake, { passive: true });
+    window.addEventListener("keydown", wake);
+    return () => {
+      window.removeEventListener("pointerdown", wake);
+      window.removeEventListener("keydown", wake);
+    };
+  }, []);
+  useEffect(() => {
+    balRef.current = balance;
+    saveState({ balance, session, muted: mute, granted: true });
+  }, [balance, session, mute]);
+  useEffect(() => {
+    if (isLive) return;
+    if (balance < 20) {
+      const n = topUp(balRef.current, TOPUP);
+      balRef.current = n;
+      setBalance(n);
+    }
+  }, [balance, isLive]);
+  useEffect(() => {
+    const cap = kit.anteMax || 10;
+    setAnte((n) => Math.min(cap, Math.max(1, n)));
+  }, [game, kit.anteMax]);
+
+  function abortAutoChain() {
+    if (autoCtl.current) {
+      autoCtl.current.abort();
+      autoCtl.current = null;
+    }
+  }
+
+  function armAuto(gap) {
+    abortAutoChain();
+    const ctl = new AbortController();
+    autoCtl.current = ctl;
+    const id = setTimeout(() => {
+      if (ctl.signal.aborted) return;
+      if (autoCtl.current === ctl) autoCtl.current = null;
+      runSpin();
+    }, gap);
+    ctl.signal.addEventListener("abort", () => clearTimeout(id), { once: true });
+  }
 
   function clearTimers() {
     gen.current += 1;
+    abortAutoChain();
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
     stopSpinLoop();
@@ -106,24 +163,37 @@ export default function App() {
   const holdSet = useMemo(() => new Set(held), [held]);
   const broke = balance < bet && !(session.inBonus);
 
+  function writeBal(n) {
+    const v = Math.max(0, Math.floor(Number(n) || 0));
+    balRef.current = v;
+    live.current.balance = v;
+    setBalance(v);
+    return v;
+  }
+
   function finishSpin(my, next, b, snap) {
     if (gen.current !== my) return;
+    const bag = pending.current;
+    if (!bag || bag.my !== my || bag.done) return;
+    bag.done = true;
     try {
       stopSpinLoop();
       const s = live.current;
       const k = kitOf(s.game);
       const ev = evalLines(next, s.game.emoji, b, k);
       const result = applyHouse(ev, b, snap, {
-        balance: s.balance,
+        balance: balRef.current,
         ante: s.ante,
         turbo: turboRef.current,
         ledger: ledger.current,
+        kit: k,
       });
       ledger.current = book(ledger.current, snap.inBonus ? 0 : b, result.win, result.gift);
-      setLast(result);
+      const paid = Math.max(0, result.win || 0);
+      writeBal(balRef.current + paid);
+      setLast({ ...result, win: paid });
       setSession(result.session);
-      setBalance((n) => n + result.win);
-      setHeld(holdKeys(next, result.extra));
+      setHeld(holdKeys(next, result.extra || result.session.inBonus));
       if (result.rare) {
         setMood("c");
         setJoy("jack");
@@ -145,16 +215,16 @@ export default function App() {
       } else if (result.extra) {
         setMood("bonus");
         playExtra();
-      } else if (result.cMult > 1) setMood("c");
-      else if (result.win) setMood(result.session.inBonus ? "bonuswin" : "win");
-      else setMood("miss");
-      if (result.win) {
+      } else if (paid > 0 && result.cMult > 1) setMood("c");
+      else if (paid > 0) setMood(result.session.inBonus ? "bonuswin" : "win");
+      else setMood(result.session.inBonus ? "bonus" : "miss");
+      if (paid > 0) {
         playWin(result.cMult > 1 ? 3 : 2);
         tapWin(result.cMult > 1 ? 2 : 1);
       } else if (!result.bonus && !result.collect) playMiss();
       if (autoRef.current && gen.current === my) {
-        const gap = turboRef.current ? 220 : 380;
-        timers.current.push(setTimeout(runSpin, gap));
+        const gap = result.session.inBonus ? 420 : turboRef.current ? 220 : 380;
+        armAuto(gap);
       }
     } catch {
       setMood("miss");
@@ -220,25 +290,26 @@ export default function App() {
   function runSpin() {
     const s = live.current;
     if (!s.game || busy.current || boot) return;
+    wakeAudio();
     const k = kitOf(s.game);
     const free = !!(s.session && s.session.inBonus);
     const b = UNIT * s.ante;
-    if (!free && s.balance < b) {
+    if (!free && balRef.current < b) {
       autoRef.current = false;
       setAuto(false);
+      abortAutoChain();
       return;
     }
     const my = ++gen.current;
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
-    const fast = turboRef.current;
-    const { base, step } = spinTempo(fast);
+    const fast = turboRef.current && !free;
+    const { base, step } = spinTempo(fast, k);
     busy.current = true;
     setSpinning(true);
-    setMood(s.session.inBonus ? "bonus" : "spin");
-    if (!free) setBalance((n) => n - b);
+    setMood(free ? "bonus" : "spin");
+    if (!free) writeBal(balRef.current - b);
     setLast(null);
-    setHeld([]);
     const nCols = k.cols || 5;
     lockRef.current = Array(nCols).fill(0);
     setLock(Array(nCols).fill(0));
@@ -247,10 +318,10 @@ export default function App() {
     playSpinLoop();
     tapSpin();
     const snap = s.session;
-    const style = readStyle(snap, s.balance, s.ante, fast);
-    const p = plan(style, snap);
+    const style = readStyle(snap, balRef.current, s.ante, fast);
+    const p = plan(style, snap, k);
     const next = spinGrid(s.game.emoji, p.forceMiss && !snap.inBonus, k);
-    pending.current = { my, next, bet: b, snap };
+    pending.current = { my, next, bet: b, snap, done: false };
     armSpin(my, next, base, step);
   }
 
@@ -296,13 +367,14 @@ export default function App() {
   if (hash.includes("admin")) {
     return (
       <div className="app">
-        <Admin session={session} setSession={setSession} balance={balance} setBalance={setBalance} emptySession={emptySession} />
+        <Admin session={session} setSession={setSession} balance={balance} setBalance={(n) => writeBal(typeof n === "function" ? n(balRef.current) : n)} emptySession={emptySession} />
       </div>
     );
   }
 
   function openGame(g) {
     const k = kitOf(g);
+    wakeAudio();
     clearTimers();
     busy.current = false;
     setSpinning(false);
@@ -314,6 +386,7 @@ export default function App() {
     setHeld([]);
     setAuto(false);
     autoRef.current = false;
+    setAnte(1);
     setMood("idle");
     setJoy(null);
     setRecents(pushRecent(g.id));
@@ -344,20 +417,29 @@ export default function App() {
   function toggleAuto() {
     playClick();
     tapTick();
-    const n = !autoRef.current;
-    autoRef.current = n;
-    setAuto(n);
-    if (n && !busy.current && !boot) {
-      timers.current.push(setTimeout(runSpin, 90));
-    } else if (!n) {
-      clearTimers();
+    if (autoRef.current) {
+      autoRef.current = false;
+      setAuto(false);
+      abortAutoChain();
+      return;
     }
+    autoRef.current = true;
+    setAuto(true);
+    if (!busy.current && !boot) armAuto(90);
   }
 
   function bumpAnte(d) {
     playClick();
     tapTick();
-    setAnte((n) => Math.min(10, Math.max(1, n + d)));
+    const cap = kit.anteMax || 10;
+    setAnte((n) => Math.min(cap, Math.max(1, n + d)));
+  }
+
+  function pickBand(id) {
+    playClick();
+    tapTick();
+    setBand(id);
+    setShown(GAMES.length);
   }
 
   const showWin = !spinning && last && last.win > 0;
@@ -365,6 +447,7 @@ export default function App() {
     "stage", "lux",
     "g-" + (game?.id || ""),
     "kit-" + kit.extra,
+    "vol-" + (kit.vol || "mid"),
     "c" + cols, "r" + rows,
     last?.win ? "hot" : "",
     last && !last.win && !spinning ? "shake" : "",
@@ -372,9 +455,10 @@ export default function App() {
     last?.cMult > 1 ? "cmult" : "",
     last?.collect ? "collect" : "",
     last?.rare ? "rare" : "",
+    last?.extra ? "extra" : "",
     "floor",
   ].filter(Boolean).join(" ");
-  const lamps = Math.max(5, Math.min(12, session.inBonus ? session.bonusLeft || 6 : 7));
+  const lamps = session.inBonus ? Math.max(1, session.bonusLeft || 1) : 7;
 
   return (
     <div className="app wide">
@@ -387,15 +471,27 @@ export default function App() {
             </div>
             <div className="meter"><em>CITV</em><b>{balance}</b></div>
           </header>
-          <section className="grid">
-            {lobby.map((g) => (
-              <button key={g.id} className={"card lux g-" + g.id + (recents[0] === g.id ? " recent" : "")} onClick={() => openGame(g)} style={{ "--c": g.color }}>
+          <nav className="bands" aria-label="klasman">
+            {BANDS.map((b) => (
+              <button key={b.id} className={"band" + (band === b.id ? " on" : "")} onClick={() => pickBand(b.id)}>{b.label}</button>
+            ))}
+          </nav>
+          <section className="grid bite">
+            {!ready && [0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="card lux ghost" style={{ "--i": i }} />)}
+            {ready && table.length === 0 && <div className="card lux empty" />}
+            {ready && table.map((g, i) => (
+              <button key={g.id} className={"card lux g-" + g.id + (recents[0] === g.id ? " recent" : "")} onClick={() => openGame(g)} style={{ "--c": g.color, "--i": i }}>
                 <div className="ribbon" />
-                <div className={"em mot-" + g.motion}>{g.emoji}</div>
+                <Character game={g} mood="idle" bond={0} />
                 <div className="nm">{g.name}</div>
                 <div className="tag">{g.character}</div>
               </button>
             ))}
+            {ready && shown < lobby.length && (
+              <button className="card lux more" onClick={() => { playClick(); tapTick(); setShown((n) => Math.min(lobby.length, n + BITE)); }}>
+                <div className="nm">+</div>
+              </button>
+            )}
           </section>
         </>
       )}
@@ -407,17 +503,17 @@ export default function App() {
           <div className="lamps">{Array.from({ length: lamps }, (_, i) => <i key={i} />)}</div>
           <Jackpot kit={kit} vault={session.vault} hit={!!last?.jack} />
           <Character game={game} mood={mood} bond={session.bond || 0} />
-          <div className={"window five " + (spinning ? "spin" : "") + (showWin ? " win" : "")} onPointerDown={nudgeStage}>
-            {grid.map((col, c) => (
-              <div key={c} className={"reelcol " + (lock[c] ? "lock" : "")}>
-                {col.map((s, r) => (
-                  <div key={r} className={"cell" + markCell(s) + (hitSet.has(`${c}:${r}`) ? " hit drop" : "") + (holdSet.has(`${c}:${r}`) ? " hold" : "")}>{s}</div>
-                ))}
-              </div>
-            ))}
+          <div className={"window five canvas " + (spinning ? "spin" : "") + (showWin ? " win" : "")}>
+            <Reels grid={grid} lock={lock} hits={hitSet} hold={holdSet} spinning={spinning} win={showWin} onPointerDown={nudgeStage} />
           </div>
           <p className={"bang " + (showWin ? "" : "quiet")}>
             {showWin ? (last.cMult > 1 ? `${last.win} ×${last.cMult}` : last.win) : ""}
+          </p>
+          <p className="paystrip" aria-label="odeme tablosu">
+            <span className="payhead">Ödeme</span>
+            <span className="payrow">🎰 3×{PAY3.wild}  4×{PAY4.wild}  5×{PAY5.wild}</span>
+            <span className="payrow">{game.emoji} 3×{PAY3.theme}  4×{PAY4.theme}  5×{PAY5.theme}</span>
+            <span className="payrow dim">⭐ 3×{PAY3.star} · düşük 3×{PAY3.low}</span>
           </p>
           <div className={"dock lux kit-" + kit.extra}>
             <div className="well"><em>CITV</em><b>{balance}</b></div>
@@ -430,7 +526,7 @@ export default function App() {
             <button className={"key latch tick " + (auto ? "on" : "")} onPointerDown={toggleAuto}>{auto ? "■" : "▶"}</button>
             <button className={"key latch tick " + (turbo ? "on" : "")} onPointerDown={() => { playClick(); tapTick(); setTurbo((t) => !t); }}>{turbo ? "▶▶" : "▶"}</button>
             {broke && !isLive && !session.inBonus && (
-              <button className="key fill tick" onPointerDown={() => { playClick(); tapTick(); setBalance((n) => n + TOPUP); }}>+</button>
+              <button className="key fill tick" onPointerDown={() => { playClick(); tapTick(); writeBal(topUp(balRef.current, TOPUP)); }}>+</button>
             )}
             <button className="key tick" onPointerDown={() => { playClick(); tapTick(); setMute((m) => !m); }}>{mute ? "·" : "♪"}</button>
             <button className="key tick" onPointerDown={() => back(false)}>←</button>

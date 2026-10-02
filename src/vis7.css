@@ -1,0 +1,87 @@
+.stage.floor {
+  perspective: 900px;
+  transform-style: preserve-3d;
+}
+.actor.d7 {
+  transform-style: preserve-3d;
+}
+.actor.d7 .figure {
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 14px 16px #000c) drop-shadow(0 0 18px color-mix(in srgb, var(--c) 45%, transparent));
+}
+.actor.d7 .depth {
+  position: absolute;
+  width: 160px;
+  height: 36px;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%) rotateX(70deg);
+  background: radial-gradient(ellipse, #0008, transparent 70%);
+  z-index: 0;
+}
+.actor.d7 .eye {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1a0808;
+  z-index: 4;
+  top: 28px;
+  box-shadow: 0 0 0 2px #fff8;
+}
+.actor.d7 .eye.L { left: 48px; }
+.actor.d7 .eye.R { left: 76px; }
+.actor.d7 .mouth {
+  position: absolute;
+  z-index: 4;
+  left: 58px;
+  top: 44px;
+  width: 16px;
+  height: 6px;
+  border-radius: 0 0 10px 10px;
+  background: #6a2030;
+}
+.mood-win .mouth, .mood-bonuswin .mouth, .mood-c .mouth {
+  height: 10px;
+  border-radius: 0 0 12px 12px;
+  background: #3a1018;
+}
+.mood-miss .mouth {
+  height: 3px;
+  width: 12px;
+  border-radius: 8px;
+}
+.mood-spin .eye { animation: blink .28s linear infinite; }
+@keyframes blink { 50% { transform: scaleY(.2); } }
+.actor.d7 .shock {
+  position: absolute;
+  inset: -20px 10%;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--c) 80%, #fff);
+  animation: shock .55s ease-out;
+  z-index: 0;
+  pointer-events: none;
+}
+@keyframes shock {
+  from { transform: scale(.4); opacity: .8; }
+  to { transform: scale(1.5); opacity: 0; }
+}
+.mood-c .figure { animation: croar .55s ease, tilt3d .55s ease; }
+.mood-win .figure, .mood-bonuswin .figure { animation: winjump .5s ease, tilt3d .5s ease; }
+.mood-bonus .figure { animation: bonuslive 1.1s ease-in-out infinite; }
+@keyframes tilt3d {
+  30% { transform: translateZ(28px) rotateY(-18deg) scale(1.12); }
+  60% { transform: translateZ(16px) rotateY(14deg) scale(1.08); }
+}
+.stage.cmult, .stage.hot.win, .stage.bonus {
+  animation: stagepulse .7s ease;
+}
+@keyframes stagepulse {
+  40% { filter: brightness(1.12) saturate(1.15); }
+}
+.cell.hit {
+  animation: pop .28s ease, cell3d .4s ease;
+}
+@keyframes cell3d {
+  40% { transform: scale(1.16) translateZ(12px); }
+}

@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { kitOf } from "./kits";
+import Character from "./Character";
 
 export default function Gate({ game, onDone }) {
   const kit = kitOf(game);
@@ -13,7 +14,7 @@ export default function Gate({ game, onDone }) {
     <div
       className={`gate cine load-${kit.load} g-${game.id}`}
       style={{ "--c": game.color, "--sky": game.sky }}
-      onPointerDown={onDone}
+      onClick={onDone}
       role="button"
       tabIndex={0}
       onKeyDown={(event) => {
@@ -32,12 +33,11 @@ export default function Gate({ game, onDone }) {
       <i className="depth d7" />
       <i className="halo" />
       <i className="filigree" />
-      <div className="hero-wrap">
-        <b className="mark hero">{game.emoji}</b>
-        <span className="hero-ring" />
-      </div>
-      <p className="hero-name">{game.character}</p>
-      <p className="hero-title">{game.title}</p>
+      <span className="gate-hero">
+        <Character game={game} mood="idle" bond={0} />
+        <p className="hero-name">{game.character}</p>
+        <p className="hero-title">{game.title}</p>
+      </span>
       <i className="bar" />
     </div>
   );
