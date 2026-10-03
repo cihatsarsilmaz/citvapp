@@ -1,11 +1,11 @@
 import { GAMES } from "./games.js";
 import { KITS } from "./kits.js";
-import { BANDS, bandOf } from "./class.js";
+import { BANDS, FEATURED, bandOf } from "./class.js";
 
 const NEED_GAME = ["id", "name", "emoji", "character", "color", "freq", "motion", "fx", "sky"];
 const NEED_KIT = ["load", "ms", "extra", "spin", "cols", "rows", "jack", "voice"];
 const SKINS = ["sweet", "olympus", "nova", "reef", "rich", "west", "mystic", "wolf", "flame", "forest", "pharaoh", "pirate", "neon", "samurai", "ice", "dragon", "circus", "vault"];
-const BAND_IDS = new Set(BANDS.map((b) => b.id).filter((id) => id !== "tumu"));
+const BAND_IDS = new Set(BANDS.map((b) => b.id).filter((id) => id !== "tumu" && id !== "onecikan"));
 
 export function audit() {
   const fail = [];
@@ -21,6 +21,8 @@ export function audit() {
     const band = bandOf(g);
     if (!BAND_IDS.has(band)) fail.push(g.id + " klasman yok");
   }
+  if (FEATURED.length !== 5) fail.push("one cikan besli degil");
+  for (const id of FEATURED) if (!ids.has(id)) fail.push("one cikan yok " + id);
   for (const id of Object.keys(KITS)) {
     if (!ids.has(id)) fail.push("kit yetim " + id);
     const kit = KITS[id];
