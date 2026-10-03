@@ -8,7 +8,7 @@ import { loadState, saveState, topUp } from "./store";
 import { getMode, LIVE } from "./coin";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
-import { BANDS, inBand } from "./class";
+import { BANDS, inBand, featuredGames } from "./class";
 import { loadRecents, pushRecent } from "./recents";
 import { lockAt, starsLocked, spinTempo } from "./pace";
 import { holdKeys } from "./bond";
@@ -71,6 +71,7 @@ export default function App() {
   const kit = kitOf(game);
   const cols = kit.cols || 5;
   const rows = kit.rows || 3;
+  const featured = useMemo(() => featuredGames(GAMES), []);
   const lobby = useMemo(() => {
     const rank = (id) => {
       const i = recents.indexOf(id);
@@ -476,6 +477,21 @@ export default function App() {
               <button key={b.id} className={"band" + (band === b.id ? " on" : "")} onClick={() => pickBand(b.id)}>{b.label}</button>
             ))}
           </nav>
+          {ready && band === "tumu" && (
+            <section className="featured" aria-label="one cikan">
+              <p className="kicker">Öne çıkan</p>
+              <div className="featured-row">
+                {featured.map((g) => (
+                  <button key={g.id} className={"card lux g-" + g.id} onClick={() => openGame(g)} style={{ "--c": g.color }}>
+                    <div className="ribbon" />
+                    <Character game={g} mood="idle" bond={0} />
+                    <div className="nm">{g.name}</div>
+                    <div className="tag">{g.character}</div>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
           <section className="grid bite">
             {!ready && [0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="card lux ghost" style={{ "--i": i }} />)}
             {ready && table.length === 0 && <div className="card lux empty" />}
