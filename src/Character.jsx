@@ -24,7 +24,7 @@ export default function Character({ game, mood, bond = 0 }) {
       {portrait ? (
         <span className="figure port">
           <img className="port-img" src={portrait} alt="" />
-          <b className="mark" data-mark={fig.mark}>{game.emoji}</b>
+          <b className="mark body" data-mark={fig.mark}>{game.emoji}</b>
         </span>
       ) : (
         <span className="figure">
@@ -37,7 +37,7 @@ export default function Character({ game, mood, bond = 0 }) {
           <i className="eye R" />
           <i className="mouth" />
           <i className="hair" />
-          <b className="mark" data-mark={fig.mark}>{game.emoji}</b>
+          <b className="mark body" data-mark={fig.mark}>{game.emoji}</b>
         </span>
       )}
       {m === "c" && <em className="cflash">×</em>}
