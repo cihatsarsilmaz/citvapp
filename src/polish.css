@@ -24,6 +24,22 @@
   background: #ff6bcb;
   color: #1a0610;
 }
+.featured {
+  padding: 0 16px 12px;
+}
+.featured .kicker {
+  margin: 0 0 8px;
+}
+.featured-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.featured-row .card {
+  flex: 0 0 148px;
+  min-width: 148px;
+}
 .card.lux {
   transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease;
 }
