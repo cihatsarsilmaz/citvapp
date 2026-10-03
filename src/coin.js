@@ -52,9 +52,22 @@ export async function fetchLiveBalance(wallet) {
   const w = wallet || getWallet();
   if (!base) return { ok: false, reason: "endpoint-yok" };
   if (!w) return { ok: false, reason: "cüzdan-yok" };
+  const url = `${base}?wallet=${encodeURIComponent(w)}`;
+  let r;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      r = await fetch(url);
+    } catch {
+      if (attempt === 2) return { ok: false, reason: "ag" };
+      await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
+      continue;
+    }
+    if (r.ok) break;
+    if (![408, 429].includes(r.status) && r.status < 500) return { ok: false, reason: "http" };
+    if (attempt === 2) return { ok: false, reason: "http" };
+    await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
+  }
   try {
-    const r = await fetch(`${base}?wallet=${encodeURIComponent(w)}`);
-    if (!r.ok) return { ok: false, reason: "http" };
     const j = await r.json();
     const balance = Number(j.balance);
     if (!Number.isFinite(balance)) return { ok: false, reason: "sayi-degil" };
