@@ -19,7 +19,7 @@ import Gate from "./Gate";
 import Jackpot from "./Jackpot";
 import Joy from "./Joy";
 import Admin from "./Admin";
-import Reels from "./Reels";
+import Board from "./Board";
 
 const POOL = [...LOW];
 const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
@@ -461,6 +461,7 @@ export default function App() {
     "floor",
   ].filter(Boolean).join(" ");
   const lamps = session.inBonus ? Math.max(1, session.bonusLeft || 1) : 7;
+  const resultText = spinning ? "Dönüyor" : showWin ? last.win + " CITV" : last ? "Boş" : "Çevir";
 
   return (
     <div className="app wide">
@@ -491,7 +492,7 @@ export default function App() {
           <section className="grid bite">
             {!ready && [0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="card lux ghost" style={{ "--i": i }} />)}
             {ready && table.length === 0 && <div className="card lux empty" />}
-            {ready && table.map((g, i) => (
+            {ready && table.map((g) => (
               <Seat key={g.id} game={g} onOpen={openGame} recent={recents[0] === g.id} />
             ))}
             {ready && shown < lobby.length && (
@@ -510,9 +511,11 @@ export default function App() {
           <div className="lamps">{Array.from({ length: lamps }, (_, i) => <i key={i} />)}</div>
           <Jackpot kit={kit} vault={session.vault} hit={!!last?.jack} />
           <Character game={game} mood={mood} bond={session.bond || 0} />
-          <div className={"window five canvas " + (spinning ? "spin" : "") + (showWin ? " win" : "")}>
-            <Reels grid={grid} lock={lock} hits={hitSet} hold={holdSet} spinning={spinning} win={showWin} onPointerDown={nudgeStage} />
+          <div className={"window five canvas " + (spinning ? "spin" : "") + (showWin ? " win" : "")} onPointerDown={nudgeStage}>
+            <Board grid={grid} hits={hitSet} spinning={spinning} />
           </div>
+          <p className="result-line">{resultText}</p>
+          {session.inBonus && <p className="bonus-left">Bonus {session.bonusLeft}</p>}
           <p className={"bang " + (showWin ? "" : "quiet")}>
             {showWin ? (last.cMult > 1 ? `${last.win} ×${last.cMult}` : last.win) : ""}
           </p>
