@@ -2,7 +2,7 @@
   "id": "./",
   "name": "CITV Slot",
   "short_name": "CITV",
-  "description": "18 slot, web salon",
+  "description": "18 slot, 18 karakter, CITV coin — yalnız web",
   "lang": "tr",
   "dir": "ltr",
   "start_url": "./?source=pwa",

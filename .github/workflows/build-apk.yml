@@ -1,9 +1,7 @@
-name: Build Android APK
+name: Build Android APK (manual archive only)
 
+# CITV Slot dağıtımı web. Bu iş store için değil; yalnızca arşiv APK.
 on:
-  push:
-    branches:
-      - Kryptocasino
   workflow_dispatch:
 
 concurrency:
@@ -71,20 +69,4 @@ jobs:
           name: citv-slot-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          retention-days: 30
-
-      - name: Delete existing latest-debug release (if any)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release delete latest-debug --yes --cleanup-tag || true
-        continue-on-error: true
-
-      - name: Create latest-debug GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create latest-debug \
-            --title "CITV Slot Latest Debug Build" \
-            --notes "CITV Slot debug APK (\`Kryptocasino\`).\n\n**Commit:** \`${{ github.sha }}\`\n**Built at:** $(date -u '+%Y-%m-%d %H:%M UTC')" \
-            --target ${{ github.sha }} \
-            android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14

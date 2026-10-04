@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { DEMO, LIVE, getMode, setMode, getWallet, setWallet, liveUrl, fetchLiveBalance } from "./coin";
+import { DEMO, LIVE, TICKER, formatCitv, getMode, setMode, getWallet, setWallet, loadClaim, saveClaim, liveUrl, fetchLiveBalance } from "./coin";
 
 const PIN = "CITV2026";
 
@@ -9,6 +9,7 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
   const [err, setErr] = useState("");
   const [mode, setModeUi] = useState(getMode());
   const [wallet, setWalletUi] = useState(getWallet());
+  const [claim, setClaimUi] = useState(loadClaim());
   const [liveMsg, setLiveMsg] = useState("");
 
   function login(e) {
@@ -32,7 +33,7 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
     const r = await fetchLiveBalance(wallet);
     if (r.ok) {
       setBalance(r.balance);
-      setLiveMsg("API bakiyesi: " + r.balance);
+      setLiveMsg("API bakiyesi: " + formatCitv(r.balance));
     } else {
       setLiveMsg("API yok veya hata: " + r.reason + (liveUrl() ? "" : ""));
     }
@@ -62,11 +63,11 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
 
   return (
     <section className="admin">
-      <p className="kicker">kasa kontrol</p>
+      <p className="kicker">kasa kontrol · {mode}</p>
       <h1>Admin</h1>
       <div className="ledger">
         <div><span>Mod</span><b>{mode}</b></div>
-        <div><span>Oyuncu</span><b>{balance}</b></div>
+        <div><span>Oyuncu {TICKER}</span><b>{balance.toLocaleString("tr-TR")}</b></div>
         <div><span>Kasa</span><b className="hot">{session.vault || 0}</b></div>
         <div><span>Spin</span><b>{session.spins || 0}</b></div>
         <div><span>RTP</span><b>{rtp}</b></div>
@@ -81,11 +82,15 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
         <button className="act ghost" onClick={pullLive}>API CEK</button>
       </div>
       {liveMsg && <p className="result">{liveMsg}</p>}
+      <form className="admin-form" onSubmit={(e) => { e.preventDefault(); saveClaim(claim); }}>
+        <input value={claim} onChange={(e) => setClaimUi(e.target.value)} placeholder="dağıtım claim kodu" />
+        <button className="act" type="submit">Kaydet</button>
+      </form>
       <div className="row">
         {mode === DEMO && <button className="act" onClick={() => setBalance((n) => n + 1000)}>+1000</button>}
         <button className="act ghost" onClick={() => setBalance(0)}>Sifirla</button>
         <button className="act ghost" onClick={() => setSession(emptySession())}>Oturum</button>
-        <button className="act ghost" onClick={logout}>Cik</button>
+        <button className="act ghost" onClick={logout}>Çık</button>
         <a className="act ghost" href="./" onClick={() => { location.hash = ""; }}>Lobi</a>
       </div>
     </section>

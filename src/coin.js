@@ -4,16 +4,21 @@
 
 export const DEMO = "DEMO";
 export const LIVE = "LIVE";
-const MODE_KEY = "citv-mode";
-const WALLET_KEY = "citv-wallet";
+export const TICKER = "CITV";
+export const MODE_KEY = "citv-mode";
+export const CLAIM_KEY = "citv-claim";
+export const WALLET_KEY = "citv-wallet";
 
 export function getMode() {
   try {
-    return localStorage.getItem(MODE_KEY) === LIVE ? LIVE : DEMO;
+    const mode = localStorage.getItem(MODE_KEY);
+    return mode === LIVE || String(mode).toLowerCase() === "live" ? LIVE : DEMO;
   } catch {
     return DEMO;
   }
 }
+
+export const loadMode = getMode;
 
 export function setMode(mode) {
   const v = mode === LIVE ? LIVE : DEMO;
@@ -21,6 +26,22 @@ export function setMode(mode) {
     localStorage.setItem(MODE_KEY, v);
   } catch {}
   return v;
+}
+
+export const saveMode = setMode;
+
+export function loadClaim() {
+  try {
+    return localStorage.getItem(CLAIM_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+export function saveClaim(code) {
+  try {
+    localStorage.setItem(CLAIM_KEY, String(code || "").trim());
+  } catch {}
 }
 
 export function getWallet() {
@@ -31,12 +52,21 @@ export function getWallet() {
   }
 }
 
+export const loadWallet = getWallet;
+
 export function setWallet(addr) {
   const v = String(addr || "").trim();
   try {
     localStorage.setItem(WALLET_KEY, v);
   } catch {}
   return v;
+}
+
+export const saveWallet = setWallet;
+
+export function formatCitv(n) {
+  const value = Number.isFinite(Number(n)) ? Number(n) : 0;
+  return `${value.toLocaleString("tr-TR")} ${TICKER}`;
 }
 
 export function liveUrl() {
@@ -62,9 +92,14 @@ export async function fetchLiveBalance(wallet) {
       await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
       continue;
     }
+
     if (r.ok) break;
-    if (![408, 429].includes(r.status) && r.status < 500) return { ok: false, reason: "http" };
-    if (attempt === 2) return { ok: false, reason: "http" };
+    if (![408, 429].includes(r.status) && r.status < 500) {
+      return { ok: false, reason: `http ${url} (${r.status} ${r.statusText})` };
+    }
+    if (attempt === 2) {
+      return { ok: false, reason: `http ${url} (${r.status} ${r.statusText})` };
+    }
     await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
   }
   try {
@@ -75,4 +110,8 @@ export async function fetchLiveBalance(wallet) {
   } catch {
     return { ok: false, reason: "ag" };
   }
+}
+
+export function liveReady() {
+  return getMode() === LIVE && !!getWallet();
 }

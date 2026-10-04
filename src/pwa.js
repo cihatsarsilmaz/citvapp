@@ -1,5 +1,5 @@
 /** PWA servis çalıştırıcı kaydı.
- * Göreli yol: GitHub Pages alt klasör + Vite base ./ 
+ * Göreli yol: GitHub Pages alt klasör + Vite base ./
  * iOS Safari SW destekler (16.4+); ana ekrana ekle standalone açar.
  */
 export function startPwa() {
