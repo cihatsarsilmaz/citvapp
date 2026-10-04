@@ -21,6 +21,7 @@ import "./reels.css";
 import "./polish.css";
 import "./feel.css";
 import "./salon.css";
+import "./board.css";
 
 startPwa();
 
