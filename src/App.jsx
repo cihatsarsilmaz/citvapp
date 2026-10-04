@@ -14,6 +14,7 @@ import { lockAt, starsLocked, spinTempo } from "./pace";
 import { holdKeys } from "./bond";
 import { loadLedger, book } from "./ledger";
 import Character from "./Character";
+import Seat from "./Seat";
 import Gate from "./Gate";
 import Jackpot from "./Jackpot";
 import Joy from "./Joy";
@@ -482,12 +483,7 @@ export default function App() {
               <p className="kicker">Öne çıkan</p>
               <div className="featured-row">
                 {featured.map((g) => (
-                  <button key={g.id} className={"card lux g-" + g.id} onClick={() => openGame(g)} style={{ "--c": g.color }}>
-                    <div className="ribbon" />
-                    <Character game={g} mood="idle" bond={0} />
-                    <div className="nm">{g.name}</div>
-                    <div className="tag">{g.character}</div>
-                  </button>
+                  <Seat key={g.id} game={g} onOpen={openGame} />
                 ))}
               </div>
             </section>
@@ -496,12 +492,7 @@ export default function App() {
             {!ready && [0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="card lux ghost" style={{ "--i": i }} />)}
             {ready && table.length === 0 && <div className="card lux empty" />}
             {ready && table.map((g, i) => (
-              <button key={g.id} className={"card lux g-" + g.id + (recents[0] === g.id ? " recent" : "")} onClick={() => openGame(g)} style={{ "--c": g.color, "--i": i }}>
-                <div className="ribbon" />
-                <Character game={g} mood="idle" bond={0} />
-                <div className="nm">{g.name}</div>
-                <div className="tag">{g.character}</div>
-              </button>
+              <Seat key={g.id} game={g} onOpen={openGame} recent={recents[0] === g.id} />
             ))}
             {ready && shown < lobby.length && (
               <button className="card lux more" onClick={() => { playClick(); tapTick(); setShown((n) => Math.min(lobby.length, n + BITE)); }}>
