@@ -1,4 +1,4 @@
-package com.astrogamewar.app;
+package com.citvslot.app;
 
 import com.getcapacitor.BridgeActivity;
 

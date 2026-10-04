@@ -63,7 +63,7 @@ h1 { font-size: var(--title); line-height: 1.08; margin: 0; letter-spacing: -0.0
   background: linear-gradient(90deg, transparent, var(--c), transparent);
 }
 .card:hover { border-color: var(--c); transform: translateY(-2px); box-shadow: 0 12px 32px #000a, 0 0 20px color-mix(in srgb, var(--c) 25%, transparent); }
-.card .em { font-size: 28px; filter: drop-shadow(0 4px 8px #0008); }
+.card .actor .mark { font-size: 28px; filter: drop-shadow(0 4px 8px #0008); }
 .card .nm { font-size: var(--panel); font-weight: 700; margin-top: 8px; }
 .card .ch { font-size: var(--label); color: #bba57a; margin-top: 3px; }
 .cabinet {

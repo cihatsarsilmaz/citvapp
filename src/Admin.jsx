@@ -1,16 +1,16 @@
 import React, { useState } from "react";
-import { DEMO, LIVE, saveMode, loadWallet, saveWallet, loadClaim, saveClaim, TICKER } from "./coin";
+import { DEMO, LIVE, TICKER, formatCitv, getMode, setMode, getWallet, setWallet, loadClaim, saveClaim, liveUrl, fetchLiveBalance } from "./coin";
 
 const PIN = "CITV2026";
 
-export default function Admin({
-  session, setSession, balance, setBalance, emptySession, mode, setMode,
-}) {
+export default function Admin({ session, setSession, balance, setBalance, emptySession }) {
   const [pin, setPin] = useState("");
   const [ok, setOk] = useState(sessionStorage.getItem("citv-admin") === "1");
   const [err, setErr] = useState("");
-  const [wallet, setWallet] = useState(loadWallet());
-  const [claim, setClaim] = useState(loadClaim());
+  const [mode, setModeUi] = useState(getMode());
+  const [wallet, setWalletUi] = useState(getWallet());
+  const [claim, setClaimUi] = useState(loadClaim());
+  const [liveMsg, setLiveMsg] = useState("");
 
   function login(e) {
     e.preventDefault();
@@ -18,62 +18,80 @@ export default function Admin({
       sessionStorage.setItem("citv-admin", "1");
       setOk(true);
       setErr("");
-    } else setErr("PIN hatalı");
+    } else setErr("PIN hatali");
   }
 
-  function goLive() {
-    setMode(LIVE);
-    saveMode(LIVE);
+  function toggleLive() {
+    const next = mode === LIVE ? DEMO : LIVE;
+    setMode(next);
+    setModeUi(next);
+    setLiveMsg(next === LIVE ? "LIVE acik. Musluk kapali." : "DEMO. Yerel fis.");
   }
 
-  function goDemo() {
-    setMode(DEMO);
-    saveMode(DEMO);
+  async function pullLive() {
+    setWallet(wallet);
+    const r = await fetchLiveBalance(wallet);
+    if (r.ok) {
+      setBalance(r.balance);
+      setLiveMsg("API bakiyesi: " + formatCitv(r.balance));
+    } else {
+      setLiveMsg("API yok veya hata: " + r.reason + (liveUrl() ? "" : ""));
+    }
+  }
+
+  function logout() {
+    sessionStorage.removeItem("citv-admin");
+    setOk(false);
   }
 
   if (!ok) {
     return (
       <section className="admin">
-        <p className="kicker">CITV Slot · kasa kontrol</p>
-        <h1>Admin giriş</h1>
+        <p className="kicker">CITV Slot - kasa kontrol</p>
+        <h1>Admin giris</h1>
         <form onSubmit={login} className="admin-form">
-          <input type="password" inputMode="text" autoComplete="off" placeholder="PIN" value={pin} onChange={(e) => setPin(e.target.value)} />
-          <button className="act" type="submit">GİR</button>
+          <input type="password" autoComplete="off" placeholder="PIN" value={pin} onChange={(e) => setPin(e.target.value)} />
+          <button className="act" type="submit">GIR</button>
         </form>
         {err && <p className="result">{err}</p>}
-        <p className="notes">İstemci önizleme. Üretim sırrı koyma. Store yok — yalnız web.</p>
-        <a className="back" href="./" onClick={() => { location.hash = ""; }}>Lobiye dön</a>
+        <a className="back" href="./" onClick={() => { location.hash = ""; }}>Lobiye don</a>
       </section>
     );
   }
 
+  const rtp = session.wagered > 0 ? Math.round((session.paid / session.wagered) * 100) : 0;
+
   return (
     <section className="admin">
-      <p className="kicker">kasa kontrol · {mode === LIVE ? "LIVE" : "DEMO"}</p>
+      <p className="kicker">kasa kontrol · {mode}</p>
       <h1>Admin</h1>
       <div className="ledger">
+        <div><span>Mod</span><b>{mode}</b></div>
         <div><span>Oyuncu {TICKER}</span><b>{balance.toLocaleString("tr-TR")}</b></div>
-        <div><span>Kasa</span><b className="hot">{session.vault}</b></div>
-        <div><span>Spin</span><b>{session.spins}</b></div>
-        <div><span>Soğuma</span><b>{session.cool}</b></div>
+        <div><span>Kasa</span><b className="hot">{session.vault || 0}</b></div>
+        <div><span>Spin</span><b>{session.spins || 0}</b></div>
+        <div><span>RTP</span><b>{rtp}</b></div>
+        <div><span>Dry</span><b>{session.dry || 0}</b></div>
+        <div><span>Bonus</span><b>{session.inBonus ? session.bonusLeft : 0}</b></div>
+        <div><span>Bag</span><b>{session.bond || 0}</b></div>
       </div>
-      <p className="notes">Dağıtım bitince LIVE aç. Cüzdan ve claim burada durur; zincir sözleşmesi bu repoda yok.</p>
+      <p className="notes">LIVE ray: dagitim bitince VITE_CITV_BALANCE_URL. Sunucu spin yok.</p>
       <div className="row">
-        <button className="act" onClick={goLive}>LIVE aç</button>
-        <button className="act ghost" onClick={goDemo}>DEMO'ya dön</button>
+        <button className={"act " + (mode === LIVE ? "" : "ghost")} onClick={toggleLive}>{mode === LIVE ? "LIVE ACIK" : "LIVE AC"}</button>
+        <input value={wallet} onChange={(e) => setWalletUi(e.target.value)} onBlur={() => setWallet(wallet)} placeholder="cuzdan" />
+        <button className="act ghost" onClick={pullLive}>API CEK</button>
       </div>
-      <form className="admin-form" onSubmit={(e) => { e.preventDefault(); saveWallet(wallet); saveClaim(claim); }}>
-        <input placeholder="cüzdan adresi" value={wallet} onChange={(e) => setWallet(e.target.value)} />
-        <input placeholder="dağıtım claim kodu" value={claim} onChange={(e) => setClaim(e.target.value)} />
+      {liveMsg && <p className="result">{liveMsg}</p>}
+      <form className="admin-form" onSubmit={(e) => { e.preventDefault(); saveClaim(claim); }}>
+        <input value={claim} onChange={(e) => setClaimUi(e.target.value)} placeholder="dağıtım claim kodu" />
         <button className="act" type="submit">Kaydet</button>
       </form>
       <div className="row">
-        {mode !== LIVE && <button className="act" onClick={() => setBalance((n) => n + 1000)}>+1000 DEMO</button>}
-        <button className="act ghost" onClick={() => setBalance(0)}>Oyuncuyu sıfırla</button>
-        <button className="act ghost" onClick={() => setSession(emptySession())}>Oturumu sıfırla</button>
-        <button className="act ghost" onClick={() => setSession((s) => ({ ...s, cool: 0 }))}>Soğumayı aç</button>
-        <button className="act ghost" onClick={() => { sessionStorage.removeItem("citv-admin"); setOk(false); }}>Cikis</button>
-        <a className="act ghost" href="./" style={{ display: "inline-block", textDecoration: "none" }} onClick={() => { location.hash = ""; }}>Lobi</a>
+        {mode === DEMO && <button className="act" onClick={() => setBalance((n) => n + 1000)}>+1000</button>}
+        <button className="act ghost" onClick={() => setBalance(0)}>Sifirla</button>
+        <button className="act ghost" onClick={() => setSession(emptySession())}>Oturum</button>
+        <button className="act ghost" onClick={logout}>Cik</button>
+        <a className="act ghost" href="./" onClick={() => { location.hash = ""; }}>Lobi</a>
       </div>
     </section>
   );

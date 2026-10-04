@@ -1,7 +1,9 @@
-import { loadMode, DEMO } from "./coin";
+import { getMode, setMode, DEMO, LIVE } from "./coin";
 
 const KEY = "citv-slot-v2";
 const LEGACY = "citv-slot-v1";
+export const GRANT = 10000;
+export const FLOOR = 250;
 
 function readRaw(key) {
   try {
@@ -13,13 +15,24 @@ function readRaw(key) {
 }
 
 export function loadState(fallback) {
-  const d = readRaw(KEY) || readRaw(LEGACY) || {};
-  return {
-    balance: Number.isFinite(d.balance) ? d.balance : fallback.balance,
-    session: d.session && typeof d.session === "object" ? { ...fallback.session, ...d.session } : fallback.session,
-    muted: !!d.muted,
-    mode: d.mode === "live" || loadMode() === "live" ? "live" : DEMO,
-  };
+  const d = readRaw(KEY) || readRaw(LEGACY);
+  if (!d) return { ...fallback, granted: true };
+  const storedLive = d.mode === LIVE || String(d.mode).toLowerCase() === "live";
+  if (storedLive && getMode() !== LIVE) setMode(LIVE);
+  const live = getMode() === LIVE || storedLive;
+  let balance = Number.isFinite(d.balance) ? d.balance : fallback.balance;
+  let granted = !!d.granted;
+  if (!live && !granted) {
+    balance += GRANT;
+    granted = true;
+  }
+  if (!live && balance < FLOOR) balance += 2500;
+  if (live) granted = true;
+  const session = d.session && typeof d.session === "object" ? { ...fallback.session, ...d.session } : fallback.session;
+  if (!d.granted && !live) session.start = balance;
+  const next = { balance, session, muted: !!d.muted, granted };
+  saveState(next);
+  return next;
 }
 
 export function saveState(state) {
@@ -28,7 +41,13 @@ export function saveState(state) {
       balance: state.balance,
       session: state.session,
       muted: state.muted,
-      mode: state.mode || DEMO,
+      mode: getMode() || DEMO,
+      granted: state.granted !== false,
     }));
   } catch {}
+}
+
+export function topUp(balance, amount = 2500) {
+  if (getMode() === LIVE) return Math.max(0, Number(balance) || 0);
+  return Math.max(0, Number(balance) || 0) + amount;
 }

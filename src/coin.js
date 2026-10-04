@@ -1,28 +1,34 @@
-/** CITV coin — salon birimi.
- * DEMO: yerel kredi (dağıtım öncesi).
- * LIVE: sen dağıtımı bitirdikten sonra açılır; zincir/cüzdan adaptörü buraya takılır.
- */
+// CITV Slot — bakiye kapisi
+// DEMO: yerel fiş. LIVE: dağıtım sonrası GET ?wallet= (Issue #24)
+// Sunucu yokken LIVE açılsa bile spin istemcide kalır; musluk kapanır.
+
+export const DEMO = "DEMO";
+export const LIVE = "LIVE";
 export const TICKER = "CITV";
 export const MODE_KEY = "citv-mode";
 export const CLAIM_KEY = "citv-claim";
 export const WALLET_KEY = "citv-wallet";
 
-export const DEMO = "demo";
-export const LIVE = "live";
-
-export function loadMode() {
+export function getMode() {
   try {
-    return localStorage.getItem(MODE_KEY) === LIVE ? LIVE : DEMO;
+    const mode = localStorage.getItem(MODE_KEY);
+    return mode === LIVE || String(mode).toLowerCase() === "live" ? LIVE : DEMO;
   } catch {
     return DEMO;
   }
 }
 
-export function saveMode(mode) {
+export const loadMode = getMode;
+
+export function setMode(mode) {
+  const v = mode === LIVE ? LIVE : DEMO;
   try {
-    localStorage.setItem(MODE_KEY, mode === LIVE ? LIVE : DEMO);
+    localStorage.setItem(MODE_KEY, v);
   } catch {}
+  return v;
 }
+
+export const saveMode = setMode;
 
 export function loadClaim() {
   try {
@@ -38,7 +44,7 @@ export function saveClaim(code) {
   } catch {}
 }
 
-export function loadWallet() {
+export function getWallet() {
   try {
     return localStorage.getItem(WALLET_KEY) || "";
   } catch {
@@ -46,28 +52,62 @@ export function loadWallet() {
   }
 }
 
-export function saveWallet(addr) {
+export const loadWallet = getWallet;
+
+export function setWallet(addr) {
+  const v = String(addr || "").trim();
   try {
-    localStorage.setItem(WALLET_KEY, String(addr || "").trim());
+    localStorage.setItem(WALLET_KEY, v);
   } catch {}
+  return v;
 }
+
+export const saveWallet = setWallet;
 
 export function formatCitv(n) {
-  const v = Number.isFinite(Number(n)) ? Number(n) : 0;
-  return `${v.toLocaleString("tr-TR")} ${TICKER}`;
+  const value = Number.isFinite(Number(n)) ? Number(n) : 0;
+  return `${value.toLocaleString("tr-TR")} ${TICKER}`;
 }
 
-/** Dağıtım sonrası gerçek bakiye — endpoint gelince doldurulur. */
-export async function fetchLiveBalance({ endpoint, wallet } = {}) {
-  if (!endpoint || !wallet) return null;
-  const url = `${endpoint.replace(/\/$/, "")}?wallet=${encodeURIComponent(wallet)}`;
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!res.ok) throw new Error(`live ${res.status}`);
-  const data = await res.json();
-  const bal = Number(data.balance ?? data.citv ?? data.amount);
-  return Number.isFinite(bal) ? bal : null;
+export function liveUrl() {
+  try {
+    return (import.meta.env && import.meta.env.VITE_CITV_BALANCE_URL) || "";
+  } catch {
+    return "";
+  }
+}
+
+export async function fetchLiveBalance(wallet) {
+  const base = liveUrl();
+  const w = wallet || getWallet();
+  if (!base) return { ok: false, reason: "endpoint-yok" };
+  if (!w) return { ok: false, reason: "cüzdan-yok" };
+  const url = `${base}?wallet=${encodeURIComponent(w)}`;
+  let r;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      r = await fetch(url);
+    } catch {
+      if (attempt === 2) return { ok: false, reason: "ag" };
+      await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
+      continue;
+    }
+
+    if (r.ok) break;
+    if (![408, 429].includes(r.status) && r.status < 500) return { ok: false, reason: "http" };
+    if (attempt === 2) return { ok: false, reason: "http" };
+    await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
+  }
+  try {
+    const j = await r.json();
+    const balance = Number(j.balance);
+    if (!Number.isFinite(balance)) return { ok: false, reason: "sayi-degil" };
+    return { ok: true, balance };
+  } catch {
+    return { ok: false, reason: "ag" };
+  }
 }
 
 export function liveReady() {
-  return loadMode() === LIVE && !!loadWallet();
+  return getMode() === LIVE && !!getWallet();
 }
