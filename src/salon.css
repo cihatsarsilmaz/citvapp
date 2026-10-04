@@ -1,84 +1,121 @@
 /* Avrupa salon kartı. Sahne karakterine dokunmaz. */
 .grid.bite,
 .featured-row {
-  gap: 12px;
+  gap: 14px;
 }
-.grid.bite .card.lux,
-.featured-row .card.lux {
-  min-height: 228px;
+.seat-card {
+  min-height: 248px;
   padding: 0;
-  border-radius: 16px;
-  border: 1px solid #c6a15a;
-  background: #120c09;
+  border-radius: 18px;
+  border: 1px solid #d7b56a;
+  background:
+    radial-gradient(120px 80px at 50% 0%, color-mix(in srgb, var(--c) 28%, transparent), transparent 70%),
+    #100c09;
   box-shadow:
-    inset 0 0 0 1px #3a2a14,
-    0 16px 28px #000a;
+    inset 0 0 0 1px #5a431c,
+    inset 0 0 0 6px #1a140c,
+    0 18px 32px #000c;
 }
-.grid.bite .card.lux::after,
-.featured-row .card.lux::after {
-  content: "OYNA";
-  inset: auto 10px 46px auto;
-  width: auto;
-  height: auto;
-  border: 0;
-  border-radius: 999px;
-  padding: 5px 9px;
-  background: linear-gradient(180deg, #f4e2a8, #b8892c);
-  color: #1a1208;
-  font: 800 9px/1 inherit;
-  letter-spacing: .14em;
-}
-.grid.bite .card .actor,
-.featured-row .card .actor {
+.seat-frame {
   position: absolute;
-  inset: 0 0 58px;
+  inset: 7px;
+  border-radius: 12px;
+  border: 1px solid #e8c56b55;
+  pointer-events: none;
+  z-index: 3;
+}
+.seat-theme {
+  position: absolute;
+  z-index: 4;
+  top: 14px;
+  left: 14px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #120c09cc;
+  border: 1px solid #e8c56b66;
+  color: #f4e2a8;
+  font: 700 9px/1 inherit;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.seat-card .actor {
+  position: absolute;
+  inset: 8px 8px 78px;
   display: block;
 }
-.grid.bite .card .figure,
-.featured-row .card .figure {
+.seat-card .figure {
   position: absolute;
   inset: 0;
   display: block;
 }
-.grid.bite .card .port-img,
-.featured-row .card .port-img {
+.seat-card .port-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 18%;
-  border-radius: 0;
-  filter: saturate(1.08) contrast(1.05);
+  object-position: center 16%;
+  border-radius: 10px;
+  filter: saturate(1.06) contrast(1.04);
 }
-.grid.bite .card .mark,
-.featured-row .card .mark,
-.grid.bite .card .ring,
-.featured-row .card .ring {
+.seat-card .mark,
+.seat-card .ring {
   display: none;
 }
-.grid.bite .card .nm,
-.featured-row .card .nm {
+.seat-plate {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 22px;
-  margin: 0;
-  padding: 18px 10px 0;
-  font-size: 15px;
-  letter-spacing: -0.02em;
-  background: linear-gradient(180deg, transparent, #0c0907 42%);
-}
-.grid.bite .card .tag,
-.featured-row .card .tag {
-  position: absolute;
-  left: 10px;
-  right: 10px;
+  left: 8px;
+  right: 8px;
   bottom: 8px;
+  z-index: 4;
+  display: grid;
+  gap: 2px;
+  padding: 22px 10px 8px;
+  border-radius: 0 0 12px 12px;
+  background: linear-gradient(180deg, transparent, #0c0907 36%);
+}
+.seat-plate .nm {
+  position: static;
+  margin: 0;
+  padding: 0;
+  background: none;
+  font-size: 15px;
+  letter-spacing: -0.03em;
+}
+.seat-plate .tag {
+  position: static;
   color: #e8c56b;
   font-size: 10px;
+  font-style: normal;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
-.featured-row .card {
-  flex-basis: 168px;
-  min-width: 168px;
+.seat-meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.seat-meta i {
+  font-style: normal;
+  font-size: 9px;
+  letter-spacing: .08em;
+  color: #f6edd8;
+  border: 1px solid #e8c56b44;
+  border-radius: 999px;
+  padding: 3px 6px;
+}
+.seat-play {
+  position: absolute;
+  z-index: 5;
+  right: 14px;
+  bottom: 86px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f4e2a8, #b8892c);
+  color: #1a1208;
+  font: 800 9px/1 inherit;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.featured-row .seat-card {
+  flex: 0 0 176px;
+  min-width: 176px;
 }
