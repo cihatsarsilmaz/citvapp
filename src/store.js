@@ -17,7 +17,7 @@ function readRaw(key) {
 export function loadState(fallback) {
   const d = readRaw(KEY) || readRaw(LEGACY);
   if (!d) return { ...fallback, granted: true };
-  const storedLive = d.mode === LIVE || String(d.mode).toLowerCase() === "live";
+  const storedLive = String(d.mode).toUpperCase() === LIVE;
   if (storedLive && getMode() !== LIVE) setMode(LIVE);
   const live = getMode() === LIVE || storedLive;
   let balance = Number.isFinite(d.balance) ? d.balance : fallback.balance;

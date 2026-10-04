@@ -90,7 +90,7 @@ export default function Admin({ session, setSession, balance, setBalance, emptyS
         {mode === DEMO && <button className="act" onClick={() => setBalance((n) => n + 1000)}>+1000</button>}
         <button className="act ghost" onClick={() => setBalance(0)}>Sifirla</button>
         <button className="act ghost" onClick={() => setSession(emptySession())}>Oturum</button>
-        <button className="act ghost" onClick={logout}>Cik</button>
+        <button className="act ghost" onClick={logout}>Çık</button>
         <a className="act ghost" href="./" onClick={() => { location.hash = ""; }}>Lobi</a>
       </div>
     </section>

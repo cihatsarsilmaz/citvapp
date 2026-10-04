@@ -94,8 +94,12 @@ export async function fetchLiveBalance(wallet) {
     }
 
     if (r.ok) break;
-    if (![408, 429].includes(r.status) && r.status < 500) return { ok: false, reason: "http" };
-    if (attempt === 2) return { ok: false, reason: "http" };
+    if (![408, 429].includes(r.status) && r.status < 500) {
+      return { ok: false, reason: `http ${url} (${r.status} ${r.statusText})` };
+    }
+    if (attempt === 2) {
+      return { ok: false, reason: `http ${url} (${r.status} ${r.statusText})` };
+    }
     await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
   }
   try {
