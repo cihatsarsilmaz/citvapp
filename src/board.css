@@ -1,0 +1,49 @@
+.reel-board {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  width: 100%;
+  min-height: 168px;
+  padding: 8px;
+}
+.reel-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+.reel-cell {
+  display: grid;
+  place-items: center;
+  min-height: 52px;
+  border-radius: 10px;
+  background: #1a080c;
+  border: 1px solid #e8c56b33;
+  font-size: 28px;
+}
+.reel-cell.hit {
+  border-color: #ffe08a;
+  box-shadow: 0 0 12px #ffe08a55;
+  background: #3a2010;
+}
+.reel-board.spin .reel-cell {
+  animation: reelBlur .18s linear infinite;
+}
+@keyframes reelBlur {
+  50% { transform: translateY(4px); filter: blur(1px); }
+}
+.result-line {
+  margin: 6px 0 0;
+  text-align: center;
+  color: #ffe08a;
+  font-weight: 800;
+  min-height: 1.2em;
+}
+.bonus-left {
+  margin: 0;
+  text-align: center;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #ffb45a;
+  font-size: 11px;
+}
