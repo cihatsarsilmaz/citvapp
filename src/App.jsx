@@ -1,23 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
 import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, playMiss, playClick, playBonusIn, playJack, playExtra, setMuted, wakeAudio } from "./audio";
-import { UNIT } from "./paytable";
+import { UNIT, PAY3, PAY4, PAY5 } from "./paytable";
 import { spinGrid, applyHouse, emptySession, plan, readStyle } from "./house";
 import { evalLines, LOW } from "./engine";
 import { loadState, saveState, topUp } from "./store";
 import { getMode, LIVE } from "./coin";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
+import { BANDS, inBand, featuredGames } from "./class";
 import { loadRecents, pushRecent } from "./recents";
 import { lockAt, starsLocked, spinTempo } from "./pace";
 import { holdKeys } from "./bond";
 import { loadLedger, book } from "./ledger";
 import Character from "./Character";
+import Seat from "./Seat";
 import Gate from "./Gate";
 import Jackpot from "./Jackpot";
 import Joy from "./Joy";
 import Admin from "./Admin";
-import Reels from "./Reels";
+import Board from "./Board";
 
 const POOL = [...LOW];
 const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
@@ -26,7 +28,7 @@ function blank(cols = 5, rows = 3) {
 }
 const START = 12500;
 const TOPUP = 2500;
-const BITE = 6;
+const BITE = 18;
 const saved = loadState({ balance: START, session: emptySession(), muted: false });
 
 export default function App() {
@@ -49,7 +51,8 @@ export default function App() {
   const [joy, setJoy] = useState(null);
   const [recents, setRecents] = useState(loadRecents);
   const [held, setHeld] = useState([]);
-  const [shown, setShown] = useState(BITE);
+  const [shown, setShown] = useState(GAMES.length);
+  const [band, setBand] = useState("tumu");
   const lockRef = useRef([0, 0, 0, 0, 0]);
   const busy = useRef(false);
   const autoRef = useRef(false);
@@ -57,6 +60,7 @@ export default function App() {
   const timers = useRef([]);
   const gen = useRef(0);
   const pending = useRef(null);
+  const autoCtl = useRef(null);
   const taps = useRef(0);
   const ledger = useRef(loadLedger());
   const balRef = useRef(saved.balance);
@@ -68,13 +72,14 @@ export default function App() {
   const kit = kitOf(game);
   const cols = kit.cols || 5;
   const rows = kit.rows || 3;
+  const featured = useMemo(() => featuredGames(GAMES), []);
   const lobby = useMemo(() => {
     const rank = (id) => {
       const i = recents.indexOf(id);
       return i === -1 ? 99 : i;
     };
-    return [...GAMES].sort((a, b) => rank(a.id) - rank(b.id));
-  }, [recents]);
+    return GAMES.filter((g) => inBand(g, band)).sort((a, b) => rank(a.id) - rank(b.id));
+  }, [recents, band]);
   const table = lobby.slice(0, shown);
 
   useEffect(() => {
@@ -103,9 +108,33 @@ export default function App() {
       setBalance(n);
     }
   }, [balance, isLive]);
+  useEffect(() => {
+    const cap = kit.anteMax || 10;
+    setAnte((n) => Math.min(cap, Math.max(1, n)));
+  }, [game, kit.anteMax]);
+
+  function abortAutoChain() {
+    if (autoCtl.current) {
+      autoCtl.current.abort();
+      autoCtl.current = null;
+    }
+  }
+
+  function armAuto(gap) {
+    abortAutoChain();
+    const ctl = new AbortController();
+    autoCtl.current = ctl;
+    const id = setTimeout(() => {
+      if (ctl.signal.aborted) return;
+      if (autoCtl.current === ctl) autoCtl.current = null;
+      runSpin();
+    }, gap);
+    ctl.signal.addEventListener("abort", () => clearTimeout(id), { once: true });
+  }
 
   function clearTimers() {
     gen.current += 1;
+    abortAutoChain();
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
     stopSpinLoop();
@@ -159,6 +188,7 @@ export default function App() {
         ante: s.ante,
         turbo: turboRef.current,
         ledger: ledger.current,
+        kit: k,
       });
       ledger.current = book(ledger.current, snap.inBonus ? 0 : b, result.win, result.gift);
       const paid = Math.max(0, result.win || 0);
@@ -196,7 +226,7 @@ export default function App() {
       } else if (!result.bonus && !result.collect) playMiss();
       if (autoRef.current && gen.current === my) {
         const gap = result.session.inBonus ? 420 : turboRef.current ? 220 : 380;
-        timers.current.push(setTimeout(runSpin, gap));
+        armAuto(gap);
       }
     } catch {
       setMood("miss");
@@ -269,13 +299,14 @@ export default function App() {
     if (!free && balRef.current < b) {
       autoRef.current = false;
       setAuto(false);
+      abortAutoChain();
       return;
     }
     const my = ++gen.current;
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
     const fast = turboRef.current && !free;
-    const { base, step } = spinTempo(fast);
+    const { base, step } = spinTempo(fast, k);
     busy.current = true;
     setSpinning(true);
     setMood(free ? "bonus" : "spin");
@@ -290,7 +321,7 @@ export default function App() {
     tapSpin();
     const snap = s.session;
     const style = readStyle(snap, balRef.current, s.ante, fast);
-    const p = plan(style, snap);
+    const p = plan(style, snap, k);
     const next = spinGrid(s.game.emoji, p.forceMiss && !snap.inBonus, k);
     pending.current = { my, next, bet: b, snap, done: false };
     armSpin(my, next, base, step);
@@ -357,6 +388,7 @@ export default function App() {
     setHeld([]);
     setAuto(false);
     autoRef.current = false;
+    setAnte(1);
     setMood("idle");
     setJoy(null);
     setRecents(pushRecent(g.id));
@@ -387,20 +419,29 @@ export default function App() {
   function toggleAuto() {
     playClick();
     tapTick();
-    const n = !autoRef.current;
-    autoRef.current = n;
-    setAuto(n);
-    if (n && !busy.current && !boot) {
-      timers.current.push(setTimeout(runSpin, 90));
-    } else if (!n) {
-      clearTimers();
+    if (autoRef.current) {
+      autoRef.current = false;
+      setAuto(false);
+      abortAutoChain();
+      return;
     }
+    autoRef.current = true;
+    setAuto(true);
+    if (!busy.current && !boot) armAuto(90);
   }
 
   function bumpAnte(d) {
     playClick();
     tapTick();
-    setAnte((n) => Math.min(10, Math.max(1, n + d)));
+    const cap = kit.anteMax || 10;
+    setAnte((n) => Math.min(cap, Math.max(1, n + d)));
+  }
+
+  function pickBand(id) {
+    playClick();
+    tapTick();
+    setBand(id);
+    setShown(GAMES.length);
   }
 
   const showWin = !spinning && last && last.win > 0;
@@ -408,6 +449,7 @@ export default function App() {
     "stage", "lux",
     "g-" + (game?.id || ""),
     "kit-" + kit.extra,
+    "vol-" + (kit.vol || "mid"),
     "c" + cols, "r" + rows,
     last?.win ? "hot" : "",
     last && !last.win && !spinning ? "shake" : "",
@@ -419,6 +461,7 @@ export default function App() {
     "floor",
   ].filter(Boolean).join(" ");
   const lamps = session.inBonus ? Math.max(1, session.bonusLeft || 1) : 7;
+  const resultText = spinning ? "Dönüyor" : showWin ? last.win + " CITV" : last ? "Boş" : "Çevir";
 
   return (
     <div className="app wide">
@@ -431,16 +474,26 @@ export default function App() {
             </div>
             <div className="meter"><em>CITV</em><b>{balance}</b></div>
           </header>
+          <nav className="bands" aria-label="klasman">
+            {BANDS.map((b) => (
+              <button key={b.id} className={"band" + (band === b.id ? " on" : "")} onClick={() => pickBand(b.id)}>{b.label}</button>
+            ))}
+          </nav>
+          {ready && band === "tumu" && (
+            <section className="featured" aria-label="one cikan">
+              <p className="kicker">Öne çıkan</p>
+              <div className="featured-row">
+                {featured.map((g) => (
+                  <Seat key={g.id} game={g} onOpen={openGame} />
+                ))}
+              </div>
+            </section>
+          )}
           <section className="grid bite">
             {!ready && [0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="card lux ghost" style={{ "--i": i }} />)}
             {ready && table.length === 0 && <div className="card lux empty" />}
-            {ready && table.map((g, i) => (
-              <button key={g.id} className={"card lux g-" + g.id + (recents[0] === g.id ? " recent" : "")} onClick={() => openGame(g)} style={{ "--c": g.color, "--i": i }}>
-                <div className="ribbon" />
-                <Character game={g} mood="idle" bond={0} />
-                <div className="nm">{g.name}</div>
-                <div className="tag">{g.character}</div>
-              </button>
+            {ready && table.map((g) => (
+              <Seat key={g.id} game={g} onOpen={openGame} recent={recents[0] === g.id} />
             ))}
             {ready && shown < lobby.length && (
               <button className="card lux more" onClick={() => { playClick(); tapTick(); setShown((n) => Math.min(lobby.length, n + BITE)); }}>
@@ -458,11 +511,19 @@ export default function App() {
           <div className="lamps">{Array.from({ length: lamps }, (_, i) => <i key={i} />)}</div>
           <Jackpot kit={kit} vault={session.vault} hit={!!last?.jack} />
           <Character game={game} mood={mood} bond={session.bond || 0} />
-          <div className={"window five canvas " + (spinning ? "spin" : "") + (showWin ? " win" : "")}>
-            <Reels grid={grid} lock={lock} hits={hitSet} hold={holdSet} spinning={spinning} win={showWin} onPointerDown={nudgeStage} />
+          <div className={"window five canvas " + (spinning ? "spin" : "") + (showWin ? " win" : "")} onPointerDown={nudgeStage}>
+            <Board grid={grid} hits={hitSet} spinning={spinning} />
           </div>
+          <p className="result-line">{resultText}</p>
+          {session.inBonus && <p className="bonus-left">Bonus {session.bonusLeft}</p>}
           <p className={"bang " + (showWin ? "" : "quiet")}>
             {showWin ? (last.cMult > 1 ? `${last.win} ×${last.cMult}` : last.win) : ""}
+          </p>
+          <p className="paystrip" aria-label="odeme tablosu">
+            <span className="payhead">Ödeme</span>
+            <span className="payrow">🎰 3×{PAY3.wild}  4×{PAY4.wild}  5×{PAY5.wild}</span>
+            <span className="payrow">{game.emoji} 3×{PAY3.theme}  4×{PAY4.theme}  5×{PAY5.theme}</span>
+            <span className="payrow dim">⭐ 3×{PAY3.star} · düşük 3×{PAY3.low}</span>
           </p>
           <div className={"dock lux kit-" + kit.extra}>
             <div className="well"><em>CITV</em><b>{balance}</b></div>

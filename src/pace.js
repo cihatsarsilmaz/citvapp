@@ -5,10 +5,12 @@ export function lockAt(c, nCols, base, step, turbo) {
   return base + c * step + hold;
 }
 
-export function spinTempo(turbo) {
+export function spinTempo(turbo, kit) {
+  const base0 = Number(kit?.base) > 0 ? kit.base : 180;
+  const step0 = Number(kit?.step) > 0 ? kit.step : 115;
   return turbo
-    ? { base: 110, step: 80 }
-    : { base: 180, step: 115 };
+    ? { base: Math.max(90, Math.round(base0 * 0.62)), step: Math.max(55, Math.round(step0 * 0.68)) }
+    : { base: base0, step: step0 };
 }
 
 export function starsLocked(next, locks) {

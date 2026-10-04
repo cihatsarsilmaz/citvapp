@@ -1,0 +1,14 @@
+{
+  "name": "CITV Tetikçi",
+  "t": "2026-10-01T01:06:47.553Z",
+  "ok": true,
+  "view": "salon keçe, 5 hat, kasa sıkı, AUTO durunca makine asılı kalmaz, ödeme okunur",
+  "notes": [
+    "kit/oyun OK",
+    "AUTO abort OK",
+    "paystrip OK",
+    "art parca OK"
+  ],
+  "fail": [],
+  "next": "görsel sıkılaştırma — dock/keçe boşluk ve hücre ritmi"
+}

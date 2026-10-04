@@ -16,7 +16,7 @@ function lows(theme) {
 function strip(theme, wilds, themes, stars) {
   const s = [];
   lows(theme).forEach((sym) => {
-    s.push(sym, sym, sym, sym);
+    s.push(sym, sym);
   });
   for (let i = 0; i < themes; i++) s.push(theme);
   for (let i = 0; i < stars; i++) s.push(STAR);
@@ -26,12 +26,12 @@ function strip(theme, wilds, themes, stars) {
 
 export function stripsFor(theme, cols = 5) {
   const base = [
-    strip(theme, 2, 2, 1),
+    strip(theme, 2, 3, 2),
+    strip(theme, 1, 3, 2),
+    strip(theme, 1, 2, 2),
     strip(theme, 1, 2, 1),
-    strip(theme, 1, 1, 1),
-    strip(theme, 1, 1, 1),
-    strip(theme, 0, 1, 1),
-    strip(theme, 0, 1, 0),
+    strip(theme, 1, 2, 1),
+    strip(theme, 0, 2, 1),
   ];
   return base.slice(0, cols);
 }
@@ -49,51 +49,56 @@ function windowN(reel, stop, rows) {
 export function readStyle(session, balance, ante, turbo) {
   const start = session.start || START_BANK;
   const ratio = start > 0 ? balance / start : 1;
-  const rtp = session.wagered > 40 ? session.paid / session.wagered : 0.5;
+  const rtp = session.wagered > 40 ? session.paid / session.wagered : 0.7;
   const dry = session.dry || 0;
-  const hot = ratio > 1.25 || rtp > 0.68;
-  const cold = ratio < 0.32 || dry >= 8;
-  const grind = turbo || ante >= 7;
+  const hot = ratio > 1.8 || rtp > 1.05;
+  const cold = ratio < 0.55 || dry >= 6;
+  const grind = turbo || ante >= 8;
   return { ratio, rtp, dry, hot, cold, grind, start };
 }
 
-export function plan(style, session) {
-  let edge = 0.42;
-  let cap = 3.6;
-  let forceMiss = (session.cool || 0) > 0;
+export function plan(style, session, kit) {
+  let edge = 0.16;
+  let cap = 6.5;
+  let forceMiss = false;
   let drip = false;
-  let roar = 0.18;
+  let roar = 0.28;
 
   if (style.hot) {
-    edge = 0.58;
-    cap = 2.4;
-    forceMiss = forceMiss || Math.random() < 0.62;
-    roar = 0.05;
+    edge = 0.24;
+    cap = 4.8;
+    roar = 0.16;
   } else if (style.cold) {
-    edge = 0.14;
-    cap = 2.8;
+    edge = 0.06;
+    cap = 7.2;
     forceMiss = false;
     drip = true;
-    roar = 0.28;
-  } else if (style.dry >= 5) {
-    edge = 0.22;
-    cap = 3.2;
-    forceMiss = false;
-    drip = style.dry >= 7;
-    roar = 0.24;
+    roar = 0.36;
+  } else if (style.dry >= 4) {
+    edge = 0.08;
+    cap = 6.8;
+    drip = true;
+    roar = 0.32;
   }
 
   if (style.grind && !style.cold) {
-    edge += 0.06;
-    cap = Math.min(cap, 2.8);
-    roar *= 0.5;
+    edge += 0.02;
+    cap = Math.min(cap, 5.5);
   }
   if (session.inBonus) {
-    edge = Math.min(0.56, edge + 0.06);
-    cap = Math.min(cap, 2.8);
-    roar = Math.max(roar, 0.2);
+    edge = Math.max(0.04, edge - 0.04);
+    cap = Math.max(cap, 6);
+    roar = Math.max(roar, 0.34);
   }
-  if (style.rtp > 0.74 && session.spins > 8) forceMiss = true;
+
+  const vol = kit?.vol || "mid";
+  if (vol === "high") {
+    cap = Math.min(8, cap + 0.8);
+    roar = Math.min(0.42, roar + 0.06);
+  } else if (vol === "low") {
+    cap = Math.max(4.5, cap - 0.4);
+    roar *= 0.85;
+  }
 
   return { edge, cap, forceMiss, drip, roar };
 }
@@ -118,48 +123,47 @@ export function spinGrid(theme, forceMiss, layout = { cols: 5, rows: 3 }) {
 }
 
 function rollRoar(themeHit, chance, hot) {
-  if (!themeHit || hot && Math.random() < 0.6) return 1;
+  if (!themeHit) return 1;
   const r = Math.random();
-  if (r < chance * 0.08) return 5;
-  if (r < chance * 0.28) return 3;
+  if (r < chance * 0.1) return 5;
+  if (r < chance * 0.32) return 3;
   if (r < chance) return 2;
   return 1;
 }
 
 export function applyHouse(evaled, bet, session, ctx = {}) {
   const style = readStyle(session, ctx.balance ?? START_BANK, ctx.ante ?? 1, ctx.turbo);
-  const p = plan(style, session);
+  const p = plan(style, session, ctx.kit);
   const day = ctx.ledger ? dayPlan(ctx.ledger, ctx.ante ?? 1) : null;
   if (day) {
     p.edge = (p.edge + day.edge) / 2;
-    p.cap = Math.min(p.cap, day.cap);
+    p.cap = Math.max(p.cap, day.cap);
     if (day.drip) p.drip = true;
-    if (day.ratio > 0.48) p.forceMiss = true;
   }
   const raw = evaled.total || 0;
   let paid = raw > 0 ? Math.floor(Math.min(raw, bet * p.cap) * (1 - p.edge)) : 0;
-  if (p.drip && paid === 0 && Math.random() < 0.78) paid = bet;
-  if (p.forceMiss && !p.drip) paid = 0;
+  if (p.drip && paid === 0 && Math.random() < 0.62) paid = bet;
+  if (p.forceMiss && !p.drip && !session.inBonus) paid = 0;
 
   const tick = nextBond(session.bond, evaled.themes);
-  if (tick.collect && paid === 0 && !style.hot && Math.random() < 0.5) paid = bet;
+  if (tick.collect && paid === 0 && Math.random() < 0.7) paid = bet;
 
   let gift = false;
   if (day && day.gift && paid === 0) {
-    paid = Math.random() < 0.35 ? bet * 2 : bet;
+    paid = Math.random() < 0.4 ? bet * 2 : bet;
     gift = true;
   }
 
   let rare = false;
-  if (day && day.rare && Math.random() < day.rare && day.ratio < 0.3) {
-    paid = Math.floor(bet * (8 + Math.random() * 4));
+  if (day && day.rare && Math.random() < day.rare) {
+    paid = Math.floor(bet * (8 + Math.random() * 6));
     rare = true;
   }
 
   let jack = 0;
   const vault = session.vault || 0;
-  if (style.cold && vault > bet * 12 && Math.random() < 0.12 && !rare) {
-    jack = Math.min(bet * 2, Math.floor(vault * 0.04));
+  if (style.cold && vault > bet * 8 && Math.random() < 0.16 && !rare) {
+    jack = Math.min(bet * 4, Math.floor(vault * 0.08));
     paid += jack;
   }
 
@@ -177,11 +181,11 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
   if (rare) roar = Math.max(8, Math.round(paid / Math.max(1, bet)));
 
   const extra = session.inBonus && (evaled.stars || 0) >= 2 ? 1 : 0;
-  const enterBonus = !session.inBonus && (session.bonusLock || 0) <= 0 && (evaled.stars || 0) >= 3;
+  const enterBonus = !session.inBonus && (session.bonusLock || 0) <= 0 && (evaled.stars || 0) >= 2;
   let bonusLeft = session.inBonus
     ? Math.max(0, (session.bonusLeft || 0) - 1 + extra)
-    : enterBonus ? 6 : 0;
-  if (bonusLeft > 12) bonusLeft = 12;
+    : enterBonus ? 8 : 0;
+  if (bonusLeft > 14) bonusLeft = 14;
   const inBonus = bonusLeft > 0;
   const won = paid > 0;
   const cMult = roar >= 2 ? roar : 1;
@@ -204,12 +208,12 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
       spins: (session.spins || 0) + 1,
       wagered: (session.wagered || 0) + wager,
       paid: (session.paid || 0) + paid,
-      vault: vault + wager - paid,
-      cool: won ? (style.hot ? 2 : 1) : Math.max(0, (session.cool || 0) - 1),
+      vault: Math.max(0, vault + wager - paid),
+      cool: won ? 0 : Math.max(0, (session.cool || 0) - 1),
       dry: won ? 0 : (session.dry || 0) + 1,
       bonusLeft,
       inBonus,
-      bonusLock: enterBonus ? 0 : inBonus ? 0 : Math.max(0, (session.bonusLock || 0) - 1) + (session.inBonus && !inBonus ? 8 : 0),
+      bonusLock: enterBonus ? 0 : inBonus ? 0 : Math.max(0, (session.bonusLock || 0) - 1) + (session.inBonus && !inBonus ? 4 : 0),
       bond: tick.bond,
     },
   };
