@@ -136,6 +136,10 @@ const VOICE = {
   clack: { thud: 130, snap: 196 },
 };
 
+function voiceOf(name) {
+  return VOICE[name] || VOICE.clack;
+}
+
 export function stopTheme() {
   if (current) {
     try { current.stop(); } catch {}
@@ -171,9 +175,10 @@ export function playTheme(freqs) {
   } catch {}
 }
 
-export function playSpinLoop() {
+export function playSpinLoop(voice = "clack") {
   if (muted) return;
   stopSpinLoop();
+  const v = voiceOf(voice);
   try {
     const ac = getCtx();
     const now = ac.currentTime;
@@ -182,17 +187,16 @@ export function playSpinLoop() {
     src.loop = true;
     const f = ac.createBiquadFilter();
     f.type = "bandpass";
-    f.frequency.setValueAtTime(420, now);
+    f.frequency.setValueAtTime(Math.max(180, v.snap), now);
     f.Q.setValueAtTime(0.7, now);
-    f.frequency.linearRampToValueAtTime(780, now + 0.35);
     const g = ac.createGain();
     g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.09 * VOL, now + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.08 * VOL, now + 0.05);
     const o = ac.createOscillator();
     o.type = "sawtooth";
-    o.frequency.setValueAtTime(48, now);
+    o.frequency.setValueAtTime(Math.max(40, v.thud / 2), now);
     const og = ac.createGain();
-    og.gain.setValueAtTime(0.025 * VOL, now);
+    og.gain.setValueAtTime(0.022 * VOL, now);
     src.connect(f);
     f.connect(g);
     o.connect(og);
@@ -219,20 +223,23 @@ export function stopSpinLoop() {
 
 export function playClash(sym, voice = "clack") {
   if (muted) return;
-  const v = VOICE[voice] || VOICE.clack;
+  const v = voiceOf(voice);
   thud(v.thud, 0, 0.26);
   tone({ freq: v.snap, type: "triangle", dur: 0.09, gain: 0.09, start: 0.01 });
 }
 
-export function playWin(tier = 1) {
+export function playWin(tier = 1, voice = "clack") {
   if (muted) return;
-  thud(62, 0, 0.28);
-  const seq = tier >= 3 ? [131, 165, 196, 262] : tier >= 2 ? [131, 196, 247] : [147, 196];
+  const v = voiceOf(voice);
+  thud(v.thud, 0, 0.28);
+  const base = v.snap;
+  const seq = tier >= 3 ? [base, base * 1.25, base * 1.5, base * 2] : tier >= 2 ? [base, base * 1.25, base * 1.5] : [base, base * 1.25];
   seq.forEach((f, i) => tone({ freq: f, type: "triangle", dur: 0.22, gain: 0.1, start: i * 0.07 }));
 }
 
-export function playMiss() {
-  tone({ freq: 98, type: "sine", dur: 0.2, gain: 0.06, slide: -28 });
+export function playMiss(voice = "clack") {
+  const v = voiceOf(voice);
+  tone({ freq: Math.max(70, v.thud), type: "sine", dur: 0.2, gain: 0.06, slide: -28 });
 }
 
 export function playClick() {
@@ -240,22 +247,26 @@ export function playClick() {
   tone({ freq: 420, type: "triangle", dur: 0.06, gain: 0.05 });
 }
 
-export function playBonusIn() {
-  thud(52, 0, 0.34);
-  const seq = [131, 165, 196, 262, 330, 392];
+export function playBonusIn(voice = "clack") {
+  const v = voiceOf(voice);
+  thud(v.thud, 0, 0.34);
+  const base = v.snap;
+  const seq = [base, base * 1.2, base * 1.5, base * 1.8, base * 2.2];
   seq.forEach((f, i) => tone({ freq: f, type: "triangle", dur: 0.28, gain: 0.11, start: i * 0.08 }));
-  tone({ freq: 523, type: "sine", dur: 0.45, gain: 0.08, start: 0.42 });
 }
 
-export function playJack() {
-  thud(46, 0, 0.36);
-  [82, 123, 164, 246, 329].forEach((f, i) =>
+export function playJack(voice = "clack") {
+  const v = voiceOf(voice);
+  thud(v.thud, 0, 0.36);
+  const base = v.snap;
+  [base, base * 1.25, base * 1.5, base * 2].forEach((f, i) =>
     tone({ freq: f, type: "triangle", dur: 0.32, gain: 0.12, start: i * 0.09 })
   );
 }
 
-export function playExtra() {
-  thud(90, 0, 0.2);
-  tone({ freq: 196, type: "triangle", dur: 0.16, gain: 0.09 });
-  tone({ freq: 294, type: "sine", dur: 0.18, gain: 0.07, start: 0.06 });
+export function playExtra(voice = "clack") {
+  const v = voiceOf(voice);
+  thud(v.thud, 0, 0.2);
+  tone({ freq: v.snap, type: "triangle", dur: 0.16, gain: 0.09 });
+  tone({ freq: v.snap * 1.5, type: "sine", dur: 0.18, gain: 0.07, start: 0.06 });
 }
