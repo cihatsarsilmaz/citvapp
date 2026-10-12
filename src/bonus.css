@@ -5,89 +5,113 @@
   display: grid;
   place-items: center;
   padding: 18px;
+  overflow: hidden;
 }
 .entry-veil, .bonus-veil {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 50% 20%, color-mix(in srgb, var(--c) 55%, #3a1808), #07050a 62%);
-  animation: veilIn .4s ease;
+  background: #07050a;
 }
-.bonus-rays {
+.bonus-mist {
   position: absolute;
-  inset: -20%;
-  background: repeating-conic-gradient(from 0deg, #e8c56b22 0 8deg, transparent 8deg 18deg);
-  animation: spinRays 14s linear infinite;
+  inset: 0;
+  background: radial-gradient(circle at 50% 40%, #ffffff33, #9aa8b033 40%, transparent 70%);
+  opacity: 0;
+  animation: mistIn .8s ease forwards;
+}
+.ph-tunnel .bonus-mist { animation: mistOut .9s ease forwards; }
+.bonus-tunnel {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 40% 70% at 50% 50%, transparent 0 28%, #0a1418 40%, #05100c 70%);
+  opacity: 0;
+  transform: scale(1.4);
+}
+.ph-tunnel .bonus-tunnel {
+  animation: tunnelIn 1s ease forwards;
+}
+.bonus-valley {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, #1a3a2a 0%, #0c2818 40%, #082018 70%, #061410 100%);
+  opacity: 0;
+}
+.ph-valley .bonus-valley {
+  animation: valleyIn .7s ease forwards;
+}
+.ph-valley .bonus-valley::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 18%;
+  height: 18%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #1a6a5a, #0a3a32);
+  box-shadow: 0 0 40px #1a6a5a55;
 }
 .entry-card, .bonus-stage {
   position: relative;
+  z-index: 5;
   width: min(380px, 92vw);
   padding: 24px 18px 18px;
   border-radius: 24px;
   border: 2px solid #e8c56b;
-  background: linear-gradient(180deg, #3a2210, #120a06);
+  background: linear-gradient(180deg, #1a2a18cc, #0a1408cc);
   text-align: center;
-  box-shadow: 0 0 40px color-mix(in srgb, var(--c) 40%, #000), 0 24px 50px #000c;
+  box-shadow: 0 0 40px #1a6a4a55, 0 24px 50px #000c;
   animation: cardIn .45s cubic-bezier(.2,1.1,.3,1);
 }
-.entry-theme, .bonus-kicker {
+.bonus-walker {
+  margin: 8px auto;
+  animation: walkIn 1.2s ease both;
+}
+.bonus-kicker {
   margin: 8px 0 0;
   letter-spacing: .2em;
   text-transform: uppercase;
-  color: #ffe08a;
+  color: #c8f0a0;
   font-size: 12px;
 }
-.entry-card h2, .bonus-stage h2 {
+.bonus-stage h2 {
   margin: 4px 0 0;
   font-size: 28px;
   letter-spacing: -0.03em;
 }
-.entry-who, .bonus-sub, .bonus-who {
+.bonus-who, .bonus-sub {
   margin: 4px 0 0;
-  color: #f0d9a0;
+  color: #e0f0c0;
   font-style: normal;
-}
-.entry-facts, .bonus-rules {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  list-style: none;
-  padding: 0;
-  margin: 14px 0 0;
-  flex-wrap: wrap;
-}
-.entry-facts span, .bonus-rules li {
-  border: 1px solid #e8c56b66;
-  border-radius: 999px;
-  padding: 5px 9px;
-  font-size: 10px;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: #ffe08a;
 }
 .bonus-count {
   display: block;
   margin: 10px 0 0;
   font-size: 56px;
   color: #fff;
-  text-shadow: 0 0 18px #e8c56b;
+  text-shadow: 0 0 18px #8ad060;
 }
 .entry-ok {
   margin-top: 16px;
   border: 0;
   border-radius: 999px;
   padding: 14px 32px;
-  background: linear-gradient(180deg, #ffe08a, #b8892c);
-  color: #1a1208;
+  background: linear-gradient(180deg, #c8f0a0, #6a9a40);
+  color: #0a1408;
   font: 800 15px/1 inherit;
   letter-spacing: .14em;
   text-transform: uppercase;
   cursor: pointer;
 }
+.stage.shake { animation: none !important; }
 .stage.bonus .reel-board {
-  border-color: #ffe08a;
-  box-shadow: 0 0 24px #e8c56b66, inset 0 0 0 4px #5a3a10;
+  border-color: #8ad060;
+  box-shadow: 0 0 24px #6a9a4055;
 }
-@keyframes veilIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mistIn { to { opacity: 1; } }
+@keyframes mistOut { to { opacity: 0; } }
+@keyframes tunnelIn { to { opacity: 1; transform: scale(1); } }
+@keyframes valleyIn { to { opacity: 1; } }
+@keyframes walkIn { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes cardIn { from { transform: translateY(22px) scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
-@keyframes spinRays { to { transform: rotate(360deg); } }
