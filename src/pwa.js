@@ -6,13 +6,16 @@ export function startPwa() {
   if (typeof window === "undefined") return;
   if (!("serviceWorker" in navigator)) return;
 
-  const run = () => {
-    const url = new URL("sw.js", window.location.href);
+  const run = async () => {
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    } catch {}
+    const url = new URL("sw.js?v=39", window.location.href);
     navigator.serviceWorker
-      .register(url.href, { scope: new URL("./", window.location.href).href })
+      .register(url.href, { scope: new URL("./", window.location.href).href, updateViaCache: "none" })
       .then((reg) => {
         reg.update().catch(() => {});
-        if (reg.waiting) reg.waiting.postMessage({ type: "SKIP" });
       })
       .catch(() => {});
   };
