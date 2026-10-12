@@ -179,10 +179,6 @@ export function playSpinLoop(voice = "clack") {
   if (muted) return;
   stopSpinLoop();
   const v = voiceOf(voice);
-  const type = v.type || "triangle";
-  tone({ freq: v.snap, type, dur: 0.12, gain: 0.14 });
-  tone({ freq: v.snap * 1.25, type, dur: 0.12, gain: 0.12, start: 0.1 });
-  tone({ freq: v.snap * 1.5, type, dur: 0.16, gain: 0.1, start: 0.2 });
   try {
     const ac = getCtx();
     const now = ac.currentTime;
@@ -191,16 +187,16 @@ export function playSpinLoop(voice = "clack") {
     src.loop = true;
     const f = ac.createBiquadFilter();
     f.type = "bandpass";
-    f.frequency.setValueAtTime(Math.max(120, v.snap), now);
-    f.Q.setValueAtTime(1.4, now);
+    f.frequency.setValueAtTime(Math.max(180, v.snap * 0.4), now);
+    f.Q.setValueAtTime(2.2, now);
     const g = ac.createGain();
     g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.06 * VOL, now + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.07 * VOL, now + 0.03);
     const o = ac.createOscillator();
-    o.type = type;
-    o.frequency.setValueAtTime(Math.max(36, v.thud), now);
+    o.type = "square";
+    o.frequency.setValueAtTime(Math.max(48, v.thud * 1.6), now);
     const og = ac.createGain();
-    og.gain.setValueAtTime(0.03 * VOL, now);
+    og.gain.setValueAtTime(0.018 * VOL, now);
     src.connect(f);
     f.connect(g);
     o.connect(og);
@@ -217,10 +213,10 @@ export function stopSpinLoop() {
   try {
     const ac = getCtx();
     const t = ac.currentTime;
-    spinNoise.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
-    if (spinNoise.og) spinNoise.og.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
-    spinNoise.o.stop(t + 0.12);
-    if (spinNoise.osc) spinNoise.osc.stop(t + 0.12);
+    spinNoise.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+    if (spinNoise.og) spinNoise.og.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+    spinNoise.o.stop(t + 0.08);
+    if (spinNoise.osc) spinNoise.osc.stop(t + 0.08);
   } catch {}
   spinNoise = null;
 }
@@ -228,8 +224,8 @@ export function stopSpinLoop() {
 export function playClash(sym, voice = "clack") {
   if (muted) return;
   const v = voiceOf(voice);
-  thud(v.thud, 0, 0.26);
-  tone({ freq: v.snap, type: v.type || "triangle", dur: 0.09, gain: 0.11, start: 0.01 });
+  thud(Math.max(70, v.thud), 0, 0.32);
+  tone({ freq: Math.max(140, v.snap * 0.5), type: "square", dur: 0.05, gain: 0.08 });
 }
 
 export function playWin(tier = 1, voice = "clack") {
@@ -244,7 +240,7 @@ export function playWin(tier = 1, voice = "clack") {
 
 export function playMiss(voice = "clack") {
   const v = voiceOf(voice);
-  tone({ freq: Math.max(50, v.thud), type: v.type || "sine", dur: 0.22, gain: 0.08, slide: -40 });
+  tone({ freq: Math.max(50, v.thud), type: "sine", dur: 0.22, gain: 0.07, slide: -40 });
 }
 
 export function playClick() {
