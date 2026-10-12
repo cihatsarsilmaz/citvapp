@@ -180,12 +180,12 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
   }
   if (rare) roar = Math.max(8, Math.round(paid / Math.max(1, bet)));
 
-  const extra = session.inBonus && (evaled.stars || 0) >= 2 ? 1 : 0;
+  const extra = session.inBonus && (evaled.stars || 0) >= 3 ? 1 : 0;
   const enterBonus = !session.inBonus && (session.bonusLock || 0) <= 0 && (evaled.stars || 0) >= 2;
   let bonusLeft = session.inBonus
     ? Math.max(0, (session.bonusLeft || 0) - 1 + extra)
     : enterBonus ? 8 : 0;
-  if (bonusLeft > 14) bonusLeft = 14;
+  if (bonusLeft > 12) bonusLeft = 12;
   const inBonus = bonusLeft > 0;
   const won = paid > 0;
   const cMult = roar >= 2 ? roar : 1;
