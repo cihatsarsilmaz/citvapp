@@ -20,6 +20,7 @@ import Jackpot from "./Jackpot";
 import Joy from "./Joy";
 import Admin from "./Admin";
 import Board from "./Board";
+import BonusFloor from "./BonusFloor";
 
 const POOL = [...LOW];
 const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
@@ -199,31 +200,31 @@ export default function App() {
       if (result.rare) {
         setMood("c");
         setJoy("jack");
-        playJack();
+        playJack(k.voice);
       } else if (result.gift) {
         setMood("win");
-        playWin(2);
+        playWin(2, k.voice);
       } else if (result.collect) {
         setMood("collect");
-        playExtra();
+        playExtra(k.voice);
       } else if (result.bonus) {
         setMood("bonus");
         setJoy("bonus");
-        playBonusIn();
+        playBonusIn(k.voice);
       } else if (result.jack) {
         setMood("win");
         setJoy("jack");
-        playJack();
+        playJack(k.voice);
       } else if (result.extra) {
         setMood("bonus");
-        playExtra();
+        playExtra(k.voice);
       } else if (paid > 0 && result.cMult > 1) setMood("c");
       else if (paid > 0) setMood(result.session.inBonus ? "bonuswin" : "win");
       else setMood(result.session.inBonus ? "bonus" : "miss");
       if (paid > 0) {
-        playWin(result.cMult > 1 ? 3 : 2);
+        playWin(result.cMult > 1 ? 3 : 2, k.voice);
         tapWin(result.cMult > 1 ? 2 : 1);
-      } else if (!result.bonus && !result.collect) playMiss();
+      } else if (!result.bonus && !result.collect) playMiss(k.voice);
       if (autoRef.current && gen.current === my) {
         const gap = result.session.inBonus ? 420 : turboRef.current ? 220 : 380;
         armAuto(gap);
@@ -265,7 +266,7 @@ export default function App() {
     playClash((next[c] || [])[mid], k.voice);
     tapLock();
     if (!lockRef.current.every(Boolean) && starsLocked(next, lockRef.current) >= 2) {
-      playExtra();
+      playExtra(k.voice);
       setMood("c");
     }
     if (lockRef.current.every(Boolean)) {
@@ -317,7 +318,7 @@ export default function App() {
     setLock(Array(nCols).fill(0));
     taps.current = 0;
     stopTheme();
-    playSpinLoop();
+    playSpinLoop(k.voice);
     tapSpin();
     const snap = s.session;
     const style = readStyle(snap, balRef.current, s.ante, fast);
@@ -515,7 +516,7 @@ export default function App() {
             <Board grid={grid} hits={hitSet} spinning={spinning} />
           </div>
           <p className="result-line">{resultText}</p>
-          {session.inBonus && <p className="bonus-left">Bonus {session.bonusLeft}</p>}
+          <BonusFloor game={game} kit={kit} left={session.bonusLeft || 0} on={!!session.inBonus} />
           <p className={"bang " + (showWin ? "" : "quiet")}>
             {showWin ? (last.cMult > 1 ? `${last.win} ×${last.cMult}` : last.win) : ""}
           </p>
