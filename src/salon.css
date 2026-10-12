@@ -4,13 +4,13 @@
   gap: 14px;
 }
 .seat-card {
+  position: relative;
   min-height: 248px;
   padding: 0;
   border-radius: 18px;
   border: 1px solid #d7b56a;
-  background:
-    radial-gradient(120px 80px at 50% 0%, color-mix(in srgb, var(--c) 28%, transparent), transparent 70%),
-    #100c09;
+  background: #100c09;
+  overflow: hidden;
   box-shadow:
     inset 0 0 0 1px #5a431c,
     inset 0 0 0 6px #1a140c,
@@ -22,55 +22,79 @@
   border-radius: 12px;
   border: 1px solid #e8c56b55;
   pointer-events: none;
-  z-index: 3;
+  z-index: 6;
 }
 .seat-theme {
   position: absolute;
-  z-index: 4;
+  z-index: 7;
   top: 14px;
   left: 14px;
+  max-width: calc(100% - 28px);
   padding: 4px 8px;
   border-radius: 999px;
   background: #120c09cc;
   border: 1px solid #e8c56b66;
   color: #f4e2a8;
   font: 700 9px/1 inherit;
-  letter-spacing: .12em;
+  letter-spacing: .08em;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.seat-card .actor {
-  position: absolute;
-  inset: 8px 8px 78px;
-  display: block;
+.seat-card .actor,
+.seat-card .actor.look,
+.seat-card .actor.has-port {
+  position: absolute !important;
+  inset: 8px 8px 78px !important;
+  height: auto !important;
+  margin: 0 !important;
+  display: block !important;
+  z-index: 1;
 }
-.seat-card .figure {
-  position: absolute;
-  inset: 0;
-  display: block;
+.seat-card .figure,
+.seat-card .figure.port,
+.seat-card .actor.look .figure {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: 10px !important;
+  display: block !important;
+  transform: none !important;
+  animation: none !important;
+  filter: none !important;
 }
-.seat-card .port-img {
-  width: 100%;
-  height: 100%;
+.seat-card .port-img,
+.seat-card .actor.has-port .port-img {
+  width: 100% !important;
+  height: 100% !important;
   object-fit: cover;
-  object-position: center 16%;
+  object-position: center 18%;
   border-radius: 10px;
-  filter: saturate(1.06) contrast(1.04);
+  display: block;
 }
 .seat-card .mark,
-.seat-card .ring {
-  display: none;
+.seat-card .actor .mark,
+.seat-card .actor.look .mark,
+.seat-card .figure.port .mark,
+.seat-card .ring,
+.seat-card .aura {
+  display: none !important;
 }
 .seat-plate {
   position: absolute;
   left: 8px;
   right: 8px;
   bottom: 8px;
-  z-index: 4;
+  z-index: 5;
   display: grid;
   gap: 2px;
-  padding: 22px 10px 8px;
+  padding: 28px 10px 8px;
   border-radius: 0 0 12px 12px;
-  background: linear-gradient(180deg, transparent, #0c0907 36%);
+  background: linear-gradient(180deg, transparent, #0c0907 42%);
 }
 .seat-plate .nm {
   position: static;
@@ -104,9 +128,9 @@
 }
 .seat-play {
   position: absolute;
-  z-index: 5;
+  z-index: 7;
   right: 14px;
-  bottom: 86px;
+  bottom: 92px;
   padding: 6px 10px;
   border-radius: 999px;
   background: linear-gradient(180deg, #f4e2a8, #b8892c);
