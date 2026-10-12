@@ -8,7 +8,7 @@ import { loadState, saveState, topUp } from "./store";
 import { getMode, LIVE } from "./coin";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
-import { BANDS, inBand, featuredGames } from "./class";
+import { BANDS, inBand, featuredGames, FEATURED } from "./class";
 import { loadRecents, pushRecent } from "./recents";
 import { lockAt, starsLocked, spinTempo } from "./pace";
 import { holdKeys } from "./bond";
@@ -21,6 +21,7 @@ import Joy from "./Joy";
 import Admin from "./Admin";
 import Board from "./Board";
 import BonusFloor from "./BonusFloor";
+import Entry from "./Entry";
 
 const POOL = [...LOW];
 const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
@@ -36,6 +37,8 @@ export default function App() {
   const [hash, setHash] = useState(typeof location !== "undefined" ? location.hash : "");
   const [game, setGame] = useState(null);
   const [boot, setBoot] = useState(false);
+  const [entry, setEntry] = useState(false);
+  const [bonusHold, setBonusHold] = useState(false);
   const [ready, setReady] = useState(false);
   const [grid, setGrid] = useState(() => blank());
   const [lock, setLock] = useState([0, 0, 0, 0, 0]);
@@ -79,7 +82,9 @@ export default function App() {
       const i = recents.indexOf(id);
       return i === -1 ? 99 : i;
     };
-    return GAMES.filter((g) => inBand(g, band)).sort((a, b) => rank(a.id) - rank(b.id));
+    return GAMES.filter((g) => inBand(g, band))
+      .filter((g) => band !== "tumu" || !FEATURED.includes(g.id))
+      .sort((a, b) => rank(a.id) - rank(b.id));
   }, [recents, band]);
   const table = lobby.slice(0, shown);
 
@@ -141,7 +146,18 @@ export default function App() {
     stopSpinLoop();
   }
 
-  const closeGate = useCallback(() => setBoot(false), []);
+  const closeGate = useCallback(() => {
+    setBoot(false);
+    setEntry(true);
+  }, []);
+  const closeEntry = useCallback(() => {
+    setEntry(false);
+    playClick();
+  }, []);
+  const closeBonusHold = useCallback(() => {
+    setBonusHold(false);
+    playClick();
+  }, []);
   const closeJoy = useCallback(() => setJoy(null), []);
 
   useEffect(() => {
@@ -209,7 +225,7 @@ export default function App() {
         playExtra(k.voice);
       } else if (result.bonus) {
         setMood("bonus");
-        setJoy("bonus");
+        setBonusHold(true);
         playBonusIn(k.voice);
       } else if (result.jack) {
         setMood("win");
@@ -225,7 +241,7 @@ export default function App() {
         playWin(result.cMult > 1 ? 3 : 2, k.voice);
         tapWin(result.cMult > 1 ? 2 : 1);
       } else if (!result.bonus && !result.collect) playMiss(k.voice);
-      if (autoRef.current && gen.current === my) {
+      if (autoRef.current && gen.current === my && !result.bonus) {
         const gap = result.session.inBonus ? 420 : turboRef.current ? 220 : 380;
         armAuto(gap);
       }
@@ -292,7 +308,7 @@ export default function App() {
 
   function runSpin() {
     const s = live.current;
-    if (!s.game || busy.current || boot) return;
+    if (!s.game || busy.current || boot || entry || bonusHold) return;
     wakeAudio();
     const k = kitOf(s.game);
     const free = !!(s.session && s.session.inBonus);
@@ -329,7 +345,7 @@ export default function App() {
   }
 
   function nudgeStage() {
-    if (boot) return;
+    if (boot || entry || bonusHold) return;
     const p = pending.current;
     if (!p || !busy.current) return;
     tap(11);
@@ -358,14 +374,14 @@ export default function App() {
     const key = (e) => {
       if (e.code === "Space" && live.current.game) {
         e.preventDefault();
-        if (boot) return;
+        if (boot || entry || bonusHold) return;
         if (busy.current) nudgeStage();
         else runSpin();
       }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [boot]);
+  }, [boot, entry, bonusHold]);
 
   if (hash.includes("admin")) {
     return (
@@ -383,6 +399,8 @@ export default function App() {
     setSpinning(false);
     setGame(g);
     setBoot(true);
+    setEntry(false);
+    setBonusHold(false);
     setGrid(blank(k.cols, k.rows));
     setLock(Array(k.cols).fill(0));
     setLast(null);
@@ -407,6 +425,8 @@ export default function App() {
     stopTheme();
     setGame(null);
     setBoot(false);
+    setEntry(false);
+    setBonusHold(false);
     setLast(null);
     setHeld([]);
     setSpinning(false);
@@ -428,7 +448,7 @@ export default function App() {
     }
     autoRef.current = true;
     setAuto(true);
-    if (!busy.current && !boot) armAuto(90);
+    if (!busy.current && !boot && !entry && !bonusHold) armAuto(90);
   }
 
   function bumpAnte(d) {
@@ -505,6 +525,10 @@ export default function App() {
         </>
       )}
       {game && boot && <Gate game={game} onDone={closeGate} />}
+      {game && entry && <Entry game={game} kit={kit} onOk={closeEntry} />}
+      {game && bonusHold && (
+        <BonusFloor game={game} kit={kit} left={session.bonusLeft || 0} on onOk={closeBonusHold} />
+      )}
       {game && joy && <Joy kind={joy} onDone={closeJoy} />}
       {game && (
         <section className={stageCls} style={{ "--c": game.color, "--sky": game.sky, "--cols": cols, "--rows": rows }}>
@@ -516,7 +540,7 @@ export default function App() {
             <Board grid={grid} hits={hitSet} spinning={spinning} />
           </div>
           <p className="result-line">{resultText}</p>
-          <BonusFloor game={game} kit={kit} left={session.bonusLeft || 0} on={!!session.inBonus} />
+          {session.inBonus && !bonusHold && <p className="bonus-left">Bonus {session.bonusLeft}</p>}
           <p className={"bang " + (showWin ? "" : "quiet")}>
             {showWin ? (last.cMult > 1 ? `${last.win} ×${last.cMult}` : last.win) : ""}
           </p>
