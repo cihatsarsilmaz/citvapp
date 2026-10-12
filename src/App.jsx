@@ -334,7 +334,7 @@ export default function App() {
     setLock(Array(nCols).fill(0));
     taps.current = 0;
     stopTheme();
-    playSpinLoop(k.voice);
+    playSpinLoop(k.voice, free);
     tapSpin();
     const snap = s.session;
     const style = readStyle(snap, balRef.current, s.ante, fast);
@@ -482,7 +482,7 @@ export default function App() {
     "floor",
   ].filter(Boolean).join(" ");
   const lamps = session.inBonus ? Math.max(1, session.bonusLeft || 1) : 7;
-  const resultText = spinning ? "Dönüyor" : showWin ? last.win + " CITV" : last ? "Boş" : "Çevir";
+  const resultText = spinning ? (session.inBonus ? "Bonus dönüyor" : "Dönüyor") : showWin ? last.win + " CITV" : last ? "Boş" : "Çevir";
 
   return (
     <div className="app wide">
