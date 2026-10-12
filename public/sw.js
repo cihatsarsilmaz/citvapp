@@ -1,5 +1,5 @@
 /* CITV Slot — servis çalıştırıcı */
-const CACHE = "citv-pwa-v23";
+const CACHE = "citv-pwa-v24";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
