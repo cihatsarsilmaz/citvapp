@@ -1,9 +1,13 @@
+import { CANDY } from "./candy";
+
 let ctx;
 let master;
 let spinTimer;
 let ambient;
 let muted = false;
 const cache = {};
+let candyBuf = null;
+let candyReady = false;
 
 export function setMuted(v) {
   muted = !!v;
@@ -13,7 +17,9 @@ export function setMuted(v) {
   }
 }
 export function isMuted() { return muted; }
-export function wakeAudio() { try { getCtx(); } catch {} }
+export function wakeAudio() {
+  try { getCtx(); loadCandy(); } catch {}
+}
 
 function getCtx() {
   if (!ctx) {
@@ -26,6 +32,18 @@ function getCtx() {
   return ctx;
 }
 function dest() { getCtx(); return master; }
+
+function loadCandy() {
+  if (candyReady || candyBuf) return;
+  candyReady = true;
+  try {
+    const ac = getCtx();
+    const bin = atob(CANDY.split(",")[1]);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    ac.decodeAudioData(arr.buffer, (b) => { candyBuf = b; }, () => {});
+  } catch {}
+}
 
 function hit(kind) {
   const ac = getCtx();
@@ -53,6 +71,7 @@ function hit(kind) {
 }
 
 function bufferOf(kind) {
+  if (kind === "candy" && candyBuf) return candyBuf;
   if (!cache[kind]) cache[kind] = hit(kind);
   return cache[kind];
 }
@@ -60,6 +79,7 @@ function bufferOf(kind) {
 function play(kind, gain = 0.6, start = 0) {
   if (muted) return;
   try {
+    loadCandy();
     const ac = getCtx();
     const src = ac.createBufferSource();
     src.buffer = bufferOf(kind);
@@ -114,9 +134,10 @@ export function stopAmbient() {
 export function playSpinLoop(voice = "clack", bonus = false) {
   if (muted) return;
   stopSpinLoop();
+  loadCandy();
   const k = kindOf(voice);
   const gap = bonus ? 140 : 190;
-  const gain = k === "candy" ? (bonus ? 0.42 : 0.32) : bonus ? 0.48 : 0.36;
+  const gain = k === "candy" ? (bonus ? 0.55 : 0.42) : bonus ? 0.48 : 0.36;
   const tick = () => play(k, gain);
   tick();
   spinTimer = setInterval(tick, gap);
@@ -127,20 +148,20 @@ export function stopSpinLoop() {
 
 export function playClash(sym, voice = "clack") {
   const k = kindOf(voice);
-  play(k, k === "candy" ? 0.5 : 0.68);
+  play(k, k === "candy" ? 0.6 : 0.68);
 }
 export function playWin(tier = 1, voice = "clack") {
   const k = kindOf(voice);
-  play(k, 0.6);
+  play(k, 0.65);
   if (k !== "candy") play("metal", 0.42, 0.06);
-  else play("candy", 0.4, 0.07);
+  else play("candy", 0.45, 0.07);
 }
 export function playMiss(voice = "clack") { play("soft", 0.2); }
 export function playClick() { play("wood", 0.4); }
 export function playBonusIn(voice = "clack") {
   const k = kindOf(voice);
-  play(k, 0.55);
-  play(k === "candy" ? "candy" : "metal", 0.4, 0.08);
+  play(k, 0.6);
+  play(k === "candy" ? "candy" : "metal", 0.45, 0.08);
 }
 export function playJack(voice = "clack") {
   play(kindOf(voice), 0.6);
@@ -157,8 +178,8 @@ export function playAnticipate() {
 export function playCharacter(voice = "clack", mood = "win") {
   const base = kindOf(voice);
   if (base === "candy") {
-    play("candy", 0.5);
-    play("candy", 0.35, 0.08);
+    play("candy", 0.6);
+    play("candy", 0.4, 0.08);
     return;
   }
   if (mood === "angry" || mood === "c") {
