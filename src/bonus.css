@@ -1,0 +1,39 @@
+.bonus-floor {
+  margin: 8px 0 0;
+  padding: 10px 12px 12px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--c) 55%, #e8c56b);
+  background:
+    radial-gradient(120px 60px at 50% 0%, color-mix(in srgb, var(--c) 35%, transparent), transparent 70%),
+    linear-gradient(180deg, #2a140c, #120806);
+  text-align: center;
+  box-shadow: inset 0 1px 0 #fff2, 0 8px 18px #0008;
+}
+.bonus-kicker {
+  margin: 0;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #f4e2a8;
+  font-size: 10px;
+}
+.bonus-count {
+  display: block;
+  margin: 2px 0;
+  font-size: 28px;
+  color: #fff;
+  letter-spacing: -0.04em;
+}
+.bonus-sub {
+  display: block;
+  font-style: normal;
+  color: #e8c56b;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.bonus-note {
+  display: block;
+  margin-top: 4px;
+  color: #cbb892;
+  font-size: 10px;
+}
