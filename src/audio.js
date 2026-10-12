@@ -19,7 +19,7 @@ function getCtx() {
   if (!ctx) {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     master = ctx.createGain();
-    master.gain.value = 0.85;
+    master.gain.value = 0.8;
     master.connect(ctx.destination);
   }
   if (ctx.state === "suspended") ctx.resume();
@@ -30,17 +30,24 @@ function dest() { getCtx(); return master; }
 function hit(kind) {
   const ac = getCtx();
   const rate = ac.sampleRate;
-  const sec = kind === "body" ? 0.09 : kind === "voice" ? 0.22 : 0.055;
+  const sec = kind === "candy" ? 0.07 : kind === "body" ? 0.08 : kind === "voice" ? 0.18 : 0.05;
   const n = Math.floor(rate * sec);
   const buf = ac.createBuffer(1, n, rate);
   const d = buf.getChannelData(0);
-  const f = kind === "wood" ? 180 : kind === "metal" ? 420 : kind === "soft" ? 140 : kind === "voice" ? 220 : 260;
   for (let i = 0; i < n; i++) {
     const t = i / rate;
-    const env = Math.exp(-t * (kind === "voice" ? 8 : 48));
-    const body = Math.sin(2 * Math.PI * f * t);
-    const click = t < 0.004 ? (Math.random() * 2 - 1) * 0.3 : 0;
-    d[i] = (body * 0.55 + click) * env;
+    let s = 0;
+    if (kind === "candy") {
+      const env = Math.exp(-t * 36);
+      s = Math.sin(2 * Math.PI * 1046 * t) * 0.45 + Math.sin(2 * Math.PI * 1568 * t) * 0.22;
+      d[i] = s * env * 0.45;
+    } else {
+      const env = Math.exp(-t * (kind === "voice" ? 10 : 50));
+      const f = kind === "wood" ? 180 : kind === "metal" ? 420 : kind === "soft" ? 160 : kind === "voice" ? 220 : 260;
+      const body = Math.sin(2 * Math.PI * f * t);
+      const click = t < 0.003 ? (Math.random() * 2 - 1) * 0.18 : 0;
+      d[i] = (body * 0.5 + click) * env;
+    }
   }
   return buf;
 }
@@ -50,7 +57,7 @@ function bufferOf(kind) {
   return cache[kind];
 }
 
-function play(kind, gain = 0.7, start = 0) {
+function play(kind, gain = 0.6, start = 0) {
   if (muted) return;
   try {
     const ac = getCtx();
@@ -65,7 +72,7 @@ function play(kind, gain = 0.7, start = 0) {
 }
 
 const MAP = {
-  chime: "soft", thunder: "body", glass: "metal", low: "body", coin: "metal",
+  chime: "candy", thunder: "body", glass: "metal", low: "body", coin: "metal",
   snap: "wood", pad: "soft", howl: "body", crackle: "wood", wood: "wood",
   bell: "metal", creak: "wood", blip: "metal", steel: "metal", ice: "metal",
   roar: "body", toot: "soft", clack: "wood",
@@ -73,7 +80,7 @@ const MAP = {
 function kindOf(name) { return MAP[name] || "wood"; }
 
 export function stopTheme() {}
-export function playTheme() { play("soft", 0.35); }
+export function playTheme() { play("soft", 0.3); }
 
 export function startAmbient(freq = 110) {
   if (muted) return;
@@ -84,9 +91,9 @@ export function startAmbient(freq = 110) {
     const o = ac.createOscillator();
     const g = ac.createGain();
     o.type = "sine";
-    o.frequency.setValueAtTime(Math.max(70, freq * 0.5), now);
+    o.frequency.setValueAtTime(Math.max(70, freq * 0.45), now);
     g.gain.setValueAtTime(0.0001, now);
-    g.gain.linearRampToValueAtTime(0.035, now + 0.8);
+    g.gain.linearRampToValueAtTime(0.028, now + 0.9);
     o.connect(g);
     g.connect(dest());
     o.start(now);
@@ -108,8 +115,9 @@ export function playSpinLoop(voice = "clack", bonus = false) {
   if (muted) return;
   stopSpinLoop();
   const k = kindOf(voice);
-  const gap = bonus ? 120 : 160;
-  const tick = () => play(k, bonus ? 0.5 : 0.38);
+  const gap = bonus ? 140 : 190;
+  const gain = k === "candy" ? (bonus ? 0.42 : 0.32) : bonus ? 0.48 : 0.36;
+  const tick = () => play(k, gain);
   tick();
   spinTimer = setInterval(tick, gap);
 }
@@ -117,46 +125,50 @@ export function stopSpinLoop() {
   if (spinTimer) { clearInterval(spinTimer); spinTimer = null; }
 }
 
-export function playClash(sym, voice = "clack") { play(kindOf(voice), 0.72); }
-export function playWin(tier = 1, voice = "clack") {
-  play(kindOf(voice), 0.75);
-  play("metal", 0.5, 0.06);
-  if (tier > 1) play("wood", 0.45, 0.12);
+export function playClash(sym, voice = "clack") {
+  const k = kindOf(voice);
+  play(k, k === "candy" ? 0.5 : 0.68);
 }
-export function playMiss(voice = "clack") { play("soft", 0.25); }
-export function playClick() { play("wood", 0.48); }
+export function playWin(tier = 1, voice = "clack") {
+  const k = kindOf(voice);
+  play(k, 0.6);
+  if (k !== "candy") play("metal", 0.42, 0.06);
+  else play("candy", 0.4, 0.07);
+}
+export function playMiss(voice = "clack") { play("soft", 0.2); }
+export function playClick() { play("wood", 0.4); }
 export function playBonusIn(voice = "clack") {
-  play("body", 0.65);
-  play("metal", 0.5, 0.07);
-  play("wood", 0.45, 0.14);
+  const k = kindOf(voice);
+  play(k, 0.55);
+  play(k === "candy" ? "candy" : "metal", 0.4, 0.08);
 }
 export function playJack(voice = "clack") {
-  play("body", 0.7);
-  play("metal", 0.55, 0.06);
-  play("wood", 0.45, 0.12);
+  play(kindOf(voice), 0.6);
+  play("metal", 0.45, 0.07);
 }
 export function playExtra(voice = "clack") {
-  play(kindOf(voice), 0.55);
-  play("metal", 0.38, 0.05);
+  play(kindOf(voice), 0.48);
 }
 
 export function playAnticipate() {
-  play("soft", 0.3);
-  play("metal", 0.25, 0.08);
+  play("soft", 0.22);
 }
 
 export function playCharacter(voice = "clack", mood = "win") {
   const base = kindOf(voice);
+  if (base === "candy") {
+    play("candy", 0.5);
+    play("candy", 0.35, 0.08);
+    return;
+  }
   if (mood === "angry" || mood === "c") {
-    play("body", 0.8);
-    play("wood", 0.6, 0.06);
-    play("metal", 0.5, 0.12);
+    play("body", 0.7);
+    play("wood", 0.5, 0.06);
   } else if (mood === "bonus") {
-    play("voice", 0.55);
-    play(base, 0.6, 0.08);
-    play("metal", 0.45, 0.16);
+    play("voice", 0.45);
+    play(base, 0.5, 0.08);
   } else {
-    play("voice", 0.5);
-    play(base, 0.55, 0.07);
+    play("voice", 0.4);
+    play(base, 0.45, 0.07);
   }
 }
