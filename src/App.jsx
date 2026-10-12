@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GAMES } from "./games";
-import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, playMiss, playClick, playBonusIn, playJack, playExtra, setMuted, wakeAudio } from "./audio";
+import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, playMiss, playClick, playBonusIn, playJack, playExtra, setMuted, wakeAudio, startAmbient, stopAmbient, playAnticipate, playCharacter } from "./audio";
 import { UNIT, PAY3, PAY4, PAY5 } from "./paytable";
 import { spinGrid, applyHouse, emptySession, plan, readStyle } from "./house";
 import { evalLines, LOW } from "./engine";
@@ -217,9 +217,11 @@ export default function App() {
         setMood("c");
         setJoy("jack");
         playJack(k.voice);
+        playCharacter(k.voice, "c");
       } else if (result.gift) {
         setMood("win");
         playWin(2, k.voice);
+        playCharacter(k.voice, "win");
       } else if (result.collect) {
         setMood("collect");
         playExtra(k.voice);
@@ -227,15 +229,19 @@ export default function App() {
         setMood("bonus");
         setBonusHold(true);
         playBonusIn(k.voice);
+        playCharacter(k.voice, "bonus");
       } else if (result.jack) {
         setMood("win");
         setJoy("jack");
         playJack(k.voice);
+        playCharacter(k.voice, "c");
       } else if (result.extra) {
         setMood("bonus");
         playExtra(k.voice);
-      } else if (paid > 0 && result.cMult > 1) setMood("c");
-      else if (paid > 0) setMood(result.session.inBonus ? "bonuswin" : "win");
+      } else if (paid > 0 && result.cMult > 1) {
+        setMood("c");
+        playCharacter(k.voice, "c");
+      } else if (paid > 0) setMood(result.session.inBonus ? "bonuswin" : "win");
       else setMood(result.session.inBonus ? "bonus" : "miss");
       if (paid > 0) {
         playWin(result.cMult > 1 ? 3 : 2, k.voice);
@@ -282,6 +288,7 @@ export default function App() {
     playClash((next[c] || [])[mid], k.voice);
     tapLock();
     if (!lockRef.current.every(Boolean) && starsLocked(next, lockRef.current) >= 2) {
+      playAnticipate();
       playExtra(k.voice);
       setMood("c");
     }
@@ -414,6 +421,7 @@ export default function App() {
     playClick();
     tapTick();
     playTheme(g.freq);
+    startAmbient((g.freq && g.freq[0]) || 110);
     try { history.pushState({ citv: "stage" }, ""); } catch {}
   }
 
@@ -423,6 +431,7 @@ export default function App() {
     autoRef.current = false;
     setAuto(false);
     stopTheme();
+    stopAmbient();
     setGame(null);
     setBoot(false);
     setEntry(false);
