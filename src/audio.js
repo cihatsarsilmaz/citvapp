@@ -116,24 +116,24 @@ function thud(freq, start = 0, gain = 0.22) {
 }
 
 const VOICE = {
-  chime: { thud: 160, snap: 392 },
-  thunder: { thud: 55, snap: 98 },
-  glass: { thud: 180, snap: 523 },
-  low: { thud: 70, snap: 110 },
-  coin: { thud: 140, snap: 330 },
-  snap: { thud: 120, snap: 247 },
-  pad: { thud: 130, snap: 311 },
-  howl: { thud: 65, snap: 147 },
-  crackle: { thud: 130, snap: 220 },
-  wood: { thud: 100, snap: 175 },
-  bell: { thud: 160, snap: 349 },
-  creak: { thud: 80, snap: 123 },
-  blip: { thud: 150, snap: 466 },
-  steel: { thud: 170, snap: 392 },
-  ice: { thud: 190, snap: 587 },
-  roar: { thud: 48, snap: 82 },
-  toot: { thud: 150, snap: 262 },
-  clack: { thud: 130, snap: 196 },
+  chime: { thud: 160, snap: 784, type: "triangle" },
+  thunder: { thud: 42, snap: 70, type: "sawtooth" },
+  glass: { thud: 220, snap: 880, type: "sine" },
+  low: { thud: 48, snap: 90, type: "sine" },
+  coin: { thud: 180, snap: 660, type: "square" },
+  snap: { thud: 110, snap: 220, type: "square" },
+  pad: { thud: 130, snap: 311, type: "sine" },
+  howl: { thud: 55, snap: 110, type: "sawtooth" },
+  crackle: { thud: 140, snap: 280, type: "square" },
+  wood: { thud: 80, snap: 160, type: "triangle" },
+  bell: { thud: 200, snap: 698, type: "sine" },
+  creak: { thud: 60, snap: 120, type: "sawtooth" },
+  blip: { thud: 240, snap: 932, type: "square" },
+  steel: { thud: 190, snap: 392, type: "triangle" },
+  ice: { thud: 260, snap: 1046, type: "sine" },
+  roar: { thud: 36, snap: 72, type: "sawtooth" },
+  toot: { thud: 170, snap: 523, type: "square" },
+  clack: { thud: 130, snap: 196, type: "triangle" },
 };
 
 function voiceOf(name) {
@@ -155,8 +155,8 @@ export function playTheme(freqs) {
     const now = ac.currentTime;
     const g = ac.createGain();
     g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.09 * VOL, now + 0.06);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.62);
+    g.gain.exponentialRampToValueAtTime(0.12 * VOL, now + 0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
     g.connect(dest());
     const f0 = Math.max(90, Math.min(...freqs.slice(0, 2)));
     const o = ac.createOscillator();
@@ -169,8 +169,8 @@ export function playTheme(freqs) {
     o2.connect(g);
     o.start(now);
     o2.start(now);
-    o.stop(now + 0.64);
-    o2.stop(now + 0.64);
+    o.stop(now + 0.72);
+    o2.stop(now + 0.72);
     current = o;
   } catch {}
 }
@@ -179,6 +179,10 @@ export function playSpinLoop(voice = "clack") {
   if (muted) return;
   stopSpinLoop();
   const v = voiceOf(voice);
+  const type = v.type || "triangle";
+  tone({ freq: v.snap, type, dur: 0.12, gain: 0.14 });
+  tone({ freq: v.snap * 1.25, type, dur: 0.12, gain: 0.12, start: 0.1 });
+  tone({ freq: v.snap * 1.5, type, dur: 0.16, gain: 0.1, start: 0.2 });
   try {
     const ac = getCtx();
     const now = ac.currentTime;
@@ -187,16 +191,16 @@ export function playSpinLoop(voice = "clack") {
     src.loop = true;
     const f = ac.createBiquadFilter();
     f.type = "bandpass";
-    f.frequency.setValueAtTime(Math.max(180, v.snap), now);
-    f.Q.setValueAtTime(0.7, now);
+    f.frequency.setValueAtTime(Math.max(120, v.snap), now);
+    f.Q.setValueAtTime(1.4, now);
     const g = ac.createGain();
     g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.08 * VOL, now + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.06 * VOL, now + 0.05);
     const o = ac.createOscillator();
-    o.type = "sawtooth";
-    o.frequency.setValueAtTime(Math.max(40, v.thud / 2), now);
+    o.type = type;
+    o.frequency.setValueAtTime(Math.max(36, v.thud), now);
     const og = ac.createGain();
-    og.gain.setValueAtTime(0.022 * VOL, now);
+    og.gain.setValueAtTime(0.03 * VOL, now);
     src.connect(f);
     f.connect(g);
     o.connect(og);
@@ -225,7 +229,7 @@ export function playClash(sym, voice = "clack") {
   if (muted) return;
   const v = voiceOf(voice);
   thud(v.thud, 0, 0.26);
-  tone({ freq: v.snap, type: "triangle", dur: 0.09, gain: 0.09, start: 0.01 });
+  tone({ freq: v.snap, type: v.type || "triangle", dur: 0.09, gain: 0.11, start: 0.01 });
 }
 
 export function playWin(tier = 1, voice = "clack") {
@@ -233,13 +237,14 @@ export function playWin(tier = 1, voice = "clack") {
   const v = voiceOf(voice);
   thud(v.thud, 0, 0.28);
   const base = v.snap;
+  const type = v.type || "triangle";
   const seq = tier >= 3 ? [base, base * 1.25, base * 1.5, base * 2] : tier >= 2 ? [base, base * 1.25, base * 1.5] : [base, base * 1.25];
-  seq.forEach((f, i) => tone({ freq: f, type: "triangle", dur: 0.22, gain: 0.1, start: i * 0.07 }));
+  seq.forEach((f, i) => tone({ freq: f, type, dur: 0.22, gain: 0.12, start: i * 0.07 }));
 }
 
 export function playMiss(voice = "clack") {
   const v = voiceOf(voice);
-  tone({ freq: Math.max(70, v.thud), type: "sine", dur: 0.2, gain: 0.06, slide: -28 });
+  tone({ freq: Math.max(50, v.thud), type: v.type || "sine", dur: 0.22, gain: 0.08, slide: -40 });
 }
 
 export function playClick() {
@@ -249,24 +254,26 @@ export function playClick() {
 
 export function playBonusIn(voice = "clack") {
   const v = voiceOf(voice);
-  thud(v.thud, 0, 0.34);
+  thud(v.thud, 0, 0.36);
   const base = v.snap;
-  const seq = [base, base * 1.2, base * 1.5, base * 1.8, base * 2.2];
-  seq.forEach((f, i) => tone({ freq: f, type: "triangle", dur: 0.28, gain: 0.11, start: i * 0.08 }));
+  const type = v.type || "triangle";
+  const seq = [base, base * 1.25, base * 1.5, base * 2, base * 2.5];
+  seq.forEach((f, i) => tone({ freq: f, type, dur: 0.3, gain: 0.14, start: i * 0.09 }));
 }
 
 export function playJack(voice = "clack") {
   const v = voiceOf(voice);
   thud(v.thud, 0, 0.36);
   const base = v.snap;
+  const type = v.type || "triangle";
   [base, base * 1.25, base * 1.5, base * 2].forEach((f, i) =>
-    tone({ freq: f, type: "triangle", dur: 0.32, gain: 0.12, start: i * 0.09 })
+    tone({ freq: f, type, dur: 0.32, gain: 0.14, start: i * 0.09 })
   );
 }
 
 export function playExtra(voice = "clack") {
   const v = voiceOf(voice);
   thud(v.thud, 0, 0.2);
-  tone({ freq: v.snap, type: "triangle", dur: 0.16, gain: 0.09 });
-  tone({ freq: v.snap * 1.5, type: "sine", dur: 0.18, gain: 0.07, start: 0.06 });
+  tone({ freq: v.snap, type: v.type || "triangle", dur: 0.16, gain: 0.1 });
+  tone({ freq: v.snap * 1.5, type: "sine", dur: 0.18, gain: 0.08, start: 0.06 });
 }
