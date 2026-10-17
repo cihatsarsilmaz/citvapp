@@ -12,7 +12,7 @@
   display: block;
   pointer-events: none;
   transform-origin: 50% 78%;
-  animation: none;
+  animation: breathe 2.8s ease-in-out infinite;
 }
 .actor.has-port .figure.port .mark {
   position: absolute;
@@ -30,39 +30,51 @@
 .stage.floor .actor.has-port {
   height: 128px;
 }
+
+/* Spin + miss: donuk */
 .mood-spin.has-port .port-img,
 .mood-miss.has-port .port-img {
   animation: none !important;
   transform: none !important;
-  filter: none !important;
 }
+.mood-miss.has-port .port-img {
+  filter: brightness(0.85);
+}
+
+/* Win / çarpan / collect: yalnız yukarı */
 .mood-win.has-port .port-img,
 .mood-bonuswin.has-port .port-img,
-.mood-c.has-port .port-img {
-  animation: softUp .45s ease;
-  filter: saturate(1.14) brightness(1.08);
-}
-.mood-bonus.has-port .port-img {
-  animation: walk 1.5s ease-in-out infinite;
-  filter: saturate(1.1) brightness(1.05);
-}
+.mood-c.has-port .port-img,
 .mood-collect.has-port .port-img {
-  animation: softUp .5s ease;
-  filter: saturate(1.16) brightness(1.1);
+  animation: softUp .48s ease;
+  filter: saturate(1.12) brightness(1.06);
 }
+
+/* Bonus: yavaş dikey nefes */
+.mood-bonus.has-port .port-img {
+  animation: bonusBreath 1.6s ease-in-out infinite;
+  filter: saturate(1.08) brightness(1.04);
+}
+
 .seat-card .actor.has-port .port-img {
   animation: none !important;
   transform: none !important;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.015); }
 }
 @keyframes softUp {
   0% { transform: translateY(0); }
   40% { transform: translateY(-7px); }
   100% { transform: translateY(0); }
 }
-@keyframes walk {
-  0%,100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+@keyframes bonusBreath {
+  0%, 100% { transform: translateY(0) scale(1.01); }
+  50% { transform: translateY(-5px) scale(1.03); }
 }
+
 @media (max-width: 390px) {
   .stage.floor .actor.has-port .figure.port {
     width: 72px !important;
