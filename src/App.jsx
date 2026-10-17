@@ -306,7 +306,7 @@ export default function App() {
       const id = setTimeout(() => lockCol(my, c, next), lockAt(c, nCols, base, step, turbo));
       timers.current.push(id);
     }
-    const worst = lockAt(nCols - 1, nCols, base, step, turbo) + 700;
+    const worst = lockAt(nCols - 1, nCols, base, step, turbo) + 900;
     timers.current.push(setTimeout(() => {
       if (gen.current !== my || !pending.current || pending.current.my !== my) return;
       for (let c = 0; c < next.length; c++) lockCol(my, c, next);
@@ -498,7 +498,7 @@ export default function App() {
         <>
           <header className="top">
             <div>
-              <p className="kicker">CITV · build 43</p>
+              <p className="kicker">CITV · build 44</p>
               <h1>Masaya otur</h1>
             </div>
             <div className="meter"><em>CITV</em><b>{balance}</b></div>
