@@ -40,21 +40,28 @@
 .mood-bonuswin.has-port .port-img,
 .mood-c.has-port .port-img {
   animation: softUp .45s ease;
-  filter: saturate(1.12) brightness(1.06);
+  filter: saturate(1.14) brightness(1.08);
 }
 .mood-bonus.has-port .port-img {
-  animation: walk 1.6s ease-in-out infinite;
+  animation: walk 1.5s ease-in-out infinite;
+  filter: saturate(1.1) brightness(1.05);
+}
+.mood-collect.has-port .port-img {
+  animation: softUp .5s ease;
+  filter: saturate(1.16) brightness(1.1);
 }
 .seat-card .actor.has-port .port-img {
   animation: none !important;
   transform: none !important;
 }
 @keyframes softUp {
-  40% { transform: translateY(-6px); }
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-7px); }
+  100% { transform: translateY(0); }
 }
 @keyframes walk {
   0%,100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  50% { transform: translateY(-5px); }
 }
 @media (max-width: 390px) {
   .stage.floor .actor.has-port .figure.port {
