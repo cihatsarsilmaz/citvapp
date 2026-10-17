@@ -4,7 +4,7 @@ import Character from "./Character";
 
 export default function Gate({ game, onDone }) {
   const kit = kitOf(game);
-  const ms = Math.max(kit.ms || 900, 1680);
+  const ms = Math.min(Math.max(kit.ms || 700, 600), 900);
   useEffect(() => {
     const t = setTimeout(onDone, ms);
     return () => clearTimeout(t);

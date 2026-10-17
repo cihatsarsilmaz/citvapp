@@ -1,3 +1,4 @@
+/* Portre: lobi kartı dikdörtgen, sahne daire */
 .actor.has-port .figure.port {
   position: relative;
   overflow: hidden;
@@ -11,7 +12,8 @@
   object-position: 50% 18%;
   display: block;
   pointer-events: none;
-  transform-origin: 50% 80%;
+  transform-origin: 50% 78%;
+  animation: breathe 2.8s ease-in-out infinite;
 }
 .actor.has-port .figure.port .mark {
   position: absolute;
@@ -22,29 +24,134 @@
   line-height: 1;
   filter: drop-shadow(0 1px 2px #000);
 }
-.stage.floor .actor.has-port .figure.port {
-  width: 64px !important;
-  height: 80px !important;
-}
-.mood-c.has-port .port-img,
-.mood-win.has-port .port-img,
-.mood-bonuswin.has-port .port-img {
-  filter: saturate(1.18) brightness(1.08);
-}
-.mood-spin.has-port .port-img {
-  filter: saturate(1.08) contrast(1.04);
-}
+
+/* Sahne: yalnız daire — kare / kutu yok */
 .stage.floor .actor.has-port {
+  height: 112px;
+  margin: 4px 0 0;
+  display: grid;
+  place-items: center;
+  background: transparent !important;
   overflow: visible;
-  max-width: 100%;
+}
+.stage.floor .actor.has-port > .depth,
+.stage.floor .actor.has-port > .burst,
+.stage.floor .actor.has-port > .shock {
+  display: none !important;
 }
 .stage.floor .actor.has-port .figure.port {
-  max-width: 72px;
-  max-height: 90px;
+  width: 96px !important;
+  height: 96px !important;
+  max-width: 96px !important;
+  max-height: 96px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  background: #0a0610;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--c, #e8c56b) 50%, transparent),
+    0 8px 20px #0008;
+  /* kare dışı kes */
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 99%, transparent 100%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 99%, transparent 100%);
 }
+.stage.floor .actor.has-port .port-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 12%;
+  border-radius: 50%;
+}
+.stage.floor .actor.has-port .figure.port .mark {
+  display: none !important;
+}
+.stage.floor .actor.has-port .ring {
+  width: 108px;
+  height: 108px;
+  background: conic-gradient(
+    from -90deg,
+    color-mix(in srgb, var(--c) 90%, #ffe08a) calc(var(--bond, 0) * 360deg),
+    #ffffff10 0
+  );
+}
+.stage.floor .actor.has-port .aura {
+  width: 96px;
+  height: 96px;
+  inset: auto;
+  border-radius: 50%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Spin + miss: donuk */
+.mood-spin.has-port .port-img,
+.mood-miss.has-port .port-img {
+  animation: none !important;
+  transform: none !important;
+}
+.mood-miss.has-port .port-img {
+  filter: brightness(0.85);
+}
+
+.mood-win.has-port .port-img,
+.mood-bonuswin.has-port .port-img,
+.mood-c.has-port .port-img,
+.mood-collect.has-port .port-img {
+  animation: softUp .48s ease;
+  filter: saturate(1.12) brightness(1.06);
+}
+
+.mood-bonus.has-port .port-img {
+  animation: bonusBreath 1.6s ease-in-out infinite;
+  filter: saturate(1.08) brightness(1.04);
+}
+
+.seat-card .actor.has-port .port-img {
+  animation: none !important;
+  transform: none !important;
+}
+
+.bonus-stage .actor.has-port .figure.port,
+.bonus-walker .actor.has-port .figure.port,
+.entry-card .actor.has-port .figure.port {
+  width: 88px !important;
+  height: 88px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  margin: 0 auto;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 99%, transparent 100%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 99%, transparent 100%);
+}
+.bonus-stage .actor.has-port .figure.port .mark,
+.bonus-walker .actor.has-port .figure.port .mark,
+.entry-card .actor.has-port .figure.port .mark {
+  display: none !important;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.015); }
+}
+@keyframes softUp {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-7px); }
+  100% { transform: translateY(0); }
+}
+@keyframes bonusBreath {
+  0%, 100% { transform: translateY(0) scale(1.01); }
+  50% { transform: translateY(-5px) scale(1.03); }
+}
+
 @media (max-width: 390px) {
   .stage.floor .actor.has-port .figure.port {
-    width: 56px !important;
-    height: 70px !important;
+    width: 84px !important;
+    height: 84px !important;
   }
+  .stage.floor .actor.has-port .ring {
+    width: 96px;
+    height: 96px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .actor.has-port .port-img { animation: none !important; }
 }

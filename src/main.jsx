@@ -20,6 +20,9 @@ import "./lock.css";
 import "./reels.css";
 import "./polish.css";
 import "./feel.css";
+import "./salon.css";
+import "./board.css";
+import "./bonus.css";
 
 startPwa();
 

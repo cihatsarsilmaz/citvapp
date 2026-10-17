@@ -1,0 +1,154 @@
+/* Avrupa salon kartı. Sahne karakterine dokunmaz. */
+.grid.bite,
+.featured-row {
+  gap: 14px;
+}
+.seat-card {
+  position: relative;
+  min-height: 248px;
+  padding: 0;
+  border-radius: 18px;
+  border: 1px solid #d7b56a;
+  background: #100c09;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px #5a431c,
+    inset 0 0 0 6px #1a140c,
+    0 18px 32px #000c;
+}
+.seat-frame {
+  position: absolute;
+  inset: 7px;
+  border-radius: 12px;
+  border: 1px solid #e8c56b55;
+  pointer-events: none;
+  z-index: 6;
+}
+.seat-theme {
+  position: absolute;
+  z-index: 7;
+  top: 14px;
+  left: 14px;
+  max-width: calc(100% - 28px);
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #120c09cc;
+  border: 1px solid #e8c56b66;
+  color: #f4e2a8;
+  font: 700 9px/1 inherit;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.seat-card .actor,
+.seat-card .actor.look,
+.seat-card .actor.has-port {
+  position: absolute !important;
+  inset: 10px 10px 86px !important;
+  height: auto !important;
+  margin: 0 !important;
+  display: block !important;
+  overflow: hidden !important;
+  border-radius: 12px !important;
+  z-index: 1;
+}
+.seat-card .figure,
+.seat-card .figure.port,
+.seat-card .actor.look .figure {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  display: block !important;
+  transform: none !important;
+  animation: none !important;
+  filter: none !important;
+}
+.seat-card .port-img,
+.seat-card .actor.has-port .port-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center 22% !important;
+  border-radius: 12px;
+  display: block;
+  transform: none !important;
+  animation: none !important;
+  filter: none !important;
+}
+.seat-card .mark,
+.seat-card .actor .mark,
+.seat-card .actor.look .mark,
+.seat-card .figure.port .mark,
+.seat-card .ring,
+.seat-card .aura,
+.seat-card .burst,
+.seat-card .shock,
+.seat-card .cflash {
+  display: none !important;
+}
+.seat-plate {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 5;
+  display: grid;
+  gap: 2px;
+  padding: 28px 10px 8px;
+  border-radius: 0 0 12px 12px;
+  background: linear-gradient(180deg, transparent, #0c0907 42%);
+}
+.seat-plate .nm {
+  position: static;
+  margin: 0;
+  padding: 0;
+  background: none;
+  font-size: 15px;
+  letter-spacing: -0.03em;
+}
+.seat-plate .tag {
+  position: static;
+  color: #e8c56b;
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.seat-meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.seat-meta i {
+  font-style: normal;
+  font-size: 9px;
+  letter-spacing: .08em;
+  color: #f6edd8;
+  border: 1px solid #e8c56b44;
+  border-radius: 999px;
+  padding: 3px 6px;
+}
+.seat-play {
+  position: absolute;
+  z-index: 7;
+  right: 12px;
+  bottom: 14px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f4e2a8, #b8892c);
+  color: #1a1208;
+  font: 800 9px/1 inherit;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.featured-row .seat-card {
+  flex: 0 0 176px;
+  min-width: 176px;
+}
