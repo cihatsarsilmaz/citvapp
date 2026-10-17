@@ -554,9 +554,9 @@ export default function App() {
           </p>
           <p className="paystrip" aria-label="odeme tablosu">
             <span className="payhead">Ödeme</span>
-            <span>3 {PAY3}</span>
-            <span>4 {PAY4}</span>
-            <span>5 {PAY5}</span>
+            <span>3× {PAY3.theme}</span>
+            <span>4× {PAY4.theme}</span>
+            <span>5× {PAY5.theme}</span>
           </p>
           <div className="dock">
             <button className="key" onClick={() => bumpAnte(-1)} disabled={ante <= 1}>−</button>
