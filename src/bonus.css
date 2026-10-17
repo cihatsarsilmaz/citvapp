@@ -67,7 +67,56 @@
   box-shadow: 0 0 50px #1a7a5a66, inset 0 8px 20px #ffffff22;
   animation: riverShimmer 2.4s ease-in-out infinite;
 }
-.entry-card, .bonus-stage {
+
+/* Giriş kartı: gecikme yok, opacity 0 ile başlamaz — siyah ekran önlemi */
+.entry-card {
+  position: relative;
+  z-index: 5;
+  width: min(380px, 92vw);
+  padding: 24px 18px 18px;
+  border-radius: 24px;
+  border: 2px solid color-mix(in srgb, var(--c, #e8c56b) 70%, #fff);
+  background: linear-gradient(180deg, #1a1420ee, #0a0810f0);
+  text-align: center;
+  box-shadow: 0 0 40px color-mix(in srgb, var(--c, #e8c56b) 35%, transparent), 0 24px 50px #000c;
+  opacity: 1;
+  transform: none;
+}
+.entry-theme {
+  margin: 10px 0 0;
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #e8c56b;
+}
+.entry-card h2 {
+  margin: 6px 0 0;
+  font-size: 26px;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+.entry-who {
+  margin: 6px 0 0;
+  color: #d0c8d8;
+  font-size: 14px;
+}
+.entry-facts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.entry-facts span {
+  font-size: 11px;
+  letter-spacing: .06em;
+  color: #f0e8d0;
+  border: 1px solid #e8c56b44;
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+
+.bonus-stage {
   position: relative;
   z-index: 5;
   width: min(380px, 92vw);
@@ -78,15 +127,13 @@
   text-align: center;
   box-shadow: 0 0 48px #1a6a4a66, 0 24px 50px #000c;
   animation: cardIn .5s cubic-bezier(.2,1.1,.3,1) both;
-  animation-delay: .35s;
 }
 .bonus-walker {
   margin: 8px auto;
   animation: walkIn 1.1s ease both;
-  animation-delay: .55s;
 }
 .bonus-walker .actor.has-port .port-img {
-  animation: walk 1.5s ease-in-out infinite !important;
+  animation: bonusBreath 1.6s ease-in-out infinite !important;
 }
 .bonus-kicker {
   margin: 8px 0 0;
@@ -118,8 +165,8 @@
   border: 0;
   border-radius: 999px;
   padding: 14px 32px;
-  background: linear-gradient(180deg, #d0f090, #6a9a40);
-  color: #0a1408;
+  background: linear-gradient(180deg, #f0d878, #b8892c);
+  color: #1a1208;
   font: 800 15px/1 inherit;
   letter-spacing: .14em;
   text-transform: uppercase;
@@ -129,9 +176,6 @@
 .stage.bonus .reel-board {
   border-color: #8ad060;
   box-shadow: 0 0 24px #6a9a4055;
-}
-.stage.bonus .actor.has-port .port-img {
-  animation: walk 1.6s ease-in-out infinite;
 }
 @keyframes mistIn { to { opacity: 1; } }
 @keyframes mistOut { to { opacity: 0; transform: scale(1.2); } }
@@ -143,7 +187,7 @@
   0%,100% { filter: brightness(1); }
   50% { filter: brightness(1.12); }
 }
-@keyframes walk {
-  0%,100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+@keyframes bonusBreath {
+  0%,100% { transform: translateY(0) scale(1.01); }
+  50% { transform: translateY(-5px) scale(1.03); }
 }
