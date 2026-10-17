@@ -14,43 +14,58 @@
 }
 .bonus-mist {
   position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 40%, #ffffff33, #9aa8b033 40%, transparent 70%);
+  inset: -10%;
+  background:
+    radial-gradient(circle at 30% 40%, #ffffff44, transparent 45%),
+    radial-gradient(circle at 70% 55%, #c8d8e855, transparent 50%),
+    radial-gradient(circle at 50% 70%, #9aa8b033, transparent 40%);
   opacity: 0;
-  animation: mistIn .8s ease forwards;
+  animation: mistIn .9s ease forwards;
+  filter: blur(8px);
 }
-.ph-tunnel .bonus-mist { animation: mistOut .9s ease forwards; }
+.ph-tunnel .bonus-mist { animation: mistOut 1s ease forwards; }
 .bonus-tunnel {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 40% 70% at 50% 50%, transparent 0 28%, #0a1418 40%, #05100c 70%);
+    radial-gradient(ellipse 28% 55% at 50% 48%, transparent 0 22%, #0a1814 38%, #04100c 65%, #020806 100%);
   opacity: 0;
-  transform: scale(1.4);
+  transform: scale(1.55);
+  pointer-events: none;
 }
 .ph-tunnel .bonus-tunnel {
-  animation: tunnelIn 1s ease forwards;
+  animation: tunnelIn 1.1s cubic-bezier(.2,.7,.2,1) forwards;
 }
 .bonus-valley {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, #1a3a2a 0%, #0c2818 40%, #082018 70%, #061410 100%);
+    linear-gradient(180deg, #1e4a32 0%, #0e301c 35%, #0a2418 65%, #061410 100%);
   opacity: 0;
 }
 .ph-valley .bonus-valley {
-  animation: valleyIn .7s ease forwards;
+  animation: valleyIn .8s ease forwards;
+}
+.ph-valley .bonus-valley::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 42%;
+  background: linear-gradient(180deg, #2a5a40aa, transparent);
+  pointer-events: none;
 }
 .ph-valley .bonus-valley::after {
   content: "";
   position: absolute;
-  left: 10%;
-  right: 10%;
-  bottom: 18%;
-  height: 18%;
+  left: 8%;
+  right: 8%;
+  bottom: 14%;
+  height: 22%;
   border-radius: 50%;
-  background: linear-gradient(180deg, #1a6a5a, #0a3a32);
-  box-shadow: 0 0 40px #1a6a5a55;
+  background:
+    linear-gradient(180deg, #2a8a6a, #0e4a3a 60%, #083028);
+  box-shadow: 0 0 50px #1a7a5a66, inset 0 8px 20px #ffffff22;
+  animation: riverShimmer 2.4s ease-in-out infinite;
 }
 .entry-card, .bonus-stage {
   position: relative;
@@ -58,15 +73,20 @@
   width: min(380px, 92vw);
   padding: 24px 18px 18px;
   border-radius: 24px;
-  border: 2px solid #e8c56b;
-  background: linear-gradient(180deg, #1a2a18cc, #0a1408cc);
+  border: 2px solid #c8e080;
+  background: linear-gradient(180deg, #1a2e1acc, #0a160acc);
   text-align: center;
-  box-shadow: 0 0 40px #1a6a4a55, 0 24px 50px #000c;
-  animation: cardIn .45s cubic-bezier(.2,1.1,.3,1);
+  box-shadow: 0 0 48px #1a6a4a66, 0 24px 50px #000c;
+  animation: cardIn .5s cubic-bezier(.2,1.1,.3,1) both;
+  animation-delay: .35s;
 }
 .bonus-walker {
   margin: 8px auto;
-  animation: walkIn 1.2s ease both;
+  animation: walkIn 1.1s ease both;
+  animation-delay: .55s;
+}
+.bonus-walker .actor.has-port .port-img {
+  animation: walk 1.5s ease-in-out infinite !important;
 }
 .bonus-kicker {
   margin: 8px 0 0;
@@ -79,10 +99,11 @@
   margin: 4px 0 0;
   font-size: 28px;
   letter-spacing: -0.03em;
+  color: #f4ffe8;
 }
 .bonus-who, .bonus-sub {
   margin: 4px 0 0;
-  color: #e0f0c0;
+  color: #d8f0c0;
   font-style: normal;
 }
 .bonus-count {
@@ -90,14 +111,14 @@
   margin: 10px 0 0;
   font-size: 56px;
   color: #fff;
-  text-shadow: 0 0 18px #8ad060;
+  text-shadow: 0 0 22px #8ad060;
 }
 .entry-ok {
   margin-top: 16px;
   border: 0;
   border-radius: 999px;
   padding: 14px 32px;
-  background: linear-gradient(180deg, #c8f0a0, #6a9a40);
+  background: linear-gradient(180deg, #d0f090, #6a9a40);
   color: #0a1408;
   font: 800 15px/1 inherit;
   letter-spacing: .14em;
@@ -109,9 +130,20 @@
   border-color: #8ad060;
   box-shadow: 0 0 24px #6a9a4055;
 }
+.stage.bonus .actor.has-port .port-img {
+  animation: walk 1.6s ease-in-out infinite;
+}
 @keyframes mistIn { to { opacity: 1; } }
-@keyframes mistOut { to { opacity: 0; } }
+@keyframes mistOut { to { opacity: 0; transform: scale(1.2); } }
 @keyframes tunnelIn { to { opacity: 1; transform: scale(1); } }
 @keyframes valleyIn { to { opacity: 1; } }
-@keyframes walkIn { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes walkIn { from { transform: translateY(28px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes cardIn { from { transform: translateY(22px) scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes riverShimmer {
+  0%,100% { filter: brightness(1); }
+  50% { filter: brightness(1.12); }
+}
+@keyframes walk {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
