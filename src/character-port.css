@@ -25,12 +25,19 @@
   filter: drop-shadow(0 1px 2px #000);
 }
 
-/* Sahne: tam daire, kare taşma yok */
+/* Sahne: yalnız daire — kare / kutu yok */
 .stage.floor .actor.has-port {
   height: 112px;
   margin: 4px 0 0;
   display: grid;
   place-items: center;
+  background: transparent !important;
+  overflow: visible;
+}
+.stage.floor .actor.has-port > .depth,
+.stage.floor .actor.has-port > .burst,
+.stage.floor .actor.has-port > .shock {
+  display: none !important;
 }
 .stage.floor .actor.has-port .figure.port {
   width: 96px !important;
@@ -39,8 +46,13 @@
   max-height: 96px !important;
   border-radius: 50% !important;
   overflow: hidden !important;
-  background: #12080c;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c, #e8c56b) 55%, transparent);
+  background: #0a0610;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--c, #e8c56b) 50%, transparent),
+    0 8px 20px #0008;
+  /* kare dışı kes */
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 99%, transparent 100%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 99%, transparent 100%);
 }
 .stage.floor .actor.has-port .port-img {
   width: 100%;
@@ -50,14 +62,25 @@
   border-radius: 50%;
 }
 .stage.floor .actor.has-port .figure.port .mark {
-  display: none;
+  display: none !important;
 }
 .stage.floor .actor.has-port .ring {
   width: 108px;
   height: 108px;
+  background: conic-gradient(
+    from -90deg,
+    color-mix(in srgb, var(--c) 90%, #ffe08a) calc(var(--bond, 0) * 360deg),
+    #ffffff10 0
+  );
 }
 .stage.floor .actor.has-port .aura {
-  inset: 8px 28%;
+  width: 96px;
+  height: 96px;
+  inset: auto;
+  border-radius: 50%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* Spin + miss: donuk */
@@ -70,7 +93,6 @@
   filter: brightness(0.85);
 }
 
-/* Win / çarpan / collect: yalnız yukarı */
 .mood-win.has-port .port-img,
 .mood-bonuswin.has-port .port-img,
 .mood-c.has-port .port-img,
@@ -79,7 +101,6 @@
   filter: saturate(1.12) brightness(1.06);
 }
 
-/* Bonus: yavaş dikey nefes */
 .mood-bonus.has-port .port-img {
   animation: bonusBreath 1.6s ease-in-out infinite;
   filter: saturate(1.08) brightness(1.04);
@@ -90,7 +111,6 @@
   transform: none !important;
 }
 
-/* Bonus panel: daire */
 .bonus-stage .actor.has-port .figure.port,
 .bonus-walker .actor.has-port .figure.port,
 .entry-card .actor.has-port .figure.port {
@@ -99,11 +119,13 @@
   border-radius: 50% !important;
   overflow: hidden !important;
   margin: 0 auto;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 99%, transparent 100%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 99%, transparent 100%);
 }
 .bonus-stage .actor.has-port .figure.port .mark,
 .bonus-walker .actor.has-port .figure.port .mark,
 .entry-card .actor.has-port .figure.port .mark {
-  display: none;
+  display: none !important;
 }
 
 @keyframes breathe {
