@@ -95,73 +95,83 @@
 }
 @keyframes cpop {
   0% { transform: scale(.4) translateY(8px); opacity: 0; }
-  55% { transform: scale(1.18); }
+  55% { transform: scale(1.12); }
   100% { transform: none; opacity: 1; }
 }
 
-.mot-float .figure { animation: float 2.6s ease-in-out infinite; }
-.mot-strike .figure { animation: strike 2.2s ease-in-out infinite; }
-.mot-orbit .figure { animation: orbit 3.4s ease-in-out infinite; }
-.mot-glide .figure { animation: glide 2.8s ease-in-out infinite; }
-.mot-nod .figure { animation: nod 2.1s ease-in-out infinite; }
-.mot-sway .figure { animation: sway 2.4s ease-in-out infinite; }
-.mot-hover .figure { animation: hover 3s ease-in-out infinite; }
-.mot-pace .figure { animation: pace 2.2s ease-in-out infinite; }
-.mot-flicker .figure { animation: flicker 1.1s ease-in-out infinite; }
-.mot-root .figure { animation: root 3.2s ease-in-out infinite; }
-.mot-guard .figure { animation: guard 2.6s ease-in-out infinite; }
-.mot-roll .figure { animation: roll 2.3s ease-in-out infinite; }
-.mot-pulse .figure { animation: pulse 1.6s ease-in-out infinite; }
-.mot-still .figure { animation: still 3.8s ease-in-out infinite; }
-.mot-drift .figure { animation: drift 3.1s ease-in-out infinite; }
-.mot-wing .figure { animation: wing 1.8s ease-in-out infinite; }
-.mot-bounce .figure { animation: bounce 1.4s ease-in-out infinite; }
-.mot-tick .figure { animation: tick 1.2s steps(2) infinite; }
-
-@keyframes float { 50% { transform: translateY(-8px); } }
-@keyframes strike { 0%,70%,100% { transform: none; } 78% { transform: scale(1.12) rotate(-8deg); } 86% { transform: scale(1.04) rotate(6deg); } }
-@keyframes orbit { 50% { transform: translate(6px,-6px) rotate(8deg); } }
-@keyframes glide { 50% { transform: translateX(8px) rotate(-4deg); } }
-@keyframes nod { 40% { transform: rotate(-10deg); } 70% { transform: rotate(6deg); } }
-@keyframes sway { 50% { transform: rotate(7deg) translateX(3px); } }
-@keyframes hover { 50% { transform: translateY(-5px) scale(1.04); } }
-@keyframes pace { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
-@keyframes flicker { 40% { transform: scale(1.08) rotate(3deg); } 70% { transform: scale(.96); } }
-@keyframes root { 50% { transform: scale(1.05) translateY(3px); } }
-@keyframes guard { 50% { transform: translateY(-3px) scaleX(1.06); } }
-@keyframes roll { 50% { transform: rotate(-12deg) translateY(3px); } }
-@keyframes pulse { 50% { transform: scale(1.1); filter: drop-shadow(0 0 14px var(--c)); } }
-@keyframes still { 50% { transform: translateY(-2px); } }
-@keyframes drift { 50% { transform: translate(4px,-8px) rotate(4deg); } }
-@keyframes wing { 30% { transform: rotate(-14deg) scale(1.08); } 60% { transform: rotate(12deg) scale(1.06); } }
-@keyframes bounce { 40% { transform: translateY(-12px); } 60% { transform: translateY(2px); } }
-@keyframes tick { 50% { transform: rotate(8deg); } }
-
-.mood-spin .figure { animation-duration: .35s; }
-.mood-miss .figure { animation: missbow .4s ease; }
-.mood-win .figure { animation: winjump .5s ease; }
-.mood-c .figure { animation: croar .55s ease; }
-.mood-collect .figure { animation: gather .7s ease; }
-.mood-bonus .figure { animation: bonuslive 1.1s ease-in-out infinite; }
-.mood-bonuswin .figure { animation: bonuswin .6s ease; }
-@keyframes missbow { 40% { transform: rotate(12deg) translateY(6px) scale(.92); } }
-@keyframes winjump { 40% { transform: translateY(-16px) scale(1.2); } }
-@keyframes croar { 30% { transform: scale(1.3) rotate(-8deg); } 60% { transform: scale(1.14) rotate(8deg); } }
-@keyframes gather {
-  20% { transform: scale(.86) translateY(4px); }
-  55% { transform: scale(1.24) rotate(-8deg); }
-  100% { transform: scale(1.06); }
+/* Adım 1: tüm idle motion = sadece dikey nefes. X / rotate yasak. */
+.mot-float .figure,
+.mot-strike .figure,
+.mot-orbit .figure,
+.mot-glide .figure,
+.mot-nod .figure,
+.mot-sway .figure,
+.mot-hover .figure,
+.mot-pace .figure,
+.mot-flicker .figure,
+.mot-root .figure,
+.mot-guard .figure,
+.mot-roll .figure,
+.mot-pulse .figure,
+.mot-still .figure,
+.mot-drift .figure,
+.mot-wing .figure,
+.mot-bounce .figure,
+.mot-tick .figure {
+  animation: breathe 2.8s ease-in-out infinite;
 }
-@keyframes bonuslive {
-  0%,100% { transform: translateY(0) rotate(-4deg) scale(1.05); }
-  50% { transform: translateY(-12px) rotate(6deg) scale(1.14); }
+
+@keyframes breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.015); }
 }
-@keyframes bonuswin { 40% { transform: scale(1.32) rotate(-10deg); } }
+
+/* Spin: karakter donuk — makara döner */
+.mood-spin .figure {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Miss: hafif kararma, sallanma yok */
+.mood-miss .figure {
+  animation: missDim .4s ease;
+}
+@keyframes missDim {
+  0% { filter: brightness(1); }
+  40% { filter: brightness(0.82); transform: translateY(2px) scale(0.98); }
+  100% { filter: brightness(1); transform: none; }
+}
+
+/* Win / çarpan / collect: sadece yukarı */
+.mood-win .figure,
+.mood-bonuswin .figure {
+  animation: softRise .5s ease;
+}
+.mood-c .figure {
+  animation: softRise .55s ease;
+}
+.mood-collect .figure {
+  animation: softRise .6s ease;
+}
+@keyframes softRise {
+  0% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-8px) scale(1.04); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* Bonus: yavaş nefes, X yok */
+.mood-bonus .figure {
+  animation: bonusBreath 1.6s ease-in-out infinite;
+}
+@keyframes bonusBreath {
+  0%, 100% { transform: translateY(0) scale(1.02); }
+  50% { transform: translateY(-5px) scale(1.04); }
+}
 
 .stage.bonus .aura { animation: aurapulse .8s ease-in-out infinite; opacity: 1; }
 .stage.cmult .aura { background: radial-gradient(circle, #ffe08acc, transparent 70%); }
 .stage.collect .ring { filter: drop-shadow(0 0 12px #ffe08a); }
-@keyframes aurapulse { 50% { transform: scale(1.4); opacity: .95; } }
+@keyframes aurapulse { 50% { transform: scale(1.25); opacity: .95; } }
 
 .fx-rain::after, .fx-bolt::after, .fx-dust::after, .fx-bubble::after,
 .fx-coin::after, .fx-veil::after, .fx-moon::after, .fx-ember::after,
@@ -208,12 +218,9 @@
   border: 1px solid color-mix(in srgb, var(--c) 55%, #fff3);
   box-shadow: 0 6px 14px #0008, inset 0 1px 0 #fff2;
 }
-.card .actor.mot-float .mark { animation: float 3s ease-in-out infinite; }
-.card .actor.mot-bounce .mark { animation: bounce 1.8s ease-in-out infinite; }
-.card .actor.mot-pulse .mark { animation: pulse 2s ease-in-out infinite; }
-.card .actor.mot-flicker .mark { animation: flicker 1.4s ease-in-out infinite; }
-.card .actor.mot-wing .mark { animation: wing 2s ease-in-out infinite; }
-.card .actor.mot-sway .mark { animation: sway 2.6s ease-in-out infinite; }
+.card .actor .mark {
+  animation: none !important;
+}
 
 .gate .hero-wrap {
   position: relative;
