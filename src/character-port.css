@@ -1,3 +1,4 @@
+/* Portre: lobi kartı dikdörtgen, sahne daire */
 .actor.has-port .figure.port {
   position: relative;
   overflow: hidden;
@@ -23,12 +24,40 @@
   line-height: 1;
   filter: drop-shadow(0 1px 2px #000);
 }
-.stage.floor .actor.has-port .figure.port {
-  width: 92px !important;
-  height: 116px !important;
-}
+
+/* Sahne: tam daire, kare taşma yok */
 .stage.floor .actor.has-port {
-  height: 128px;
+  height: 112px;
+  margin: 4px 0 0;
+  display: grid;
+  place-items: center;
+}
+.stage.floor .actor.has-port .figure.port {
+  width: 96px !important;
+  height: 96px !important;
+  max-width: 96px !important;
+  max-height: 96px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  background: #12080c;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c, #e8c56b) 55%, transparent);
+}
+.stage.floor .actor.has-port .port-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 12%;
+  border-radius: 50%;
+}
+.stage.floor .actor.has-port .figure.port .mark {
+  display: none;
+}
+.stage.floor .actor.has-port .ring {
+  width: 108px;
+  height: 108px;
+}
+.stage.floor .actor.has-port .aura {
+  inset: 8px 28%;
 }
 
 /* Spin + miss: donuk */
@@ -61,6 +90,22 @@
   transform: none !important;
 }
 
+/* Bonus panel: daire */
+.bonus-stage .actor.has-port .figure.port,
+.bonus-walker .actor.has-port .figure.port,
+.entry-card .actor.has-port .figure.port {
+  width: 88px !important;
+  height: 88px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  margin: 0 auto;
+}
+.bonus-stage .actor.has-port .figure.port .mark,
+.bonus-walker .actor.has-port .figure.port .mark,
+.entry-card .actor.has-port .figure.port .mark {
+  display: none;
+}
+
 @keyframes breathe {
   0%, 100% { transform: translateY(0) scale(1); }
   50% { transform: translateY(-3px) scale(1.015); }
@@ -77,8 +122,12 @@
 
 @media (max-width: 390px) {
   .stage.floor .actor.has-port .figure.port {
-    width: 72px !important;
-    height: 90px !important;
+    width: 84px !important;
+    height: 84px !important;
+  }
+  .stage.floor .actor.has-port .ring {
+    width: 96px;
+    height: 96px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
