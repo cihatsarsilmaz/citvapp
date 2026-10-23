@@ -55,7 +55,7 @@ function hit(kind) {
     kind === "soft" ? 0.16 :
     kind === "win" ? 0.28 :
     kind === "body" ? 0.14 :
-    kind === "spin" ? 0.08 :
+    kind === "spin" ? 0.05 :
     kind === "bonus" ? 0.42 : 0.1;
   const n = Math.floor(rate * sec);
   const buf = ac.createBuffer(1, n, rate);
@@ -64,9 +64,9 @@ function hit(kind) {
     const t = i / rate;
     let s = 0;
     if (kind === "spin") {
-      const env = Math.exp(-t * 32);
-      s = Math.sin(2 * Math.PI * 180 * t) * 0.22;
-      d[i] = s * env * 0.28;
+      const env = Math.exp(-t * 48);
+      s = Math.sin(2 * Math.PI * 160 * t) * 0.16;
+      d[i] = s * env * 0.22;
     } else if (kind === "bonus") {
       const env = Math.exp(-t * 6) * Math.min(1, t * 8);
       s = Math.sin(2 * Math.PI * (220 + t * 180) * t) * 0.28 +
@@ -178,8 +178,8 @@ export function playSpinLoop(voice = "clack", bonus = false) {
   if (muted) return;
   stopSpinLoop();
   loadCandy();
-  const gap = bonus ? 320 : 380;
-  const gain = bonus ? 0.14 : 0.10;
+  const gap = bonus ? 420 : 480;
+  const gain = bonus ? 0.10 : 0.07;
   const tick = () => play("spin", gain);
   tick();
   spinTimer = setInterval(tick, gap);
