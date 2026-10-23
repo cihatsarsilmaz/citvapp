@@ -498,7 +498,7 @@ export default function App() {
         <>
           <header className="top">
             <div>
-              <p className="kicker">CITV · build 46</p>
+              <p className="kicker">CITV · build 47</p>
               <h1>Masaya otur</h1>
             </div>
             <div className="meter"><em>CITV</em><b>{balance}</b></div>
