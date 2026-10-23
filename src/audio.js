@@ -55,7 +55,8 @@ function hit(kind) {
     kind === "soft" ? 0.16 :
     kind === "win" ? 0.28 :
     kind === "body" ? 0.14 :
-    kind === "spin" ? 0.08 : 0.1;
+    kind === "spin" ? 0.08 :
+    kind === "bonus" ? 0.42 : 0.1;
   const n = Math.floor(rate * sec);
   const buf = ac.createBuffer(1, n, rate);
   const d = buf.getChannelData(0);
@@ -66,6 +67,11 @@ function hit(kind) {
       const env = Math.exp(-t * 32);
       s = Math.sin(2 * Math.PI * 180 * t) * 0.22;
       d[i] = s * env * 0.28;
+    } else if (kind === "bonus") {
+      const env = Math.exp(-t * 6) * Math.min(1, t * 8);
+      s = Math.sin(2 * Math.PI * (220 + t * 180) * t) * 0.28 +
+          Math.sin(2 * Math.PI * 330 * t) * 0.16;
+      d[i] = s * env * 0.45;
     } else if (kind === "candy") {
       const env = Math.exp(-t * 22);
       s = Math.sin(2 * Math.PI * 880 * t) * 0.35 +
@@ -194,8 +200,9 @@ export function playWin(tier = 1, voice = "clack") {
 export function playMiss(voice = "clack") { play("soft", 0.14); }
 export function playClick() { play("soft", 0.22); }
 export function playBonusIn(voice = "clack") {
-  play("win", 0.5);
-  play(kindOf(voice) === "candy" ? "candy" : "soft", 0.35, 0.1);
+  play("bonus", 0.52);
+  play("win", 0.38, 0.12);
+  play(kindOf(voice) === "candy" ? "candy" : "soft", 0.32, 0.22);
 }
 export function playJack(voice = "clack") {
   play("win", 0.58);
@@ -220,8 +227,9 @@ export function playCharacter(voice = "clack", mood = "win") {
     play("body", 0.42);
     play("soft", 0.28, 0.08);
   } else if (mood === "bonus") {
-    play("voice", 0.38);
-    play("soft", 0.28, 0.1);
+    play("bonus", 0.45);
+    play("voice", 0.32, 0.1);
+    play("soft", 0.22, 0.18);
   } else {
     play("voice", 0.32);
     play("soft", 0.24, 0.08);
