@@ -77,6 +77,14 @@
 .stage.rare {
   box-shadow: 0 0 48px #ffe08a88, inset 0 0 0 2px #ffe08a;
 }
+.bang:not(.quiet) {
+  animation: winFlash 0.6s ease;
+}
+@keyframes winFlash {
+  0% { transform: scale(1); text-shadow: 0 0 0 transparent; }
+  40% { transform: scale(1.12); text-shadow: 0 0 18px #ffe08a; }
+  100% { transform: scale(1); text-shadow: 0 0 0 transparent; }
+}
 @media (min-width: 900px) {
   .app.wide:has(.stage.floor) { max-width: 620px; margin: 0 auto; }
   .stage.floor { border-radius: 20px; min-height: calc(100dvh - 16px); margin: 8px; }
