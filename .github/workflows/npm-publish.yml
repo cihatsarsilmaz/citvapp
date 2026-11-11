@@ -55,7 +55,6 @@ jobs:
       - name: Verify GitHub Packages registry config
         run: |
           REGISTRY=$(jq -r '.publishConfig.registry // "undefined"' package.json)
-          PRIVATE=$(jq -r '.private // "true"' package.json)
           
           if [[ $REGISTRY == *"npm.pkg.github.com"* ]] || [[ $REGISTRY == "undefined" ]]; then
             echo "✅ Registry configuration: OK (default or configured)"
@@ -63,7 +62,7 @@ jobs:
             echo "⚠️ Registry mismatch. Found: $REGISTRY"
           fi
           
-          if [[ $PRIVATE == "false" ]]; then
+          if jq -e '.private == false' package.json >/dev/null; then
             echo "✅ Package is public (private: false)"
           else
             echo "❌ Package must be public for publishing (private: false)"
@@ -136,7 +135,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create success release comment
+      - name: Write publish success summary
         if: success()
         uses: actions/github-script@v7
         with:
@@ -146,81 +145,71 @@ jobs:
             const packageVersion = '${{ needs.validate.outputs.package_version }}';
             const tag = release.tag_name;
             
-            github.rest.repos.createReleaseComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.id,
-              body: `✅ **Paket başarıyla GitHub Packages'a yayınlandı!**
+            await core.summary.addRaw(`✅ **Paket başarıyla GitHub Packages'a yayınlandı!**
 
-📦 **Paket Bilgileri:**
-- **Adı:** \`${packageName}\`
-- **Sürüm:** \`${packageVersion}\`
-- **Registry:** npm.pkg.github.com
-- **Release Tag:** \`${tag}\`
-- **Yayın Zamanı:** ${{ github.event.release.published_at }}
+            📦 **Paket Bilgileri:**
+            - **Adı:** \`${packageName}\`
+            - **Sürüm:** \`${packageVersion}\`
+            - **Registry:** npm.pkg.github.com
+            - **Release Tag:** \`${tag}\`
+            - **Yayın Zamanı:** ${{ github.event.release.published_at }}
 
-📥 **Kurulum Komutu:**
-\`\`\`bash
-npm install ${packageName}@${packageVersion}
-\`\`\`
+            📥 **Kurulum Komutu:**
+            \`\`\`bash
+            npm install ${packageName}@${packageVersion}
+            \`\`\`
 
-🔗 **Hızlı Erişim:**
-- 📦 [GitHub Packages](${{ github.server_url }}/${{ github.repository }}/packages)
-- 📋 [Release Sayfası](${{ github.event.release.html_url }})
-- 🔧 [Workflow Detayları](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            🔗 **Hızlı Erişim:**
+            - 📦 [GitHub Packages](${{ github.server_url }}/${{ github.repository }}/packages)
+            - 📋 [Release Sayfası](${{ github.event.release.html_url }})
+            - 🔧 [Workflow Detayları](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
-👤 **Yayınlayan:** @${{ github.actor }}
-🔑 **Commit:** \`${{ github.sha }}\``
-            });
+            👤 **Yayınlayan:** @${{ github.actor }}
+            🔑 **Commit:** \`${{ github.sha }}\``).write();
 
-      - name: Publish failure notification
+      - name: Write publish failure summary
         if: failure()
         uses: actions/github-script@v7
         with:
           script: |
             const release = context.payload.release;
             
-            github.rest.repos.createReleaseComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.id,
-              body: `❌ **GitHub Packages yayın işlemi başarısız oldu!**
+            await core.summary.addRaw(`❌ **GitHub Packages yayın işlemi başarısız oldu!**
 
-📋 **Hata Bilgileri:**
-- **Sürüm:** \`${{ github.event.release.tag_name }}\`
-- **Workflow ID:** ${{ github.run_id }}
-- **Çalışan:** @${{ github.actor }}
+            📋 **Hata Bilgileri:**
+            - **Sürüm:** \`${release.tag_name}\`
+            - **Workflow ID:** ${{ github.run_id }}
+            - **Çalışan:** @${{ github.actor }}
 
-🔍 **Sorun Giderme Rehberi:**
+            🔍 **Sorun Giderme Rehberi:**
 
-1. **[Workflow Loglarını İncele](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})**
-   
-2. **Genel Kontroller:**
-   - \`npm ci\` başarıyla tamamlandı mı?
-   - \`npm run build\` (varsa) başarılı oldu mu?
-   - \`npm test\` (varsa) geçti mi?
+            1. **[Workflow Loglarını İncele](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})**
 
-3. **package.json Yapılandırması:**
-   - ✅ Scope formatı: \`@cihatsarsilmaz/citvapp\`
-   - ✅ Private flag: \`false\` olmalı
-   - ✅ publishConfig.registry: \`https://npm.pkg.github.com\` (isteğe bağlı)
+            2. **Genel Kontroller:**
+               - \`npm ci\` başarıyla tamamlandı mı?
+               - \`npm run build\` (varsa) başarılı oldu mu?
+               - \`npm test\` (varsa) geçti mi?
 
-4. **GitHub Packages İzinleri:**
-   - ✅ Repository → Settings → Actions → General
-   - ✅ Workflow permissions: "Read and write" etkin mi?
-   - ✅ GITHUB_TOKEN izinleri: packages:write aktif mi?
+            3. **package.json Yapılandırması:**
+               - ✅ Scope formatı: \`@cihatsarsilmaz/citvapp\`
+               - ✅ Private flag: \`false\` olmalı
+               - ✅ publishConfig.registry: \`https://npm.pkg.github.com\` (isteğe bağlı)
 
-5. **Diğer Seçenekler:**
-   - Node.js versiyonunu doğrula (20.x+)
-   - npm cache temizle: \`npm cache clean --force\`
-   - .npmrc dosyasını kontrol et
+            4. **GitHub Packages İzinleri:**
+               - ✅ Repository → Settings → Actions → General
+               - ✅ Workflow permissions: "Read and write" etkin mi?
+               - ✅ GITHUB_TOKEN izinleri: packages:write aktif mi?
 
-🔗 **Faydalı Linkler:**
-- [GitHub Packages Dokümantasyonu](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry)
-- [Workflow Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            5. **Diğer Seçenekler:**
+               - Node.js versiyonunu doğrula (20.x+)
+               - npm cache temizle: \`npm cache clean --force\`
+               - .npmrc dosyasını kontrol et
 
-💡 **Sonraki Adım:** Hataları düzelt ve yeni bir release yayınla.`
-            });
+            🔗 **Faydalı Linkler:**
+            - [GitHub Packages Dokümantasyonu](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry)
+            - [Workflow Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            💡 **Sonraki Adım:** Hataları düzelt ve yeni bir release yayınla.`).write();
 
   quality-report:
     name: Quality Report & Analytics
@@ -288,7 +277,7 @@ npm install ${packageName}@${packageVersion}
           echo ""
           echo "✨ Workflow Özellikleri:"
           echo "  ✅ Pre-flight validation"
-          echo "  ✅ Otomatik release comments"
+          echo "  ✅ Otomatik yayın özeti"
           echo "  ✅ GitHub Step Summary"
           echo "  ✅ Hata diagnostics"
           echo "  ✅ Clean Unicode (no hidden characters)"
