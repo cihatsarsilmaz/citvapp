@@ -1,0 +1,31 @@
+name: Validate npm publish workflow syntax
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/npm-publish.yml'
+      - '.github/workflows/validate-npm-publish.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse YAML and assert release-only publication
+        shell: bash
+        run: |
+          ruby -rpsych -e '
+            file = ".github/workflows/npm-publish.yml"
+            doc = Psych.safe_load(File.read(file), permitted_classes: [], aliases: false)
+            abort "Not a workflow mapping" unless doc.is_a?(Hash)
+            events = doc.fetch("on") { doc.fetch(true, nil) }
+            abort "Publish must be release-only" unless events.is_a?(Hash) && events.keys == ["release"]
+            abort "Missing published release trigger" unless events.fetch("release").fetch("types") == ["published"]
+            jobs = doc.fetch("jobs")
+            abort "Missing publish job" unless jobs.key?("build-and-publish")
+            puts "YAML parsed; release-only publication trigger verified"
+          '
