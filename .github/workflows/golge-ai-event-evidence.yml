@@ -1,0 +1,43 @@
+name: GOLGE AI Event Evidence
+on:
+  push:
+    branches: [Kryptocasino, main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: golge-ai-evidence-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Record event evidence
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          {
+            echo "## GÖLGE AI event evidence"
+            echo "- Repository: ${REPOSITORY}"
+            echo "- Event: ${EVENT_NAME}"
+            echo "- Ref: ${REF_NAME}"
+            echo "- Commit: \`${COMMIT_SHA}\`"
+            echo "- Run: ${RUN_URL}"
+            if [ -n "${PR_NUMBER}" ]; then
+              echo "- PR: #${PR_NUMBER} (${PR_URL})"
+            fi
+            echo "- Note: This records an event, not build/test/deployment success."
+          } >> "$GITHUB_STEP_SUMMARY"
