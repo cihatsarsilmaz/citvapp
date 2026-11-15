@@ -132,95 +132,22 @@ jobs:
           echo "  Registry: $(npm pkg get publishConfig.registry || 'using default')"
 
       - name: Publish to GitHub Packages
+        id: publish
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create success release comment
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const release = context.payload.release;
-            const packageName = '${{ needs.validate.outputs.package_name }}';
-            const packageVersion = '${{ needs.validate.outputs.package_version }}';
-            const tag = release.tag_name;
-            
-            github.rest.repos.createReleaseComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.id,
-              body: `✅ **Paket başarıyla GitHub Packages'a yayınlandı!**
-
-📦 **Paket Bilgileri:**
-- **Adı:** \`${packageName}\`
-- **Sürüm:** \`${packageVersion}\`
-- **Registry:** npm.pkg.github.com
-- **Release Tag:** \`${tag}\`
-- **Yayın Zamanı:** ${{ github.event.release.published_at }}
-
-📥 **Kurulum Komutu:**
-\`\`\`bash
-npm install ${packageName}@${packageVersion}
-\`\`\`
-
-🔗 **Hızlı Erişim:**
-- 📦 [GitHub Packages](${{ github.server_url }}/${{ github.repository }}/packages)
-- 📋 [Release Sayfası](${{ github.event.release.html_url }})
-- 🔧 [Workflow Detayları](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-👤 **Yayınlayan:** @${{ github.actor }}
-🔑 **Commit:** \`${{ github.sha }}\``
-            });
-
-      - name: Publish failure notification
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const release = context.payload.release;
-            
-            github.rest.repos.createReleaseComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.id,
-              body: `❌ **GitHub Packages yayın işlemi başarısız oldu!**
-
-📋 **Hata Bilgileri:**
-- **Sürüm:** \`${{ github.event.release.tag_name }}\`
-- **Workflow ID:** ${{ github.run_id }}
-- **Çalışan:** @${{ github.actor }}
-
-🔍 **Sorun Giderme Rehberi:**
-
-1. **[Workflow Loglarını İncele](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})**
-   
-2. **Genel Kontroller:**
-   - \`npm ci\` başarıyla tamamlandı mı?
-   - \`npm run build\` (varsa) başarılı oldu mu?
-   - \`npm test\` (varsa) geçti mi?
-
-3. **package.json Yapılandırması:**
-   - ✅ Scope formatı: \`@cihatsarsilmaz/citvapp\`
-   - ✅ Private flag: \`false\` olmalı
-   - ✅ publishConfig.registry: \`https://npm.pkg.github.com\` (isteğe bağlı)
-
-4. **GitHub Packages İzinleri:**
-   - ✅ Repository → Settings → Actions → General
-   - ✅ Workflow permissions: "Read and write" etkin mi?
-   - ✅ GITHUB_TOKEN izinleri: packages:write aktif mi?
-
-5. **Diğer Seçenekler:**
-   - Node.js versiyonunu doğrula (20.x+)
-   - npm cache temizle: \`npm cache clean --force\`
-   - .npmrc dosyasını kontrol et
-
-🔗 **Faydalı Linkler:**
-- [GitHub Packages Dokümantasyonu](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry)
-- [Workflow Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-💡 **Sonraki Adım:** Hataları düzelt ve yeni bir release yayınla.`
-            });
+      - name: Record publish outcome in job summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## GitHub Packages publish"
+            echo "- Package: ${{ needs.validate.outputs.package_name }}"
+            echo "- Version: ${{ needs.validate.outputs.package_version }}"
+            echo "- Publish step outcome: ${{ steps.publish.outcome }}"
+            echo "- Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   quality-report:
     name: Quality Report & Analytics
