@@ -1,0 +1,11 @@
+node_modules
+.data
+.git
+.github
+.skywork
+artifacts
+android/.gradle
+android/app/build
+*.log
+*.apk
+*.aab

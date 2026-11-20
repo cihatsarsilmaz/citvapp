@@ -72,14 +72,14 @@ function betSafe(wager) {
   return Math.max(0, wager);
 }
 
-export function book(L, wager, paid, gifted) {
-  const next = L && L.day === dayKey() ? { ...L } : emptyLedger();
+export function book(L, wager, paid, gifted, { now = Date.now(), persist = true } = {}) {
+  const next = L && L.day === dayKey(now) ? { ...L } : { day: dayKey(now), in: 0, out: 0, lastGift: 0, gifts: 0 };
   next.in += wager;
   next.out += paid;
   if (gifted) {
-    next.lastGift = Date.now();
+    next.lastGift = now;
     next.gifts = (next.gifts || 0) + 1;
   }
-  saveLedger(next);
+  if (persist) saveLedger(next);
   return next;
 }

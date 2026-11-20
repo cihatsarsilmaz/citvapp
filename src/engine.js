@@ -1,4 +1,4 @@
-import { WILD, STAR, PAY3, PAY4, PAY5 } from "./paytable";
+import { WILD, STAR, PAY3, PAY4, PAY5 } from "./paytable.js";
 
 export const COLS = 5;
 export const ROWS = 3;
