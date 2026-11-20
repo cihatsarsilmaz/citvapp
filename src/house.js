@@ -169,6 +169,9 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
   }
 
   const wager = session.inBonus ? 0 : bet;
+  // Günlük tavan tüm spinleri kapsar: oyunun tek RTP denetleyicisi burası.
+  // Yalnızca ücretli spinlere uygulanırsa bedava spin kazancı sınırsız kalır
+  // ve gerçekleşen RTP %500'ün üzerine çıkar.
   if (ctx.ledger) paid = clipDay(ctx.ledger, wager, paid);
 
   let roar = 1;
@@ -181,10 +184,14 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
   }
   if (rare) roar = Math.max(8, Math.round(paid / Math.max(1, bet)));
 
-  const extra = session.inBonus && (evaled.stars || 0) >= 2 ? 1 : 0;
+  // Her bonus spini bir hak harcar. Yalnızca 4+ yıldız nadir bir yeniden
+  // tetikleme verir; 2 yıldız artık hakkı geri kazandırmaz, aksi halde
+  // 10 spinlik tur sonsuza kadar zincirleniyordu.
+  const retrigger = session.inBonus && (evaled.stars || 0) >= 4 ? 1 : 0;
+  const extra = retrigger;
   const enterBonus = !session.inBonus && (session.bonusLock || 0) <= 0 && (evaled.stars || 0) >= 2;
   let bonusLeft = session.inBonus
-    ? Math.max(0, (session.bonusLeft || 0) - 1 + extra)
+    ? Math.max(0, (session.bonusLeft || 0) - 1) + retrigger
     : enterBonus ? 10 : 0;
   if (bonusLeft > 14) bonusLeft = 14;
   const inBonus = bonusLeft > 0;
@@ -214,7 +221,9 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
       dry: won ? 0 : (session.dry || 0) + 1,
       bonusLeft,
       inBonus,
-      bonusLock: enterBonus ? 0 : inBonus ? 0 : Math.max(0, (session.bonusLock || 0) - 1) + (session.inBonus && !inBonus ? 3 : 0),
+      // Tur bittikten sonra 40 spin bekleme: 2+ yıldız spinlerin %56-71'inde
+      // geldiği için 3 spinlik kilit bonusun sürekli yeniden açılmasına yetiyordu.
+      bonusLock: enterBonus ? 0 : inBonus ? 0 : Math.max(0, (session.bonusLock || 0) - 1) + (session.inBonus && !inBonus ? 40 : 0),
       bond: tick.bond,
     },
   };
