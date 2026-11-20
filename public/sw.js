@@ -1,5 +1,5 @@
 /* CITV Slot — servis çalıştırıcı */
-const CACHE = "citv-pwa-v40";
+const CACHE = "citv-pwa-v24";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -26,9 +26,13 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
-  if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(fetch(req, { cache: "no-store" }));
+    return;
+  }
+  if (req.method !== "GET") return;
   const dest = req.destination;
   const isPage =
     dest === "document" ||
