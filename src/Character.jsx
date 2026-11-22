@@ -3,7 +3,7 @@ import { BOND_MAX } from "./bond";
 import { figureOf } from "./figures";
 import { portraitOf } from "./portraits";
 
-export default function Character({ game, mood, bond = 0 }) {
+export default function Character({ game, mood, bond = 0, onPoke }) {
   if (!game) return null;
   const m = mood || "idle";
   const fig = figureOf(game);
@@ -12,9 +12,19 @@ export default function Character({ game, mood, bond = 0 }) {
   const portrait = portraitOf(game.id);
   return (
     <div
-      className={`actor fig seat d7 look mot-${game.motion || "sway"} mood-${m} id-${game.id}${portrait ? " has-port" : ""}`}
-      aria-hidden="true"
-      title={fig.story}
+      className={`actor fig seat d7 look mot-${game.motion || "sway"} mood-${m} id-${game.id}${portrait ? " has-port" : ""}${onPoke ? " pokeable" : ""}`}
+      aria-hidden={onPoke ? undefined : "true"}
+      role={onPoke ? "button" : undefined}
+      tabIndex={onPoke ? 0 : undefined}
+      aria-label={onPoke ? `${game.character} ile etkileşim` : undefined}
+      onClick={onPoke}
+      onKeyDown={onPoke ? (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onPoke();
+        }
+      } : undefined}
+      title={onPoke ? `${fig.story} · dokun` : fig.story}
     >
       <i className="depth" />
       <i className="ring" style={{ "--bond": fill }} />

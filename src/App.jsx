@@ -367,6 +367,23 @@ export default function App() {
     }
   }
 
+  // Sahne etkileşimi: karaktere dokununca oyunun kendi tınısıyla tepki verir.
+  const pokeT = useRef(0);
+  function pokeCharacter() {
+    if (boot || entry || bonusHold) return;
+    wakeAudio();
+    const roll = Math.random();
+    const pick = roll < 0.34 ? "c" : roll < 0.67 ? "win" : "bonus";
+    setMood(pick);
+    playCharacter(kit.voice, pick);
+    clearTimeout(pokeT.current);
+    pokeT.current = setTimeout(() => {
+      setMood((current) => (current === pick
+        ? (live.current.session && live.current.session.inBonus ? "bonus" : "idle")
+        : current));
+    }, 900);
+  }
+
   function nudgeStage() {
     if (boot || entry || bonusHold) return;
     const p = pending.current;
@@ -574,7 +591,7 @@ export default function App() {
           <div className="bevel" />
           <div className="lamps">{Array.from({ length: lamps }, (_, i) => <i key={i} />)}</div>
           <Jackpot kit={kit} vault={session.vault} hit={!!last?.jack} />
-          <Character game={game} mood={mood} bond={session.bond || 0} />
+          <Character game={game} mood={mood} bond={session.bond || 0} onPoke={pokeCharacter} />
           <div className={"window five canvas " + (spinning ? "spin" : "") + (showWin ? " win" : "")} onPointerDown={nudgeStage}>
             <Board grid={grid} hits={hitSet} spinning={spinning} />
           </div>
