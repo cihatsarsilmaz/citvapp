@@ -191,3 +191,11 @@
   0%,100% { transform: translateY(0) scale(1.01); }
   50% { transform: translateY(-5px) scale(1.03); }
 }
+
+.bonus-tap {
+  margin: 6px 0 0;
+  font-size: 12px;
+  letter-spacing: .04em;
+  color: #bfe89a;
+  opacity: .85;
+}
