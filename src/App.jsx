@@ -19,6 +19,7 @@ import Seat from "./Seat";
 import Gate from "./Gate";
 import Jackpot from "./Jackpot";
 import Joy from "./Joy";
+import { lineFor } from "./lines";
 import Admin from "./AdminSecure";
 import Board from "./Board";
 import BonusFloor from "./BonusFloor";
@@ -54,6 +55,7 @@ export default function App() {
   const [turbo, setTurbo] = useState(false);
   const [mute, setMute] = useState(() => { try { return localStorage.getItem("citv-muted") === "1"; } catch { return false; } });
   const [mood, setMood] = useState("idle");
+  const [line, setLine] = useState("");
   const [joy, setJoy] = useState(null);
   const [recents, setRecents] = useState(loadRecents);
   const [held, setHeld] = useState([]);
@@ -248,6 +250,8 @@ export default function App() {
         playWin(result.cMult > 1 ? 3 : 2, k.voice);
         tapWin(result.cMult > 1 ? 2 : 1);
       } else if (!result.bonus && !result.collect) playMiss(k.voice);
+      if (result.bonus) sayLine("bonus");
+      else if (paid > 0 && result.cMult > 1) sayLine("c");
       if (autoRef.current && gen.current === my && !result.bonus) {
         const gap = result.session.inBonus ? 420 : turboRef.current ? 220 : 380;
         armAuto(gap);
@@ -367,6 +371,16 @@ export default function App() {
     }
   }
 
+  // Karakter repliği: büyük kazanç, bonus girişi ve dokunmada kısa bir balon.
+  const lineT = useRef(0);
+  function sayLine(mood) {
+    const text = lineFor(game, mood);
+    if (!text) return;
+    setLine(text);
+    clearTimeout(lineT.current);
+    lineT.current = setTimeout(() => setLine(""), 1700);
+  }
+
   // Sahne etkileşimi: karaktere dokununca oyunun kendi tınısıyla tepki verir.
   const pokeT = useRef(0);
   function pokeCharacter() {
@@ -375,6 +389,7 @@ export default function App() {
     const roll = Math.random();
     const pick = roll < 0.34 ? "c" : roll < 0.67 ? "win" : "bonus";
     setMood(pick);
+    sayLine(pick);
     playCharacter(kit.voice, pick);
     clearTimeout(pokeT.current);
     pokeT.current = setTimeout(() => {
@@ -591,7 +606,7 @@ export default function App() {
           <div className="bevel" />
           <div className="lamps">{Array.from({ length: lamps }, (_, i) => <i key={i} />)}</div>
           <Jackpot kit={kit} vault={session.vault} hit={!!last?.jack} />
-          <Character game={game} mood={mood} bond={session.bond || 0} onPoke={pokeCharacter} />
+          <Character game={game} mood={mood} bond={session.bond || 0} onPoke={pokeCharacter} line={line} />
           <div className={"window five canvas " + (spinning ? "spin" : "") + (showWin ? " win" : "")} onPointerDown={nudgeStage}>
             <Board grid={grid} hits={hitSet} spinning={spinning} />
           </div>

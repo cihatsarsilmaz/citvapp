@@ -3,7 +3,7 @@ import { BOND_MAX } from "./bond";
 import { figureOf } from "./figures";
 import { portraitOf } from "./portraits";
 
-export default function Character({ game, mood, bond = 0, onPoke }) {
+export default function Character({ game, mood, bond = 0, onPoke, line }) {
   if (!game) return null;
   const m = mood || "idle";
   const fig = figureOf(game);
@@ -12,7 +12,7 @@ export default function Character({ game, mood, bond = 0, onPoke }) {
   const portrait = portraitOf(game.id);
   return (
     <div
-      className={`actor fig seat d7 look mot-${game.motion || "sway"} mood-${m} id-${game.id}${portrait ? " has-port" : ""}${onPoke ? " pokeable" : ""}`}
+      className={`actor fig seat d7 look mot-${game.motion || "sway"} mood-${m} id-${game.id}${portrait ? " has-port" : ""}${onPoke ? " pokeable" : ""}${line ? " speaking" : ""}`}
       aria-hidden={onPoke ? undefined : "true"}
       role={onPoke ? "button" : undefined}
       tabIndex={onPoke ? 0 : undefined}
@@ -50,6 +50,7 @@ export default function Character({ game, mood, bond = 0, onPoke }) {
           <b className="mark body" data-mark={fig.mark}>{game.emoji}</b>
         </span>
       )}
+      {line && <em className="say" role="status">{line}</em>}
       {m === "c" && <em className="cflash">×</em>}
     </div>
   );
