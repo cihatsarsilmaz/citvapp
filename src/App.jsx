@@ -2,23 +2,25 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { GAMES } from "./games";
 import { playTheme, stopTheme, playSpinLoop, stopSpinLoop, playClash, playWin, playMiss, playClick, playBonusIn, playJack, playExtra, setMuted, wakeAudio, startAmbient, stopAmbient, playAnticipate, playCharacter } from "./audio";
 import { UNIT, PAY3, PAY4, PAY5 } from "./paytable";
-import { spinGrid, applyHouse, emptySession, plan, readStyle } from "./house";
-import { evalLines, LOW } from "./engine";
-import { loadState, saveState, topUp } from "./store";
-import { getMode, LIVE } from "./coin";
+import { emptySession } from "./house";
+import { LOW } from "./engine";
+import { api, submitSpin } from "./api";
+import { useAuth } from "./Auth";
+import Account from "./Account";
 import { tap, tapSpin, tapTick, tapLock, tapWin } from "./feel";
 import { kitOf } from "./kits";
 import { BANDS, inBand, featuredGames, FEATURED } from "./class";
 import { loadRecents, pushRecent } from "./recents";
 import { lockAt, starsLocked, spinTempo } from "./pace";
 import { holdKeys } from "./bond";
-import { loadLedger, book } from "./ledger";
+
 import Character from "./Character";
 import Seat from "./Seat";
 import Gate from "./Gate";
 import Jackpot from "./Jackpot";
 import Joy from "./Joy";
-import Admin from "./Admin";
+import { lineFor } from "./lines";
+import Admin from "./AdminSecure";
 import Board from "./Board";
 import BonusFloor from "./BonusFloor";
 import Entry from "./Entry";
@@ -28,12 +30,14 @@ const rnd = () => POOL[Math.floor(Math.random() * POOL.length)];
 function blank(cols = 5, rows = 3) {
   return Array.from({ length: cols }, () => Array.from({ length: rows }, rnd));
 }
-const START = 12500;
-const TOPUP = 2500;
 const BITE = 18;
-const saved = loadState({ balance: START, session: emptySession(), muted: false });
+
 
 export default function App() {
+  const auth = useAuth();
+  const [gameReady, setGameReady] = useState(false);
+  const [spinError, setSpinError] = useState("");
+  const [stateError, setStateError] = useState("");
   const [hash, setHash] = useState(typeof location !== "undefined" ? location.hash : "");
   const [game, setGame] = useState(null);
   const [boot, setBoot] = useState(false);
@@ -45,13 +49,13 @@ export default function App() {
   const [spinning, setSpinning] = useState(false);
   const [ante, setAnte] = useState(1);
   const [last, setLast] = useState(null);
-  const [balance, setBalance] = useState(saved.balance);
-  const [session, setSession] = useState(saved.session);
+  const [balance, setBalance] = useState(auth.user.balance);
+  const [session, setSession] = useState(emptySession);
   const [auto, setAuto] = useState(false);
   const [turbo, setTurbo] = useState(false);
-  const [mute, setMute] = useState(saved.muted);
-  const [mode, setModeTick] = useState(getMode());
+  const [mute, setMute] = useState(() => { try { return localStorage.getItem("citv-muted") === "1"; } catch { return false; } });
   const [mood, setMood] = useState("idle");
+  const [line, setLine] = useState("");
   const [joy, setJoy] = useState(null);
   const [recents, setRecents] = useState(loadRecents);
   const [held, setHeld] = useState([]);
@@ -66,13 +70,11 @@ export default function App() {
   const pending = useRef(null);
   const autoCtl = useRef(null);
   const taps = useRef(0);
-  const ledger = useRef(loadLedger());
-  const balRef = useRef(saved.balance);
+  const balRef = useRef(auth.user.balance);
   const live = useRef({});
-  live.current = { game, balance, ante, session, ledger: ledger.current };
+  live.current = { game, balance, ante, session, boot, entry, bonusHold, hash };
   autoRef.current = auto;
   turboRef.current = turbo;
-  const isLive = mode === LIVE;
   const kit = kitOf(game);
   const cols = kit.cols || 5;
   const rows = kit.rows || 3;
@@ -103,17 +105,26 @@ export default function App() {
     };
   }, []);
   useEffect(() => {
-    balRef.current = balance;
-    saveState({ balance, session, muted: mute, granted: true });
-  }, [balance, session, mute]);
+    try { localStorage.setItem("citv-muted", mute ? "1" : "0"); } catch {}
+  }, [mute]);
   useEffect(() => {
-    if (isLive) return;
-    if (balance < 20) {
-      const n = topUp(balRef.current, TOPUP);
-      balRef.current = n;
-      setBalance(n);
+    let active = true;
+    api("/game-state").then(async (state) => {
+      const recovered = await submitSpin.recover(auth.user.id);
+      if (recovered) state = { ...state, session: recovered.result.session, user: { ...state.user, balance: recovered.balance }, lastSpin: recovered };
+      if (!active) return;
+      setSession(state.session);
+      writeBal(state.user.balance);
+      setGameReady(true);
+    }).catch((error) => { if (active) setStateError(error.message); });
+    return () => { active = false; };
+  }, [auth.user.id]);
+  useEffect(() => {
+    if (Number.isFinite(auth.user.balance) && !busy.current) {
+      balRef.current = auth.user.balance;
+      setBalance(auth.user.balance);
     }
-  }, [balance, isLive]);
+  }, [auth.user.balance]);
   useEffect(() => {
     const cap = kit.anteMax || 10;
     setAnte((n) => Math.min(cap, Math.max(1, n)));
@@ -163,7 +174,6 @@ export default function App() {
   useEffect(() => {
     const onHash = () => {
       setHash(location.hash);
-      setModeTick(getMode());
     };
     const onPop = () => {
       if (live.current.game) back(true);
@@ -187,6 +197,7 @@ export default function App() {
     balRef.current = v;
     live.current.balance = v;
     setBalance(v);
+    auth.setUser((current) => ({ ...current, balance: v }));
     return v;
   }
 
@@ -199,17 +210,9 @@ export default function App() {
       stopSpinLoop();
       const s = live.current;
       const k = kitOf(s.game);
-      const ev = evalLines(next, s.game.emoji, b, k);
-      const result = applyHouse(ev, b, snap, {
-        balance: balRef.current,
-        ante: s.ante,
-        turbo: turboRef.current,
-        ledger: ledger.current,
-        kit: k,
-      });
-      ledger.current = book(ledger.current, snap.inBonus ? 0 : b, result.win, result.gift);
+      const result = bag.server.result;
       const paid = Math.max(0, result.win || 0);
-      writeBal(balRef.current + paid);
+      writeBal(bag.server.balance);
       setLast({ ...result, win: paid });
       setSession(result.session);
       setHeld(holdKeys(next, result.extra || result.session.inBonus));
@@ -247,6 +250,8 @@ export default function App() {
         playWin(result.cMult > 1 ? 3 : 2, k.voice);
         tapWin(result.cMult > 1 ? 2 : 1);
       } else if (!result.bonus && !result.collect) playMiss(k.voice);
+      if (result.bonus) sayLine("bonus");
+      else if (paid > 0 && result.cMult > 1) sayLine("c");
       if (autoRef.current && gen.current === my && !result.bonus) {
         const gap = result.session.inBonus ? 420 : turboRef.current ? 220 : 380;
         armAuto(gap);
@@ -313,9 +318,9 @@ export default function App() {
     }, worst));
   }
 
-  function runSpin() {
+  async function runSpin() {
     const s = live.current;
-    if (!s.game || busy.current || boot || entry || bonusHold) return;
+    if (!s.game || busy.current || s.boot || s.entry || s.bonusHold || s.hash.includes("admin") || s.hash.includes("account")) return;
     wakeAudio();
     const k = kitOf(s.game);
     const free = !!(s.session && s.session.inBonus);
@@ -334,7 +339,7 @@ export default function App() {
     busy.current = true;
     setSpinning(true);
     setMood(free ? "bonus" : "spin");
-    if (!free) writeBal(balRef.current - b);
+    setSpinError("");
     setLast(null);
     const nCols = k.cols || 5;
     lockRef.current = Array(nCols).fill(0);
@@ -344,11 +349,54 @@ export default function App() {
     playSpinLoop(k.voice, free);
     tapSpin();
     const snap = s.session;
-    const style = readStyle(snap, balRef.current, s.ante, fast);
-    const p = plan(style, snap, k);
-    const next = spinGrid(s.game.emoji, p.forceMiss && !snap.inBonus, k);
-    pending.current = { my, next, bet: b, snap, done: false };
-    armSpin(my, next, base, step);
+    try {
+      const server = await submitSpin(auth.user.id, { gameId: s.game.id, ante: s.ante, turbo: fast });
+      // Settlement is authoritative even if navigation interrupted its animation.
+      writeBal(server.balance);
+      setSession(server.result.session);
+      if (gen.current !== my) return;
+      const next = server.grid;
+      pending.current = { my, next, bet: b, snap, done: false, server };
+      armSpin(my, next, base, step);
+    } catch (error) {
+      if (gen.current !== my) return;
+      setSpinError(error.message);
+      autoRef.current = false;
+      setAuto(false);
+      abortAutoChain();
+      busy.current = false;
+      setSpinning(false);
+      stopSpinLoop();
+      setMood("miss");
+    }
+  }
+
+  // Karakter repliği: büyük kazanç, bonus girişi ve dokunmada kısa bir balon.
+  const lineT = useRef(0);
+  function sayLine(mood) {
+    const text = lineFor(game, mood);
+    if (!text) return;
+    setLine(text);
+    clearTimeout(lineT.current);
+    lineT.current = setTimeout(() => setLine(""), 1700);
+  }
+
+  // Sahne etkileşimi: karaktere dokununca oyunun kendi tınısıyla tepki verir.
+  const pokeT = useRef(0);
+  function pokeCharacter() {
+    if (boot || entry || bonusHold) return;
+    wakeAudio();
+    const roll = Math.random();
+    const pick = roll < 0.34 ? "c" : roll < 0.67 ? "win" : "bonus";
+    setMood(pick);
+    sayLine(pick);
+    playCharacter(kit.voice, pick);
+    clearTimeout(pokeT.current);
+    pokeT.current = setTimeout(() => {
+      setMood((current) => (current === pick
+        ? (live.current.session && live.current.session.inBonus ? "bonus" : "idle")
+        : current));
+    }, 900);
   }
 
   function nudgeStage() {
@@ -379,7 +427,7 @@ export default function App() {
 
   useEffect(() => {
     const key = (e) => {
-      if (e.code === "Space" && live.current.game) {
+      if (e.code === "Space" && live.current.game && !e.repeat && !e.target.closest?.("button, a, input, select, textarea, [contenteditable=true]")) {
         e.preventDefault();
         if (boot || entry || bonusHold) return;
         if (busy.current) nudgeStage();
@@ -393,12 +441,20 @@ export default function App() {
   if (hash.includes("admin")) {
     return (
       <div className="app">
-        <Admin session={session} setSession={setSession} balance={balance} setBalance={(n) => writeBal(typeof n === "function" ? n(balRef.current) : n)} emptySession={emptySession} />
+        <Admin />
       </div>
     );
   }
 
+  if (hash.includes("account")) return <div className="app"><Account /></div>;
+  if (!gameReady) return <main className="auth-shell"><section className="auth-card"><h1>Oyun durumu yükleniyor</h1>{stateError && <><p role="alert">{stateError}</p><button onClick={() => location.reload()}>Yeniden dene</button><button onClick={auth.logout}>Çıkış</button></>}</section></main>;
+
   function openGame(g) {
+    if (session.inBonus && session.bonusGameId && g.id !== session.bonusGameId) {
+      setSpinError("Devam eden bonus için " + GAMES.find((item) => item.id === session.bonusGameId)?.name + " oyununu açın.");
+      return;
+    }
+    setSpinError("");
     const k = kitOf(g);
     wakeAudio();
     clearTimers();
@@ -414,7 +470,7 @@ export default function App() {
     setHeld([]);
     setAuto(false);
     autoRef.current = false;
-    setAnte(1);
+    setAnte(session.inBonus ? session.bonusAnte || 1 : 1);
     setMood("idle");
     setJoy(null);
     setRecents(pushRecent(g.id));
@@ -426,6 +482,10 @@ export default function App() {
   }
 
   function back(fromPop) {
+    if (busy.current) {
+      if (fromPop) { try { history.pushState({ citv: "stage" }, ""); } catch {} }
+      return;
+    }
     clearTimers();
     busy.current = false;
     autoRef.current = false;
@@ -461,6 +521,7 @@ export default function App() {
   }
 
   function bumpAnte(d) {
+    if (busy.current || session.inBonus) return;
     playClick();
     tapTick();
     const cap = kit.anteMax || 10;
@@ -498,11 +559,13 @@ export default function App() {
         <>
           <header className="top">
             <div>
-              <p className="kicker">CITV · build 49</p>
+              <p className="kicker">CITV · 2.0.0</p>
               <h1>Masaya otur</h1>
             </div>
-            <div className="meter"><em>CITV</em><b>{balance}</b></div>
+            <div className="user-tools"><a className="profile-link" href="#account">{auth.user.displayName}</a>{auth.user.role === "admin" && <a className="profile-link" href="#admin">Admin</a>}<div className="meter"><em>CITV</em><b>{balance}</b></div></div>
           </header>
+          {spinError && <p className="form-error" role="alert">{spinError}</p>}
+          {session.inBonus && <p className="form-help">Devam eden bonus: {GAMES.find((item) => item.id === session.bonusGameId)?.name} · {session.bonusLeft} tur</p>}
           <nav className="bands" aria-label="klasman">
             {BANDS.map((b) => (
               <button key={b.id} className={"band" + (band === b.id ? " on" : "")} onClick={() => pickBand(b.id)}>{b.label}</button>
@@ -543,11 +606,12 @@ export default function App() {
           <div className="bevel" />
           <div className="lamps">{Array.from({ length: lamps }, (_, i) => <i key={i} />)}</div>
           <Jackpot kit={kit} vault={session.vault} hit={!!last?.jack} />
-          <Character game={game} mood={mood} bond={session.bond || 0} />
+          <Character game={game} mood={mood} bond={session.bond || 0} onPoke={pokeCharacter} line={line} />
           <div className={"window five canvas " + (spinning ? "spin" : "") + (showWin ? " win" : "")} onPointerDown={nudgeStage}>
             <Board grid={grid} hits={hitSet} spinning={spinning} />
           </div>
-          <p className="result-line">{resultText}</p>
+          <p className="result-line" role="status">{resultText}</p>
+          {spinError && <p className="spin-error" role="alert">{spinError}</p>}
           {session.inBonus && !bonusHold && <p className="bonus-left">Bonus {session.bonusLeft}</p>}
           <p className={"bang " + (showWin ? "" : "quiet")}>
             {showWin ? (last.cMult > 1 ? `${last.win} ×${last.cMult}` : last.win) : ""}
@@ -559,14 +623,14 @@ export default function App() {
             <span>5× {PAY5.theme}</span>
           </p>
           <div className="dock">
-            <button className="key" onClick={() => bumpAnte(-1)} disabled={ante <= 1}>−</button>
+            <button className="key" onClick={() => bumpAnte(-1)} disabled={spinning || session.inBonus || ante <= 1} aria-label="Bahsi azalt">−</button>
             <b className="ante">{ante}</b>
-            <button className="key" onClick={() => bumpAnte(1)} disabled={ante >= (kit.anteMax || 10)}>+</button>
-            <button className={"plunger" + (spinning ? " spin" : "")} onClick={runSpin} disabled={broke && !session.inBonus}>{session.inBonus ? "BONUS" : "ÇEVİR"}</button>
+            <button className="key" onClick={() => bumpAnte(1)} disabled={spinning || session.inBonus || ante >= (kit.anteMax || 10)} aria-label="Bahsi artır">+</button>
+            <button className={"plunger" + (spinning ? " spin" : "")} onClick={() => spinning ? nudgeStage() : runSpin()} disabled={(broke && !session.inBonus) || boot || entry || bonusHold}>{session.inBonus ? "BONUS" : "ÇEVİR"}</button>
             <button className={"key" + (auto ? " on" : "")} onClick={toggleAuto}>OTO</button>
             <button className={"key" + (turbo ? " on" : "")} onClick={() => { playClick(); setTurbo((v) => !v); }}>HIZ</button>
             <button className="key" onClick={() => { playClick(); setMute((v) => !v); }}>{mute ? "SES" : "SES"}</button>
-            <button className="key" onClick={() => back(false)}>GERİ</button>
+            <button className="key" onClick={() => back(false)} disabled={spinning}>GERİ</button>
           </div>
         </section>
       )}

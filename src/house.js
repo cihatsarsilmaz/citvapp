@@ -1,12 +1,12 @@
-import { WILD, STAR } from "./paytable";
-import { LOW } from "./engine";
-import { nextBond } from "./bond";
-import { dayPlan, clipDay } from "./ledger";
+import { WILD, STAR } from "./paytable.js";
+import { LOW } from "./engine.js";
+import { nextBond } from "./bond.js";
+import { dayPlan, clipDay } from "./ledger.js";
 
 export const START_BANK = 12500;
 
-function pick(list) {
-  return list[Math.floor(Math.random() * list.length)];
+function pick(list, random) {
+  return list[Math.floor(random() * list.length)];
 }
 
 function lows(theme) {
@@ -103,7 +103,7 @@ export function plan(style, session, kit) {
   return { edge, cap, forceMiss, drip, roar };
 }
 
-export function spinGrid(theme, forceMiss, layout = { cols: 5, rows: 3 }) {
+export function spinGrid(theme, forceMiss, layout = { cols: 5, rows: 3 }, random = Math.random) {
   const cols = layout.cols || 5;
   const rows = layout.rows || 3;
   const strips = stripsFor(theme, cols);
@@ -111,20 +111,20 @@ export function spinGrid(theme, forceMiss, layout = { cols: 5, rows: 3 }) {
   const grid = [];
   for (let c = 0; c < cols; c++) {
     const reel = strips[c];
-    const col = windowN(reel, Math.floor(Math.random() * reel.length), rows);
+    const col = windowN(reel, Math.floor(random() * reel.length), rows);
     if (forceMiss && c > 0) {
       const avoid = grid[0][Math.floor(rows / 2)];
       const mid = Math.floor(rows / 2);
-      col[mid] = pick(filler.filter((s) => s !== avoid));
+      col[mid] = pick(filler.filter((s) => s !== avoid), random);
     }
     grid.push(col);
   }
   return grid;
 }
 
-function rollRoar(themeHit, chance, hot) {
+function rollRoar(themeHit, chance, hot, random) {
   if (!themeHit) return 1;
-  const r = Math.random();
+  const r = random();
   if (r < chance * 0.12) return 5;
   if (r < chance * 0.36) return 3;
   if (r < chance) return 2;
@@ -132,9 +132,10 @@ function rollRoar(themeHit, chance, hot) {
 }
 
 export function applyHouse(evaled, bet, session, ctx = {}) {
+  const random = ctx.random || Math.random;
   const style = readStyle(session, ctx.balance ?? START_BANK, ctx.ante ?? 1, ctx.turbo);
   const p = plan(style, session, ctx.kit);
-  const day = ctx.ledger ? dayPlan(ctx.ledger, ctx.ante ?? 1) : null;
+  const day = ctx.ledger ? dayPlan(ctx.ledger, ctx.ante ?? 1, ctx.now ?? Date.now()) : null;
   if (day) {
     p.edge = (p.edge + day.edge) / 2;
     p.cap = Math.max(p.cap, day.cap);
@@ -142,37 +143,40 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
   }
   const raw = evaled.total || 0;
   let paid = raw > 0 ? Math.floor(Math.min(raw, bet * p.cap) * (1 - p.edge)) : 0;
-  if (p.drip && paid === 0 && Math.random() < 0.72) paid = bet;
+  if (p.drip && paid === 0 && random() < 0.72) paid = bet;
   if (p.forceMiss && !p.drip && !session.inBonus) paid = 0;
 
   const tick = nextBond(session.bond, evaled.themes);
-  if (tick.collect && paid === 0 && Math.random() < 0.75) paid = bet;
+  if (tick.collect && paid === 0 && random() < 0.75) paid = bet;
 
   let gift = false;
   if (day && day.gift && paid === 0) {
-    paid = Math.random() < 0.45 ? bet * 2 : bet;
+    paid = random() < 0.45 ? bet * 2 : bet;
     gift = true;
   }
 
   let rare = false;
-  if (day && day.rare && Math.random() < day.rare) {
-    paid = Math.floor(bet * (10 + Math.random() * 8));
+  if (day && day.rare && random() < day.rare) {
+    paid = Math.floor(bet * (10 + random() * 8));
     rare = true;
   }
 
   let jack = 0;
   const vault = session.vault || 0;
-  if (style.cold && vault > bet * 6 && Math.random() < 0.2 && !rare) {
+  if (style.cold && vault > bet * 6 && random() < 0.2 && !rare) {
     jack = Math.min(bet * 5, Math.floor(vault * 0.1));
     paid += jack;
   }
 
   const wager = session.inBonus ? 0 : bet;
+  // Günlük tavan tüm spinleri kapsar: oyunun tek RTP denetleyicisi burası.
+  // Yalnızca ücretli spinlere uygulanırsa bedava spin kazancı sınırsız kalır
+  // ve gerçekleşen RTP %500'ün üzerine çıkar.
   if (ctx.ledger) paid = clipDay(ctx.ledger, wager, paid);
 
   let roar = 1;
   if (paid > 0 && !rare) {
-    roar = rollRoar(!!evaled.themeHit, p.roar, style.hot);
+    roar = rollRoar(!!evaled.themeHit, p.roar, style.hot, random);
     if (roar > 1) {
       paid = paid * roar;
       if (ctx.ledger) paid = clipDay(ctx.ledger, wager, paid);
@@ -180,10 +184,14 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
   }
   if (rare) roar = Math.max(8, Math.round(paid / Math.max(1, bet)));
 
-  const extra = session.inBonus && (evaled.stars || 0) >= 2 ? 1 : 0;
+  // Her bonus spini bir hak harcar. Yalnızca 4+ yıldız nadir bir yeniden
+  // tetikleme verir; 2 yıldız artık hakkı geri kazandırmaz, aksi halde
+  // 10 spinlik tur sonsuza kadar zincirleniyordu.
+  const retrigger = session.inBonus && (evaled.stars || 0) >= 4 ? 1 : 0;
+  const extra = retrigger;
   const enterBonus = !session.inBonus && (session.bonusLock || 0) <= 0 && (evaled.stars || 0) >= 2;
   let bonusLeft = session.inBonus
-    ? Math.max(0, (session.bonusLeft || 0) - 1 + extra)
+    ? Math.max(0, (session.bonusLeft || 0) - 1) + retrigger
     : enterBonus ? 10 : 0;
   if (bonusLeft > 14) bonusLeft = 14;
   const inBonus = bonusLeft > 0;
@@ -213,7 +221,9 @@ export function applyHouse(evaled, bet, session, ctx = {}) {
       dry: won ? 0 : (session.dry || 0) + 1,
       bonusLeft,
       inBonus,
-      bonusLock: enterBonus ? 0 : inBonus ? 0 : Math.max(0, (session.bonusLock || 0) - 1) + (session.inBonus && !inBonus ? 3 : 0),
+      // Tur bittikten sonra 40 spin bekleme: 2+ yıldız spinlerin %56-71'inde
+      // geldiği için 3 spinlik kilit bonusun sürekli yeniden açılmasına yetiyordu.
+      bonusLock: enterBonus ? 0 : inBonus ? 0 : Math.max(0, (session.bonusLock || 0) - 1) + (session.inBonus && !inBonus ? 40 : 0),
       bond: tick.bond,
     },
   };
