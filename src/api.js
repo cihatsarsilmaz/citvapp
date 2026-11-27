@@ -1,4 +1,5 @@
 import { createSpinClient } from "./spin-client.mjs";
+import { DEMO, demoApi } from "./demo.js";
 
 let csrfToken = "";
 const apiBase = String(import.meta.env?.VITE_CITV_API_URL || "").replace(/\/+$/, "");
@@ -21,6 +22,8 @@ async function ensureCsrf() {
 
 export async function api(path, options = {}) {
   const method = String(options.method || "GET").toUpperCase();
+  // Sunucusuz yayinda (Pages) istekler yerel motora gider.
+  if (DEMO) return demoApi(path, options);
   const headers = { Accept: "application/json", ...(options.headers || {}) };
   if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
     headers["X-CSRF-Token"] = await ensureCsrf();
